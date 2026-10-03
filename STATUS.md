@@ -1,13 +1,13 @@
 # Status
 
-**Current phase:** Phase 1 polish finished in code (awaiting device check); next P2-DUP-001 Find exact copies
+**Current phase:** Phase 1 polish and P2-DUP-001 Find exact copies done in code; awaiting the owner's device test
 **Last updated:** 2026-10-03
 
 ## Completed
 
 - **Phase 0**: all tasks (device check pending).
 - **Phase 1**: P1-SET-002, P1-CLN-001, P1-JOB-001, P1-JOB-002, P1-REV-001, P1-REV-002, P1-REV-003 (design checkpoint pending), P1-REV-004, P1-LIB-001..005, P1-ONB-001..003, P1-MOT-001, P1-UI-006, P1-UI-008, P1-UI-009, P1-QA-001 (automated part; device walkthrough pending). P1-UI-007 skipped (optional; licensing).
-- **Phase 2**: P2-MEDIA-001/002/003/004/006, P2-DB-001..004, P2-JOB-001..003, P2-LIB-001, P2-EXP-001..007, P2-FIND-001, P2-UI-001, P2-DIAG-001. Spike S1 answered from source (needs dev build). Details in [docs/BACKLOG.md](docs/BACKLOG.md).
+- **Phase 2**: P2-DUP-001 (awaiting device), P2-MEDIA-001/002/003/004/006, P2-DB-001..004, P2-JOB-001..003, P2-LIB-001, P2-EXP-001..007, P2-FIND-001, P2-UI-001, P2-DIAG-001. Spike S1 answered from source (needs dev build). Details in [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Checks actually run (Windows 11, Node 22.23.3, 2026-10-03, after Phase 1 polish)
 
@@ -16,7 +16,7 @@
 | `npm run typecheck`    | ✅ pass (`.expo/types` set aside, as in CI) |
 | `npm run lint`         | ✅ pass                                     |
 | `npm run format:check` | ✅ pass                                     |
-| `npm test`             | ✅ 319/319 tests                            |
+| `npm test`             | ✅ 346/346 tests                            |
 | `npm run doctor`       | ✅ 21/21                                    |
 | `npm run bundle:ios`   | ✅ iOS Hermes bundle (4.3 MB)               |
 | Physical iPhone        | ⏳ not run yet                              |
@@ -38,6 +38,15 @@ Real photo access prompts and limited selection; scan speed and smoothness on yo
 5. **Increase Contrast** (iOS Settings → Accessibility → Display & Text Size): secondary text and lines get stronger in both themes.
 6. **Gallery** (Settings → Developer): theme chips, job bar states, sample scan sheet, chips, before/after placeholder.
 7. **Accessibility walkthrough**: docs/TEST_PLAN.md §4, "Phase 1 accessibility pass".
+
+## Find exact copies: iPhone checklist (awaiting owner test)
+
+1. Clean → (with your library scanned) the **Exact copies** card → **Find exact copies**. The job bar says "Exact copies" with "Fingerprinting files · x of y". Try Pause, Resume, and switching tabs.
+2. To create a real exact copy: in Photos, save the same image twice (e.g. save one image from Messages twice), or Duplicate a photo. Scan again on Clean, then **Check again**. Expect a set in **Exact copies**, with a keeper and Remove still disabled. Note whether Photos' Duplicate produces identical files; that's useful evidence either way.
+3. The card lists what wasn't checked and why (Live Photos, iCloud only, edited, videos). Check the numbers look plausible for your library.
+4. Stop partway, then **Continue checking**: it should pick up quickly.
+5. Settings → Developer → Diagnostics: crop a photo in Photos, Scan again, then run **Edited photo check** and **Live Photo check** → Share report → send it to me.
+6. Report how long the check took and for how many photos.
 
 ## Real-photo test (owner)
 
@@ -62,7 +71,7 @@ Device test 1 is done: scan, Library, thumbnails and Compare work (after fixes P
    - P1-UI-009: gallery completion (job bar states, sheets, chips)
    - P1-QA-001: accessibility pass (labels, roles, largest Dynamic Type, Reduce Motion, Reduce Transparency)
    - P1-UI-007 (licensed fixture photos) is optional; skip if licensing is uncertain
-2. **Then P2-DUP-001 "Find exact copies"**: a separate, user-started, pausable job (about 50 ms per photo measured on iPhone 17, so roughly 8 minutes for 10,000 photos).
+2. ✅ **P2-DUP-001 "Find exact copies"** (done in code 2026-10-03; checklist above): a separate, user-started, pausable job (about 50 ms per photo measured on iPhone 17, so roughly 8 minutes for 10,000 photos).
    - Eligible only: not a Live Photo; `getIsInCloud()` false (so nothing downloads); the `getUri()` file proves it is the camera original (path under `DCIM`, file name matches the catalog filename). Everything else is reported as "not checked" with the reason.
    - Hash with `File.info({ md5: true })`; only compare files of equal byte size; confirm candidates with a second, stronger check (SHA-256 via expo-crypto if it works in Expo Go SDK 57, otherwise full byte comparison) before calling them exact copies.
    - Persist fingerprints in a new migration with representation, algorithm, implementation version and the asset's modification time; invalidate on change.
