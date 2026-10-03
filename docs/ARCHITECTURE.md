@@ -73,7 +73,7 @@ interface JobRunner {
 }
 interface CleanupPlanner {
   plan(groups, selection): ActionPlan;
-} // pure; shows scope before anything happens
+} // pure; shows scope before anything happens. Implemented: buildActionPlan in src/domain/action-plan.ts
 interface CleanupExecutor {
   execute(plan: ActionPlan): Promise<ActionResult>;
 } // revalidates, then calls the OS

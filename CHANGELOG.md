@@ -14,6 +14,7 @@
 - Compact job bar floating above the tab bar, Apple Music mini-player style; expands into a native scan sheet with stages and controls; content insets grow while it shows (P1-JOB-002).
 - Review choices (P1-REV-001): Skip a group (collapses with Undo), Protect/Unprotect a photo, "Keep this one instead" to change the keeper, via a touch-and-hold native action sheet or VoiceOver custom actions. Choices persist for the session and clear when results change. Protected photos and skipped groups drop out of every total; keeper changes are reflected.
 - Full-screen group review (P1-REV-002/003): swipe through photos with native paging and pinch zoom, or compare side by side with the keeper; thumbnail strip with keeper/protected/marked markers; plain-language differences from the keeper; Mark for review, Keep this one, Protect; Next group slides in and settles. Every gesture has a button alternative.
+- Removal plan preview (P1-REV-004): exact photos removed and kept per group, single flagged photos, honest "could free up to", iCloud sync and Recently Deleted warning, notice when marked keepers were left out, and a disabled remove button for sample data. Built by a tested pure planner that never includes keepers (even flagged elsewhere), protected photos or skipped groups, and counts each photo once.
 - Shared ProgressBar (eases between reported values; indeterminate sweep; reduced-motion fallbacks). One success haptic and VoiceOver announcement on completion.
 
 ## 0.1.0 — Phase 0 foundation (2026-10-02)
