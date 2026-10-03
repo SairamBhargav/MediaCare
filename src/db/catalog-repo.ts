@@ -1,3 +1,9 @@
+import {
+  FINGERPRINT_ALGORITHM,
+  FINGERPRINT_REPRESENTATION,
+  type FingerprintRow,
+  type SkipReason,
+} from '@/domain/exact-copies';
 import type { PhotoRecord } from '@/domain/media';
 
 import { getDatabase } from './database';
@@ -132,6 +138,7 @@ export async function removeUnseen(scanId: string): Promise<number> {
     'DELETE FROM assets WHERE last_seen_scan IS NULL OR last_seen_scan != ?',
     scanId,
   );
+  await removeOrphanFingerprints();
   return result.changes;
 }
 
@@ -146,6 +153,7 @@ export async function deleteAssets(ids: readonly string[]) {
       await statement.finalizeAsync();
     }
   });
+  await removeOrphanFingerprints();
 }
 
 export async function loadProtectedIds(): Promise<Set<string>> {
@@ -178,8 +186,11 @@ export type ScanJobRow = {
   error: string | null;
 };
 
+export type JobKind = 'library-scan' | 'copy-check';
+
 export async function saveScanJob(job: {
   id: string;
+  kind?: JobKind;
   status: string;
   processed: number;
   total: number | null;
@@ -190,11 +201,12 @@ export async function saveScanJob(job: {
   const db = await getDatabase();
   await db.runAsync(
     `INSERT INTO jobs (id, kind, status, processed, total, started_at, updated_at, finished_at, error)
-     VALUES (?, 'library-scan', ?, ?, ?, ?, ?, ?, ?)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET status = excluded.status, processed = excluded.processed,
        total = excluded.total, updated_at = excluded.updated_at, finished_at = excluded.finished_at,
        error = excluded.error`,
     job.id,
+    job.kind ?? 'library-scan',
     job.status,
     job.processed,
     job.total,
@@ -205,10 +217,11 @@ export async function saveScanJob(job: {
   );
 }
 
-export async function loadLastScanJob(): Promise<ScanJobRow | null> {
+export async function loadLastScanJob(kind: JobKind = 'library-scan'): Promise<ScanJobRow | null> {
   const db = await getDatabase();
   return db.getFirstAsync<ScanJobRow>(
-    "SELECT id, status, processed, total, started_at, updated_at, finished_at, error FROM jobs WHERE kind = 'library-scan' ORDER BY started_at DESC LIMIT 1",
+    'SELECT id, status, processed, total, started_at, updated_at, finished_at, error FROM jobs WHERE kind = ? ORDER BY started_at DESC LIMIT 1',
+    kind,
   );
 }
 
@@ -216,7 +229,7 @@ export async function loadLastScanJob(): Promise<ScanJobRow | null> {
 export async function markInterruptedScans() {
   const db = await getDatabase();
   await db.runAsync(
-    "UPDATE jobs SET status = 'interrupted', updated_at = ? WHERE kind = 'library-scan' AND status IN ('running', 'paused')",
+    "UPDATE jobs SET status = 'interrupted', updated_at = ? WHERE status IN ('running', 'paused')",
     Date.now(),
   );
 }
@@ -264,6 +277,97 @@ export async function listDerivatives(limit = 20): Promise<DerivativeRow[]> {
 export async function clearCatalog() {
   const db = await getDatabase();
   await db.execAsync(
-    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives;',
+    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints;',
   );
+}
+
+type FingerprintDbRow = {
+  asset_id: string;
+  asset_version: number | null;
+  status: string;
+  skip_reason: string | null;
+  implementation: string;
+  byte_size: number | null;
+  digest: string | null;
+  match_group: string | null;
+  checked_at: number;
+};
+
+export async function loadFingerprints(): Promise<FingerprintRow[]> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<FingerprintDbRow>(
+    'SELECT asset_id, asset_version, status, skip_reason, implementation, byte_size, digest, match_group, checked_at FROM fingerprints',
+  );
+  return rows.map((row) => ({
+    assetId: row.asset_id,
+    assetVersion: row.asset_version,
+    status: row.status === 'hashed' ? 'hashed' : 'skipped',
+    skipReason: (row.skip_reason as SkipReason | null) ?? null,
+    implementation: row.implementation,
+    byteSize: row.byte_size,
+    digest: row.digest,
+    matchGroup: row.match_group,
+    checkedAt: row.checked_at,
+  }));
+}
+
+/** Writes a batch of fingerprints (or skip reasons), replacing older rows. */
+export async function saveFingerprints(rows: readonly FingerprintRow[]) {
+  if (rows.length === 0) return;
+  const db = await getDatabase();
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    const statement = await txn.prepareAsync(
+      `INSERT INTO fingerprints (asset_id, asset_version, status, skip_reason, representation, algorithm, implementation, byte_size, digest, match_group, checked_at)
+       VALUES ($id, $version, $status, $reason, $representation, $algorithm, $implementation, $size, $digest, NULL, $checked)
+       ON CONFLICT(asset_id) DO UPDATE SET asset_version = excluded.asset_version, status = excluded.status,
+         skip_reason = excluded.skip_reason, representation = excluded.representation, algorithm = excluded.algorithm,
+         implementation = excluded.implementation, byte_size = excluded.byte_size, digest = excluded.digest,
+         match_group = NULL, checked_at = excluded.checked_at`,
+    );
+    try {
+      for (const row of rows) {
+        await statement.executeAsync({
+          $id: row.assetId,
+          $version: row.assetVersion,
+          $status: row.status,
+          $reason: row.skipReason,
+          $representation: FINGERPRINT_REPRESENTATION,
+          $algorithm: FINGERPRINT_ALGORITHM,
+          $implementation: row.implementation,
+          $size: row.byteSize,
+          $digest: row.digest,
+          $checked: row.checkedAt,
+        });
+      }
+    } finally {
+      await statement.finalizeAsync();
+    }
+  });
+}
+
+/**
+ * Records the confirmed exact-copy sets of a finished check: every match
+ * group is cleared, then each set's members point at the set's first id.
+ */
+export async function saveMatchGroups(sets: readonly (readonly string[])[]) {
+  const db = await getDatabase();
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    await txn.runAsync('UPDATE fingerprints SET match_group = NULL WHERE match_group IS NOT NULL');
+    const statement = await txn.prepareAsync(
+      'UPDATE fingerprints SET match_group = $group WHERE asset_id = $id',
+    );
+    try {
+      for (const set of sets) {
+        for (const id of set) await statement.executeAsync({ $group: set[0], $id: id });
+      }
+    } finally {
+      await statement.finalizeAsync();
+    }
+  });
+}
+
+/** Fingerprints of photos no longer in the catalog are dropped with them. */
+async function removeOrphanFingerprints() {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM fingerprints WHERE asset_id NOT IN (SELECT id FROM assets)');
 }

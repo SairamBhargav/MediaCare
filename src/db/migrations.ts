@@ -56,4 +56,26 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_derivatives_created ON derivatives (created_at DESC);
   `,
+
+  // 2: file fingerprints for exact copies (P2-DUP-001). One row per photo:
+  // either a fingerprint of the proven camera-original file, or why it
+  // wasn't fingerprinted. Valid only while asset_version (Photos'
+  // modification time) and implementation match; match_group links files
+  // confirmed identical by a full byte comparison.
+  `
+  CREATE TABLE fingerprints (
+    asset_id TEXT PRIMARY KEY NOT NULL,
+    asset_version INTEGER,
+    status TEXT NOT NULL,
+    skip_reason TEXT,
+    representation TEXT NOT NULL,
+    algorithm TEXT NOT NULL,
+    implementation TEXT NOT NULL,
+    byte_size INTEGER,
+    digest TEXT,
+    match_group TEXT,
+    checked_at INTEGER NOT NULL
+  );
+  CREATE INDEX idx_fingerprints_digest ON fingerprints (byte_size, digest);
+  `,
 ];
