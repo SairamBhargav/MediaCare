@@ -5,6 +5,7 @@ import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { EmptyState } from '@/components/empty-state';
 import { Icon } from '@/components/icon';
+import { RevealGroup } from '@/components/reveal';
 import { SectionHeader } from '@/components/section-header';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
@@ -48,6 +49,8 @@ type CleanContentProps = {
   plannedCount?: number;
   /** Photos reported changes since the last scan. */
   libraryChanged?: boolean;
+  /** Play the one-time staggered reveal (P1-MOT-001) as this content mounts. */
+  animateReveal?: boolean;
 };
 
 const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, onStop: () => {} };
@@ -65,25 +68,38 @@ export function CleanContent({
   adjustments = {},
   plannedCount = 0,
   libraryChanged = false,
+  animateReveal = false,
 }: CleanContentProps) {
-  if (isActive(job)) return <ScanningCard job={job} {...scanActions} />;
+  if (isActive(job)) {
+    return (
+      <RevealGroup index={0} animate={animateReveal}>
+        <ScanningCard job={job} {...scanActions} />
+      </RevealGroup>
+    );
+  }
 
   switch (state.status) {
     case 'not-scanned':
-      return <NotScanned access={access} actions={actions} />;
+      return (
+        <RevealGroup index={0} animate={animateReveal}>
+          <NotScanned access={access} actions={actions} />
+        </RevealGroup>
+      );
     case 'failed':
       return (
-        <Surface>
-          <EmptyState
-            icon="warning"
-            tone="error"
-            title="Scan stopped"
-            message={state.message}
-            action={
-              <Button title="Try again" variant="secondary" onPress={actions.onScanLibrary} />
-            }
-          />
-        </Surface>
+        <RevealGroup index={0} animate={animateReveal}>
+          <Surface>
+            <EmptyState
+              icon="warning"
+              tone="error"
+              title="Scan stopped"
+              message={state.message}
+              action={
+                <Button title="Try again" variant="secondary" onPress={actions.onScanLibrary} />
+              }
+            />
+          </Surface>
+        </RevealGroup>
       );
     case 'results':
       return (
@@ -94,6 +110,7 @@ export function CleanContent({
           adjustments={adjustments}
           plannedCount={plannedCount}
           libraryChanged={libraryChanged}
+          animateReveal={animateReveal}
         />
       );
   }
@@ -147,7 +164,9 @@ function NotScanned({
             onPress={actions.onScanLibrary}
             block
             accessibilityHint={
-              access === 'full' || access === 'limited' ? undefined : 'Asks for photo access first'
+              access === 'full' || access === 'limited'
+                ? undefined
+                : 'Explains photo access, then iOS asks'
             }
           />
           {access === 'limited' ? (
@@ -176,6 +195,7 @@ function Results({
   adjustments,
   plannedCount,
   libraryChanged,
+  animateReveal,
 }: {
   state: Extract<CleanHomeState, { status: 'results' }>;
   access: PhotoAccess | 'unknown';
@@ -183,6 +203,7 @@ function Results({
   adjustments: ReviewAdjustments;
   plannedCount: number;
   libraryChanged: boolean;
+  animateReveal: boolean;
 }) {
   const { width } = useWindowDimensions();
   const sample = state.sample;
@@ -224,100 +245,112 @@ function Results({
   if (summaries.length === 0) {
     return (
       <>
-        {changedBanner}
-        <Surface>
-          <EmptyState
-            icon="check"
-            title="Nothing to clean up"
-            message={
-              sample
-                ? `None of the ${state.analyzed.toLocaleString()} photos checked are repeats, copies or unusually large.`
-                : `No bursts, screenshots or long videos among the ${state.analyzed.toLocaleString()} items checked.`
-            }
-          />
-        </Surface>
-        {footer}
+        <RevealGroup index={0} animate={animateReveal}>
+          {changedBanner}
+          <Surface>
+            <EmptyState
+              icon="check"
+              title="Nothing to clean up"
+              message={
+                sample
+                  ? `None of the ${state.analyzed.toLocaleString()} photos checked are repeats, copies or unusually large.`
+                  : `No bursts, screenshots or long videos among the ${state.analyzed.toLocaleString()} items checked.`
+              }
+            />
+          </Surface>
+        </RevealGroup>
+        <RevealGroup index={1} animate={animateReveal}>
+          {footer}
+        </RevealGroup>
       </>
     );
   }
 
   return (
     <>
-      {changedBanner}
-      <Surface elevation="raised" style={styles.intro}>
-        <View style={styles.pills}>
-          <StatusPill
-            label={sample ? 'Sample results' : 'Your library'}
-            tone="accent"
-            icon="photo"
-          />
-          {partial ? <StatusPill label="Partial" tone="warning" icon="warning" /> : null}
-        </View>
-        <AppText variant="title1" style={styles.numbers}>
-          {sample
-            ? `Could free up to ${formatBytes(totalBytes)}`
-            : `${candidates.toLocaleString()} ${candidates === 1 ? 'item' : 'items'} to review`}
-        </AppText>
-        <AppText variant="body" color="secondaryLabel">
-          {partial ? 'Results so far. Items not checked yet aren’t included. ' : ''}
-          {sample
-            ? 'Each photo is counted once'
-            : 'Favorites aren’t suggested, sizes aren’t measured yet'}
-          {setAside ? ', protected photos and skipped groups aren’t counted' : ''}, and nothing is
-          removed until you review it.
-        </AppText>
-        <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
-          {coverage}
-        </AppText>
-        {!sample && access === 'limited' ? (
-          <View style={styles.row}>
-            <AppText variant="footnote" color="secondaryLabel" style={styles.flex}>
-              Only the photos you’ve shared with MediaCare are included.
-            </AppText>
-            <Button title="Manage" variant="plain" onPress={actions.onManageSelection} />
-          </View>
-        ) : null}
-      </Surface>
-
-      <View style={styles.section}>
-        <SectionHeader eyebrow={sample ? 'Sample' : 'Your library'} title="Findings" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          decelerationRate="fast"
-          snapToInterval={cardWidth + spacing.sm}
-          snapToAlignment="start"
-          style={styles.shelf}
-          contentContainerStyle={styles.shelfContent}
-          accessibilityLabel="Finding categories"
-        >
-          {summaries.map((summary) => (
-            <CategoryCard
-              key={summary.category}
-              summary={summary}
-              sample={sample}
-              width={cardWidth}
-              onPress={() => router.push(`/category/${summary.category}`)}
+      <RevealGroup index={0} animate={animateReveal}>
+        {changedBanner}
+        <Surface elevation="raised" style={styles.intro}>
+          <View style={styles.pills}>
+            <StatusPill
+              label={sample ? 'Sample results' : 'Your library'}
+              tone="accent"
+              icon="photo"
             />
-          ))}
-        </ScrollView>
-      </View>
+            {partial ? <StatusPill label="Partial" tone="warning" icon="warning" /> : null}
+          </View>
+          <AppText variant="title1" style={styles.numbers}>
+            {sample
+              ? `Could free up to ${formatBytes(totalBytes)}`
+              : `${candidates.toLocaleString()} ${candidates === 1 ? 'item' : 'items'} to review`}
+          </AppText>
+          <AppText variant="body" color="secondaryLabel">
+            {partial ? 'Results so far. Items not checked yet aren’t included. ' : ''}
+            {sample
+              ? 'Each photo is counted once'
+              : 'Favorites aren’t suggested, sizes aren’t measured yet'}
+            {setAside ? ', protected photos and skipped groups aren’t counted' : ''}, and nothing is
+            removed until you review it.
+          </AppText>
+          <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
+            {coverage}
+          </AppText>
+          {!sample && access === 'limited' ? (
+            <View style={styles.row}>
+              <AppText variant="footnote" color="secondaryLabel" style={styles.flex}>
+                Only the photos you’ve shared with MediaCare are included.
+              </AppText>
+              <Button title="Manage" variant="plain" onPress={actions.onManageSelection} />
+            </View>
+          ) : null}
+        </Surface>
+      </RevealGroup>
+
+      <RevealGroup index={1} animate={animateReveal}>
+        <View style={styles.section}>
+          <SectionHeader eyebrow={sample ? 'Sample' : 'Your library'} title="Findings" />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            snapToInterval={cardWidth + spacing.sm}
+            snapToAlignment="start"
+            style={styles.shelf}
+            contentContainerStyle={styles.shelfContent}
+            accessibilityLabel="Finding categories"
+          >
+            {summaries.map((summary) => (
+              <CategoryCard
+                key={summary.category}
+                summary={summary}
+                sample={sample}
+                width={cardWidth}
+                onPress={() => router.push(`/category/${summary.category}`)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      </RevealGroup>
 
       {plannedCount > 0 && actions.onOpenPlan ? (
-        <Surface style={styles.row}>
-          <View style={styles.flex}>
-            <AppText variant="headline">
-              {plannedCount} {plannedCount === 1 ? 'photo' : 'photos'} marked
-            </AppText>
-            <AppText variant="footnote" color="secondaryLabel">
-              See exactly what would be removed and kept.
-            </AppText>
-          </View>
-          <Button title="Review plan" onPress={actions.onOpenPlan} />
-        </Surface>
+        <RevealGroup index={2} animate={animateReveal}>
+          <Surface style={styles.row}>
+            <View style={styles.flex}>
+              <AppText variant="headline">
+                {plannedCount} {plannedCount === 1 ? 'photo' : 'photos'} marked
+              </AppText>
+              <AppText variant="footnote" color="secondaryLabel">
+                See exactly what would be removed and kept.
+              </AppText>
+            </View>
+            <Button title="Review plan" onPress={actions.onOpenPlan} />
+          </Surface>
+        </RevealGroup>
       ) : null}
 
-      {footer}
+      <RevealGroup index={3} animate={animateReveal}>
+        {footer}
+      </RevealGroup>
     </>
   );
 }

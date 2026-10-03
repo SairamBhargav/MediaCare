@@ -4,7 +4,6 @@ import { SectionList, StyleSheet, View, useWindowDimensions } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/app-text';
-import { scanLibrary } from '@/features/media/start-scan';
 import { Button } from '@/components/button';
 import { ChromeBackground } from '@/components/chrome-background';
 import { MediaTile } from '@/components/media-tile';
@@ -17,6 +16,7 @@ import { isActive, jobFraction } from '@/domain/jobs';
 import { chunkRows, gridColumns, groupByMonth } from '@/domain/timeline';
 import { jobProgressText } from '@/features/clean/job-text';
 import type { MediaItem } from '@/features/media/registry';
+import { scanLibrary } from '@/features/media/start-scan';
 import { hasPhotoAccess, useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
 import { useLibrarySession } from '@/state/library-session';

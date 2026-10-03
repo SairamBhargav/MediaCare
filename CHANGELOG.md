@@ -2,6 +2,7 @@
 
 ## Unreleased: Phase 1 polish, then exact copies
 
+- Home reveal (P1-MOT-001): the Clean screen’s content fades up in at most four groups, 40 ms apart, once per session and only once it’s actually on screen; never under Reduce Motion or Less motion.
 - Onboarding (P1-ONB-001..003): a one-screen introduction on first run (sample photos, labelled, settle in under 1.2 s; buttons usable at once), then an explanation of photo access before iOS asks. Every "Scan my library" button now explains first if iOS hasn’t asked yet. The seen flag is stored with preferences; Settings → Help reopens the introduction and the access explanation.
 - Photo viewer (P1-LIB-003/004): opens out of the tapped tile and returns to it; pinch, pan and double-tap zoom; drag down or up to close, a Close button, and the VoiceOver escape gesture. Info shows date source, dimensions, size, source and file. Reduce Motion fades instead of flying.
 - Library keeps its place (P1-LIB-005): Select mode, the selection and the scroll position survive tab switches and the screen being rebuilt; photos that leave the library drop out of the selection; Clear data resets it.

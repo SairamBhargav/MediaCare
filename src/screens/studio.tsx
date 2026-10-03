@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppText } from '@/components/app-text';
-import { scanLibrary } from '@/features/media/start-scan';
 import { Button } from '@/components/button';
 import { EmptyState } from '@/components/empty-state';
 import { MediaTile } from '@/components/media-tile';
@@ -13,6 +12,7 @@ import { Surface } from '@/components/surface';
 import { listDerivatives, type DerivativeRow } from '@/db/catalog-repo';
 import { formatBytes } from '@/domain/bytes';
 import { savings } from '@/domain/compress';
+import { scanLibrary } from '@/features/media/start-scan';
 import { hasPhotoAccess, useCatalog } from '@/state/catalog';
 import { gutter, spacing } from '@/theme';
 
