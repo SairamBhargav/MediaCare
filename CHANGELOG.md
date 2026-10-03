@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased: Phase 1 polish, then exact copies
+
+- Removed unused template packages expo-glass-effect, expo-device and expo-web-browser (P1-UI-008). Doctor 21/21, iOS bundle exports.
+
 ## Unreleased: Phase 2 (real photos) built, awaiting device test
 
 - Fixed from the first device test (iPhone 17): gray thumbnails (asset ids already include ph://), and Compare opening "page could not be found" for real groups (ids with slashes are now escaped).
