@@ -1,8 +1,9 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/app-text';
+import { Button } from '@/components/button';
 import { ChromeBackground } from '@/components/chrome-background';
 import { EmptyState } from '@/components/empty-state';
 import { StatusPill } from '@/components/status-pill';
@@ -108,12 +109,23 @@ function SelectionSummary({ count, bytes }: { count: number; bytes: number }) {
       ]}
     >
       <ChromeBackground />
-      <AppText variant="headline" accessibilityLiveRegion="polite" style={styles.numbers}>
-        {text}
-      </AppText>
-      <AppText variant="footnote" color="secondaryLabel">
-        Nothing is removed from here. With real photos you’ll review the exact list first.
-      </AppText>
+      <View style={styles.summaryRow}>
+        <View style={styles.flex}>
+          <AppText variant="headline" accessibilityLiveRegion="polite" style={styles.numbers}>
+            {text}
+          </AppText>
+          <AppText variant="footnote" color="secondaryLabel">
+            Nothing is removed from here.
+          </AppText>
+        </View>
+        {count > 0 ? (
+          <Button
+            title="Review plan"
+            onPress={() => router.push('/plan')}
+            accessibilityHint="Lists exactly what would be removed and kept"
+          />
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -123,6 +135,7 @@ const SUMMARY_CLEARANCE = 120;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   content: {
     paddingHorizontal: gutter,
     paddingTop: spacing.sm,

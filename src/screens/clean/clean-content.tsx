@@ -31,6 +31,9 @@ type CleanContentProps = {
   scanActions?: ScanActions;
   /** Review choices (protected, skipped, keeper changes) that totals must respect. */
   adjustments?: ReviewAdjustments;
+  /** Photos currently in the removal plan; shows a shortcut to it when > 0. */
+  plannedCount?: number;
+  onOpenPlan?: () => void;
 };
 
 const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, onStop: () => {} };
@@ -46,6 +49,8 @@ export function CleanContent({
   onReset,
   scanActions = NO_SCAN_ACTIONS,
   adjustments = {},
+  plannedCount = 0,
+  onOpenPlan,
 }: CleanContentProps) {
   if (isActive(job)) return <ScanningCard job={job} {...scanActions} />;
 
@@ -65,7 +70,15 @@ export function CleanContent({
         </Surface>
       );
     case 'results':
-      return <Results state={state} adjustments={adjustments} onReset={onReset} />;
+      return (
+        <Results
+          state={state}
+          adjustments={adjustments}
+          onReset={onReset}
+          plannedCount={plannedCount}
+          onOpenPlan={onOpenPlan}
+        />
+      );
   }
 }
 
@@ -95,10 +108,14 @@ function Results({
   state,
   adjustments,
   onReset,
+  plannedCount,
+  onOpenPlan,
 }: {
   state: Extract<CleanHomeState, { status: 'results' }>;
   adjustments: ReviewAdjustments;
   onReset: () => void;
+  plannedCount: number;
+  onOpenPlan?: () => void;
 }) {
   const { width } = useWindowDimensions();
   const summaries = summarizeCategories(state.findings, sampleBytes, adjustments);
@@ -167,6 +184,20 @@ function Results({
         </ScrollView>
       </View>
 
+      {plannedCount > 0 && onOpenPlan ? (
+        <Surface style={styles.planRow}>
+          <View style={styles.flex}>
+            <AppText variant="headline">
+              {plannedCount} {plannedCount === 1 ? 'photo' : 'photos'} marked
+            </AppText>
+            <AppText variant="footnote" color="secondaryLabel">
+              See exactly what would be removed and kept.
+            </AppText>
+          </View>
+          <Button title="Review plan" onPress={onOpenPlan} />
+        </Surface>
+      ) : null}
+
       <Button title="Reset sample" variant="plain" onPress={onReset} style={styles.reset} />
     </>
   );
@@ -194,4 +225,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   reset: { alignSelf: 'center' },
+  planRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

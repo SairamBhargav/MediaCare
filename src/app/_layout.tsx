@@ -64,6 +64,7 @@ export default function RootLayout() {
               headerStyle: { backgroundColor: colors.background },
             }}
           />
+          <Stack.Screen name="plan" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen
             name="scan"
             options={{
