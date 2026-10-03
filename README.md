@@ -4,15 +4,14 @@ _Keep the memories that matter, reclaim space with confidence, and make the best
 
 An iPhone-first photo and video cleanup, organization and creation app, built with React Native, Expo and TypeScript, developed on Windows and tested on a physical iPhone. Working name; the brand isn't final.
 
-> **Current status: Phase 0 complete (foundation).** The app runs in Expo Go with **sample images only**. It does not request photo access, scan a library, or remove anything yet. See [STATUS.md](STATUS.md).
+> **Current status: Phase 2 built, awaiting device test.** MediaCare can read your Photos library (with your permission), catalog it on the iPhone, find bursts, screenshots and long videos, and make verified smaller copies. Removal is not available yet (Phase 3). See [STATUS.md](STATUS.md).
 
 ## What's in this build
 
-- Three tabs: **Clean**, **Library**, **Studio**, plus a **Settings** sheet.
-- A sample _Similar shots_ review on Clean: suggested keeper (never selectable), tap-to-select with a spring check badge and haptic tick, Select all / Clear, and a live summary with sizes labelled as illustrative.
-- A virtualized sample photo grid with Select mode.
-- Light/Dark/System appearance, an in-app _Less motion_ switch that adds to iOS Reduce Motion, a Haptics switch, and a solid tab bar under Reduce Transparency.
-- A development-only _Components & Motion_ gallery (Settings → Developer).
+- **Clean**: scan your Photos library on the iPhone (or a clearly labelled sample). Real results: photos taken moments apart, screenshots and long videos, with favorites never suggested. Review groups (keeper, protect, skip, compare side by side) and see a removal plan. Removal itself is disabled until Phase 3.
+- **Library**: your photos by month; tap one for details, Protect, or a smaller copy.
+- **Studio**: make smaller JPEG copies by quality or target size, with real measured sizes, saved as new photos. Originals are never changed.
+- **Settings**: theme, motion, haptics, photo access, Clear MediaCare data, and developer tools (component gallery, Diagnostics).
 
 ## Run it (Windows → iPhone)
 
@@ -66,6 +65,7 @@ src/state/       small UI stores             docs/            plan, specs, decis
 
 ## Known limits
 
-- Sample data only; no photo access, scanning, exports or removal yet.
+- No removal yet; exact duplicates and blur detection need Phase 3 (native code).
+- Real photo sizes are not measured during scans; only copies you make are measured.
 - Nothing has been verified on an iPhone yet. CI proves the code compiles and tests pass, not native behavior.
 - No license has been chosen; all rights reserved.

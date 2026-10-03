@@ -1,67 +1,53 @@
 # Status
 
-**Current phase:** 2 (real photos) in progress, paused mid-phase; Phase 1 owner checkpoint still pending
+**Current phase:** 2 (real photos) built; awaiting the owner's device test before Phase 3
 **Last updated:** 2026-10-03
-
-## Phase 2 progress
-
-Built and pushed: photo access (full/limited/denied), SQLite catalog, resumable metadata-only library scan, honest real findings (moments within 2 s, screenshots, long videos; favorites never suggested), Clean home for real results, Library showing real photos, photo viewer with Protect, and **Make a smaller copy** (quality or target size, measured bytes, decode check, save as a new photo, share). 183 tests pass.
-
-Evidence from expo-media-library's iOS source: `getUri()` / `getInfo()` return the current (edited) rendition and download from iCloud, so exact duplicates need a native module (Phase 3). Video duration from metadata is already in milliseconds.
-
-**Remaining before Phase 2 exit:** Studio entry point and copies list; Settings photo-access row and "Clear MediaCare data"; on-device diagnostics screen for spikes S1/S3/S5; docs (CAPABILITIES, SCREENS, DATA_MODEL, BACKLOG, CHANGELOG); then the owner's real-photo test.
 
 ## Completed
 
-- **Phase 0**: P0-REPO-001 · P0-UI-001 · P0-UI-002 · P0-NAV-001 · P0-MOT-001 (device check pending) · P0-DOM-001 · P0-DOM-002 · P0-CI-001 · P0-DOC-001
-- **Phase 1**: P1-SET-002 (preferences persist) · P1-CLN-001 (Clean home categories and states) · P1-JOB-001 (job model + simulated sample scan) · P1-JOB-002 (compact job bar + scan sheet) · P1-REV-001 (skip, protect, change keeper, session-persistent review) · P1-REV-002 (full-screen compare) · P1-REV-003 (next-group transition; design checkpoint pending) · P1-REV-004 (removal plan preview) · P1-LIB-001 (month timeline) · P1-LIB-002 (adaptive columns)
+- **Phase 0**: all tasks (device check pending).
+- **Phase 1**: P1-SET-002, P1-CLN-001, P1-JOB-001, P1-JOB-002, P1-REV-001, P1-REV-002, P1-REV-003 (design checkpoint pending), P1-REV-004, P1-LIB-001, P1-LIB-002.
+- **Phase 2**: P2-MEDIA-001/002/003/004/006, P2-DB-001..004, P2-JOB-001..003, P2-LIB-001, P2-EXP-001..007, P2-FIND-001, P2-UI-001, P2-DIAG-001. Spike S1 answered from source (needs dev build). Details in [docs/BACKLOG.md](docs/BACKLOG.md).
 
-Details in [docs/BACKLOG.md](docs/BACKLOG.md).
+## Checks actually run (Windows 11, Node 22.23.3, 2026-10-03)
 
-## Checks actually run (Windows 11, Node 22.23.3, 2026-10-02, after P1-LIB-002)
+| Check                  | Result                                      |
+| ---------------------- | ------------------------------------------- |
+| `npm run typecheck`    | ✅ pass (`.expo/types` set aside, as in CI) |
+| `npm run lint`         | ✅ pass                                     |
+| `npm run format:check` | ✅ pass                                     |
+| `npm test`             | ✅ 185/185 tests                            |
+| `npm run doctor`       | ✅ 21/21                                    |
+| `npm run bundle:ios`   | ✅ iOS Hermes bundle (4.3 MB)               |
+| Physical iPhone        | ⏳ not run yet                              |
 
-| Check                                     | Result                                                           |
-| ----------------------------------------- | ---------------------------------------------------------------- |
-| `npm run typecheck`                       | ✅ pass (with `.expo/types` set aside, as in CI; see note below) |
-| `npm run lint`                            | ✅ pass                                                          |
-| `npm run format:check`                    | ✅ pass                                                          |
-| `npm test`                                | ✅ 150/150 tests, 19 suites                                      |
-| `npm run doctor`                          | ✅ 21/21 (after adding expo-sqlite)                              |
-| `npm run bundle:ios`                      | ✅ iOS Hermes bundle built (4 MB)                                |
-| Metro dev server (`expo start --offline`) | ✅ served `/status` 200                                          |
-| GitHub Actions CI                         | ✅ green on the Phase 0 fix commit; runs again on push           |
-| Physical iPhone in Expo Go                | ⏳ not reported yet (P1-DEV-001)                                 |
+## What only a device can confirm
 
-**Windows typed-routes note:** while `npm start` runs, Expo's dev server on Windows records newly created non-route files as routes in `.expo/types/router.d.ts` (entries like `/../state/preferences`). Local `npm run typecheck` then fails on valid links. Restart `npm start` or delete `.expo/types`. Runtime and CI are unaffected. Also in [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md).
+Real photo access prompts and limited selection; scan speed and smoothness on your library size; HEIC thumbnails and orientation; copy sizes and what metadata a copy keeps; how Expo Go handles all of this. Nothing here is reported as tested until you run it.
 
-## Implemented vs. evidence
+## Real-photo test (owner)
 
-| Item                                                                                          | Implemented | Automated checks                       | Device-tested | Notes                                                 |
-| --------------------------------------------------------------------------------------------- | ----------- | -------------------------------------- | ------------- | ----------------------------------------------------- |
-| Tabs, Settings sheet, gallery                                                                 | ✅          | ✅                                     | ⏳ owner      |                                                       |
-| Preferences survive relaunch                                                                  | ✅          | ✅ (in-memory store mock)              | ⏳ owner      | Close the app fully, reopen; theme should stick       |
-| Clean home states + category shelf                                                            | ✅          | ✅ (all 5 states)                      | ⏳ owner      | Shelf snap feel needs a device                        |
-| Sample scan: job bar, scan sheet, pause/resume/stop, partial results                          | ✅          | ✅ (reducer, runner, store, bar, card) | ⏳ owner      | Bar spring and sheet detents need a device            |
-| Review choices: skip, protect, change keeper, persist across navigation; totals respect them  | ✅          | ✅ (domain, store, screen)             | ⏳ owner      | Long-press action sheet needs a device                |
-| Group review: pager + pinch zoom, side by side, differences, next group                       | ✅          | ✅ (compare helper, screen)            | ⏳ owner      | Swipe vs back-swipe and zoom need a device            |
-| Removal plan preview (keeper/protected/skipped safety rules, iCloud warning, disabled remove) | ✅          | ✅ (plan domain, screen)               | ⏳ owner      |                                                       |
-| Library timeline: sticky month headers, capture-local dates, adaptive columns                 | ✅          | ✅ (timeline domain, screen)           | ⏳ owner      | Sticky header blur over scrolling grid needs a device |
-| Category screen, cross-group selection summary                                                | ✅          | ✅                                     | ⏳ owner      |                                                       |
-| Press/selection motion + haptics                                                              | ✅          | ✅ (state only)                        | ⏳ owner      | Feel can't be verified off-device                     |
-| `@expo/ui` Settings controls in Expo Go                                                       | ✅          | ✅ (types)                             | ⏳ owner      | Risk R7                                               |
-| Real photo access, scanning, exports, removal                                                 | ❌          | —                                      | —             | Phases 2–3                                            |
-
-**Demo-only paths:** `src/demo/` (sample library, hand-authored sample findings, simulated scan runner) and `src/state/clean-session.ts` (sample results and sample jobs are session-only, never persisted). Every surface showing them says "Sample".
+1. `npm start`, open in Expo Go on the iPhone.
+2. Clean → **Scan my library**. Choose **Allow Full Access** (or try **Limit Access** to test limited mode). Watch the job bar; try Pause/Resume, switch tabs while it runs.
+3. Look at the findings: **Taken moments apart**, **Screenshots**, **Long videos**. Open one, Compare, mark a few, open **Review plan** (Remove stays disabled).
+4. Library → tap a photo → **Make a smaller copy** → Target size 1 MB → Make copy → **Save to Photos**. Check the new photo in the Photos app and that the original is unchanged.
+5. Settings → Developer → **Diagnostics** → Run file check and Run copy check → **Share report** and send it to me.
+6. Report: iPhone model, iOS version, library size roughly, scan time, anything wrong.
 
 ## Next actionable tasks
 
-1. **P1-DEV-001 (owner)**: run the app on your iPhone and do the smoke test in [docs/TEST_PLAN.md §4](docs/TEST_PLAN.md#4-device-checks-owner-physical-iphone), plus: Clean → **Run sample scan** → switch to Library while it runs (job bar stays above the tabs) → tap the bar (sheet opens; drag between half and full) → Pause/Resume → let it finish (one success tick) → open categories and select across groups → touch and hold a photo (Keep this one instead / Protect) → Skip a group and Undo → go back to Clean (total updates) and return (choices kept) → **Compare** on a group: swipe photos, pinch to zoom, try Side by side, Mark for review, Next group → **Review plan** (from a category or the Clean home): check it lists exactly what you marked and keeps each group’s keeper. Try **Stop scan** midway too: you should get partial results. Report iPhone model, iOS version, Expo Go version and anything that looks or feels off.
-2. **Design checkpoint (owner, P1-REV-003)**: walk one full flow on the iPhone (scan → category → Compare → mark/keep/protect → Next group → back) and tell me what to change in look, motion or wording. This is the one sign-off Phase 1 asks for.
-3. **P1-LIB-003 → P1-LIB-005**: photo viewer with tile-to-viewer continuity, pinch/pan/double-tap and drag-to-dismiss, scroll and selection restoration.
-4. **P1-ONB-001 → P1-ONB-003**: onboarding and access explainer.
+1. **Owner**: real-photo test above plus the Phase 1 design checkpoint.
+2. Fix whatever the device test finds (expected: some layout and iOS-behavior surprises).
+3. Remaining Phase 1 polish: viewer drag-to-dismiss (P1-LIB-004), onboarding (P1-ONB-001..003), home reveal (P1-MOT-001), Increase Contrast palette (P1-UI-006), accessibility pass (P1-QA-001).
+4. **Phase 3 decision (owner)**: Apple Developer Program membership for a development build. Exact duplicates, blur detection and removal need native code that Expo Go can't load.
 
 ## Blockers / owner input
 
-- Device facts still unknown (A1): iPhone model, iOS version, Expo Go SDK.
-- The GitHub repo is **public** (checked 2026-10-02). Make it private in GitHub → Settings → General → Danger Zone unless you intend to publish the code (A4).
-- Not needed until Phase 3: Apple Developer Program decision, bundle identifier.
+- Device facts unknown (A1): iPhone model, iOS version, Expo Go version.
+- The GitHub repo is **public** (checked 2026-10-02). Make it private unless you intend to publish (A4).
+- Phase 3 needs the Apple Developer decision and a bundle identifier.
+
+## Notes
+
+- In Expo Go, photo permission is granted to Expo Go (Settings → Expo Go → Photos), not "MediaCare".
+- Windows typed-routes quirk: if `npm run typecheck` complains about routes like `/../state/...` while `npm start` runs, restart `npm start` (see docs/SETUP_WINDOWS.md).

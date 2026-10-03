@@ -89,6 +89,7 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen name="gallery" options={{ title: 'Components & Motion' }} />
+          <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
         </Stack>
       </ThemeProvider>
     </GestureHandlerRootView>

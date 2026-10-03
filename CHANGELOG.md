@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased: Phase 1 in progress
+## Unreleased: Phase 2 (real photos) built, awaiting device test
+
+- Real photo access (full, limited, denied) with Manage selected photos and Open Settings; access rechecked when the app returns to the foreground.
+- On-device SQLite catalog (metadata only) filled by a resumable, checkpointed scan that reads no files and downloads nothing; rescans skip unchanged items; interrupted scans are recorded as interrupted.
+- Real findings limited to what metadata supports: moments taken within 2 seconds, screenshots, long videos. Favorites are never suggested; no sizes are claimed.
+- Library shows your photos (Photos thumbnails at tile size); viewer with date source, dimensions, type, Protect and Make a smaller copy.
+- Smaller copies: quality-first or target size with bounded search, measured bytes, decode verification, saved to Photos as a new item, share; copies listed in Studio.
+- Settings: photo access, catalog size, Clear MediaCare data (never touches Photos), Diagnostics.
+- Diagnostics report for device evidence (library facts, file check, copy check).
+- Photo permission explanations for future development builds.
+
+## Phase 1 work
 
 - Preferences (theme, less motion, haptics) persist on device via the synchronous expo-sqlite key-value store; saved theme applies before the first frame; corrupted values fall back to defaults (P1-SET-002).
 - Clean home rebuilt around explicit states (not scanned, results, partial, no findings, failed) with a "Could free up to" total that counts each photo once and shows coverage (P1-CLN-001).

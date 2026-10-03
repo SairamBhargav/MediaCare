@@ -41,7 +41,15 @@
         }
       ],
       "expo-sqlite",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "MediaCare reads your photos’ dates, sizes and types on this iPhone to find bursts, screenshots and long videos. Nothing is uploaded.",
+          "savePhotosPermission": "MediaCare saves the smaller copies you choose to make as new photos.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

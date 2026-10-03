@@ -10,10 +10,13 @@ import {
 } from '@expo/ui';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
+import { openSettings } from '@/services/media/photo-library';
+import { useCatalog } from '@/state/catalog';
+import { useCleanSession } from '@/state/clean-session';
 import { usePreferences, type AppearancePreference } from '@/state/preferences';
 import { gutter, spacing, useTheme } from '@/theme';
 
@@ -25,6 +28,38 @@ export function SettingsScreen() {
   const { colors } = useTheme();
   const { appearance, lessMotion, haptics, setAppearance, setLessMotion, setHaptics } =
     usePreferences();
+
+  const access = useCatalog((catalog) => catalog.access);
+  const cataloged = useCatalog((catalog) => catalog.items.length);
+
+  const accessLabel =
+    access === 'full'
+      ? 'All photos'
+      : access === 'limited'
+        ? 'Selected photos'
+        : access === 'denied'
+          ? 'Not allowed'
+          : 'Not asked yet';
+
+  const confirmClear = () =>
+    Alert.alert(
+      'Clear MediaCare data?',
+      'This removes MediaCare’s catalog, scan history, protection marks and list of copies from this iPhone. Your photos in Photos are not touched.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear data',
+          style: 'destructive',
+          onPress: () => {
+            useCleanSession.getState().reset();
+            useCatalog
+              .getState()
+              .clear()
+              .catch(() => {});
+          },
+        },
+      ],
+    );
 
   const version = Constants.expoConfig?.version ?? 'unknown';
   const sdk = Constants.expoConfig?.sdkVersion ?? 'unknown';
@@ -65,11 +100,54 @@ export function SettingsScreen() {
             </FieldGroup.SectionFooter>
           </FieldGroup.Section>
 
-          <FieldGroup.Section title="Privacy">
+          <FieldGroup.Section title="Photos">
+            <Row>
+              <Text>Access</Text>
+              <Spacer />
+              <Text>{accessLabel}</Text>
+            </Row>
+            {access === 'limited' ? (
+              <NativeButton
+                variant="text"
+                label="Manage selected photos"
+                onPress={() => {
+                  useCatalog
+                    .getState()
+                    .manageSelection()
+                    .catch(() => {});
+                }}
+              />
+            ) : null}
+            {access !== 'undetermined' && access !== 'unknown' ? (
+              <NativeButton
+                variant="text"
+                label="Change in iOS Settings"
+                onPress={() => {
+                  openSettings().catch(() => {});
+                }}
+              />
+            ) : null}
+            <FieldGroup.SectionFooter>
+              <Text>
+                In Expo Go, photo access belongs to the Expo Go app: Settings, Expo Go, Photos.
+              </Text>
+            </FieldGroup.SectionFooter>
+          </FieldGroup.Section>
+
+          <FieldGroup.Section title="Privacy & Data">
             <Text>
-              MediaCare works on your iPhone. It has no account and does not upload your photos.
-              This build does not request photo access yet; it shows sample images only.
+              MediaCare works on your iPhone. It has no account and uploads nothing. Scans read
+              dates, sizes and types, not the pictures.
             </Text>
+            <Row>
+              <Text>Items in MediaCare’s catalog</Text>
+              <Spacer />
+              <Text>{cataloged.toLocaleString()}</Text>
+            </Row>
+            <NativeButton variant="text" label="Clear MediaCare data…" onPress={confirmClear} />
+            <FieldGroup.SectionFooter>
+              <Text>Clearing never deletes anything from Photos.</Text>
+            </FieldGroup.SectionFooter>
           </FieldGroup.Section>
 
           {__DEV__ ? (
@@ -80,6 +158,14 @@ export function SettingsScreen() {
                 onPress={() => {
                   router.back();
                   router.push('/gallery');
+                }}
+              />
+              <NativeButton
+                variant="text"
+                label="Diagnostics"
+                onPress={() => {
+                  router.back();
+                  router.push('/diagnostics');
                 }}
               />
             </FieldGroup.Section>
