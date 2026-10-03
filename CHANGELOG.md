@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased: Phase 1 in progress
+
+- Preferences (theme, less motion, haptics) persist on device via the synchronous expo-sqlite key-value store; saved theme applies before the first frame; corrupted values fall back to defaults (P1-SET-002).
+- Clean home rebuilt around explicit states (not scanned, results, partial, no findings, failed) with a "Could free up to" total that counts each photo once and shows coverage (P1-CLN-001).
+- Photo-led category shelf: Similar shots, Exact copies, Possibly blurry, Large files, all labelled Sample.
+- New category screen: per-group review with protected keepers, flagged photos with reasons and sizes, and one translucent selection summary across the category.
+- Sample library extended with hand-authored findings (3 burst groups, 2 exact-copy sets, 5 soft-focus photos, 4 panoramas).
+- Findings domain module with tests; shared ChromeBackground component; Clean state previews in the dev gallery.
+- Docs: Windows typed-routes troubleshooting; PRD task-ID formatting fix.
+
 ## 0.1.0 — Phase 0 foundation (2026-10-02)
 
 - Expo SDK 57 / React Native 0.86 / TypeScript strict app scaffolded; template demo removed.

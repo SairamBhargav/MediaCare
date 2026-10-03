@@ -12,6 +12,8 @@ import { SelectionBadge } from '@/components/selection-badge';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
 import { sampleLibrary } from '@/demo/sample-library';
+import { CleanContent } from '@/screens/clean/clean-content';
+import { sampleResultsState, type CleanHomeState } from '@/state/clean-session';
 import {
   gutter,
   radius,
@@ -49,6 +51,7 @@ export function GalleryScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [badgeOn, setBadgeOn] = useState(false);
+  const [cleanPreview, setCleanPreview] = useState<CleanPreview>('results');
   const tiles = sampleLibrary.slice(0, 6);
 
   return (
@@ -179,9 +182,44 @@ export function GalleryScreen() {
           />
         </Surface>
       </View>
+
+      <View style={styles.section}>
+        <SectionHeader eyebrow="Screens" title="Clean home states" />
+        <View style={styles.inline}>
+          {(Object.keys(CLEAN_PREVIEWS) as CleanPreview[]).map((key) => (
+            <Button
+              key={key}
+              title={key}
+              variant={key === cleanPreview ? 'primary' : 'secondary'}
+              onPress={() => setCleanPreview(key)}
+              style={styles.chip}
+            />
+          ))}
+        </View>
+        <CleanContent
+          state={CLEAN_PREVIEWS[cleanPreview]}
+          onShowSample={() => setCleanPreview('results')}
+          onReset={() => setCleanPreview('not scanned')}
+        />
+      </View>
     </ScrollView>
   );
 }
+
+const resultsPreview = sampleResultsState;
+
+const CLEAN_PREVIEWS: Record<string, CleanHomeState> = {
+  'not scanned': { status: 'not-scanned' },
+  results: resultsPreview,
+  partial: { ...resultsPreview, analyzed: 40 },
+  'no findings': { ...resultsPreview, findings: [] },
+  failed: {
+    status: 'failed',
+    message: 'Photo access was turned off in Settings. Your progress is saved.',
+  },
+};
+
+type CleanPreview = keyof typeof CLEAN_PREVIEWS;
 
 const styles = StyleSheet.create({
   content: { padding: gutter, gap: spacing.xxl },
@@ -205,4 +243,5 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tileCell: { width: '31%', flexGrow: 1 },
+  chip: { minHeight: 36, paddingVertical: spacing.xxs },
 });

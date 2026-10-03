@@ -48,6 +48,15 @@ export default function RootLayout() {
             name="settings"
             options={{ presentation: 'modal', title: 'Settings', headerShown: false }}
           />
+          <Stack.Screen
+            name="category/[category]"
+            options={{
+              headerLargeTitleEnabled: true,
+              headerShadowVisible: false,
+              headerLargeTitleShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
+            }}
+          />
           <Stack.Screen name="gallery" options={{ title: 'Components & Motion' }} />
         </Stack>
       </ThemeProvider>

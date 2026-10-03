@@ -1,13 +1,12 @@
-import { BlurView } from 'expo-blur';
 import type { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useReduceTransparency } from '@/hooks/use-reduce-transparency';
 import { spacing, useTheme } from '@/theme';
 
 import { AppText } from './app-text';
+import { ChromeBackground } from './chrome-background';
 import { Icon, type IconName } from './icon';
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
@@ -37,23 +36,14 @@ const TAB_ICONS: Record<string, IconName> = {
  * renders there.
  */
 export function TabBar({ state, descriptors, navigation }: TabBarProps) {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const reduceTransparency = useReduceTransparency();
 
   return (
     <View
       style={[styles.container, { paddingBottom: insets.bottom, borderTopColor: colors.separator }]}
     >
-      {reduceTransparency ? (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.chromeSolid }]} />
-      ) : (
-        <BlurView
-          tint={scheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
-          intensity={100}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
+      <ChromeBackground />
       <View style={styles.row} accessibilityRole="tablist">
         {state.routes.map((route, index) => {
           const focused = state.index === index;

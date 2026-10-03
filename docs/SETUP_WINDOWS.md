@@ -32,13 +32,14 @@ Useful keys in the terminal: `r` reload, `j` open debugger, `?` all commands.
 
 ### When the phone can't connect
 
-| Symptom                                                     | Fix                                                                                                                                                       |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spinner then "Could not connect to development server"      | PC and iPhone must be on the **same Wi-Fi** (not guest Wi-Fi; not phone hotspot with client isolation)                                                    |
-| Windows Firewall prompt was dismissed                       | Windows Security → Firewall → _Allow an app_ → enable **Node.js** on **Private** networks; make sure your Wi-Fi is set to _Private_ in Settings → Network |
-| VPN on PC or phone                                          | Turn it off, or use the tunnel below                                                                                                                      |
-| University / office network blocks device-to-device traffic | Use the tunnel                                                                                                                                            |
-| "Incompatible SDK version" in Expo Go                       | Expo Go and project SDK differ; see step 3                                                                                                                |
+| Symptom                                                     | Fix                                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Spinner then "Could not connect to development server"      | PC and iPhone must be on the **same Wi-Fi** (not guest Wi-Fi; not phone hotspot with client isolation)                                                                                                                                                             |
+| Windows Firewall prompt was dismissed                       | Windows Security → Firewall → _Allow an app_ → enable **Node.js** on **Private** networks; make sure your Wi-Fi is set to _Private_ in Settings → Network                                                                                                          |
+| VPN on PC or phone                                          | Turn it off, or use the tunnel below                                                                                                                                                                                                                               |
+| University / office network blocks device-to-device traffic | Use the tunnel                                                                                                                                                                                                                                                     |
+| "Incompatible SDK version" in Expo Go                       | Expo Go and project SDK differ; see step 3                                                                                                                                                                                                                         |
+| `npm run typecheck` fails with routes like `/../state/...`  | Known Expo dev-server issue on Windows: files created while `npm start` runs get recorded as routes in `.expo/types`. Stop and restart `npm start` (it regenerates the file), or delete `.expo/types`. The app itself is unaffected, and CI does not use this file |
 
 **Tunnel fallback**:
 

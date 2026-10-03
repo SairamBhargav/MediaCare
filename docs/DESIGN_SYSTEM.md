@@ -71,21 +71,23 @@ Translucency is reserved for navigation chrome: the tab bar now, the compact act
 
 ## Components
 
-| Component        | Contract                                                                                                                                               |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AppText`        | `variant`, `color` (palette token). Only text primitive                                                                                                |
-| `Button`         | `variant: primary · secondary · plain · destructive`, `icon`, `loading`, `disabled`, `block`. Press scale feedback; busy/disabled exposed to VoiceOver |
-| `IconButton`     | 44-pt circle; **requires** `accessibilityLabel`                                                                                                        |
-| `PressableScale` | Feedback on press-in (scale 0.97, 120 ms CSS transition; opacity under reduced motion), commit on press-out                                            |
-| `Icon`           | Semantic names → SF Symbol (iOS) / Material Symbol (Android/web). Hidden from accessibility                                                            |
-| `MediaTile`      | `grid` or `card`; `selectable`, `selected`, `keeper`. Checkbox semantics when selectable; keeper is never a checkbox                                   |
-| `SelectionBadge` | Ring always visible; check springs in. Visual only                                                                                                     |
-| `StatusPill`     | Tone + text (+ optional icon). Text always states the status                                                                                           |
-| `SectionHeader`  | Optional eyebrow, title2, trailing action                                                                                                              |
-| `Surface`        | Card container; `raised` adds light-mode shadow                                                                                                        |
-| `EmptyState`     | Icon well, title, message, optional action; `tone="error"` for failures                                                                                |
-| `Screen`         | Scrolling tab root with in-content large title and correct insets                                                                                      |
-| `TabBar`         | Translucent custom tab bar for stable JS `Tabs` (ADR-0002); reserves the slot for the active-job bar                                                   |
+| Component          | Contract                                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AppText`          | `variant`, `color` (palette token). Only text primitive                                                                                                |
+| `Button`           | `variant: primary · secondary · plain · destructive`, `icon`, `loading`, `disabled`, `block`. Press scale feedback; busy/disabled exposed to VoiceOver |
+| `IconButton`       | 44-pt circle; **requires** `accessibilityLabel`                                                                                                        |
+| `PressableScale`   | Feedback on press-in (scale 0.97, 120 ms CSS transition; opacity under reduced motion), commit on press-out                                            |
+| `Icon`             | Semantic names → SF Symbol (iOS) / Material Symbol (Android/web). Hidden from accessibility                                                            |
+| `MediaTile`        | `grid` or `card`; `selectable`, `selected`, `keeper`. Checkbox semantics when selectable; keeper is never a checkbox                                   |
+| `SelectionBadge`   | Ring always visible; check springs in. Visual only                                                                                                     |
+| `StatusPill`       | Tone + text (+ optional icon). Text always states the status                                                                                           |
+| `SectionHeader`    | Optional eyebrow, title2, trailing action                                                                                                              |
+| `Surface`          | Card container; `raised` adds light-mode shadow                                                                                                        |
+| `EmptyState`       | Icon well, title, message, optional action; `tone="error"` for failures                                                                                |
+| `Screen`           | Scrolling tab root with in-content large title and correct insets                                                                                      |
+| `TabBar`           | Translucent custom tab bar for stable JS `Tabs` (ADR-0002); reserves the slot for the active-job bar                                                   |
+| `ChromeBackground` | System material blur for bars; solid `chromeSolid` under Reduce Transparency. Used by TabBar and bottom summary bars                                   |
+| `SampleArtwork`    | Synthetic stand-in image (gradient + glyph; `soft` look drawn out of focus). Exported from `media-tile.tsx`                                            |
 
 Planned primitives (built when a screen needs them): `Sheet` (native `formSheet` first), `ProgressIndicator`, `ErrorState` variant, `BeforeAfterViewer`, `ActiveJobBar`.
 

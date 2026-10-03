@@ -29,3 +29,9 @@ jest.mock('expo-sqlite/kv-store', () => {
   };
   return { __esModule: true, Storage, default: Storage };
 });
+
+// Safe-area insets come from native; use the library's official mock.
+jest.mock(
+  'react-native-safe-area-context',
+  () => require('react-native-safe-area-context/jest/mock').default,
+);
