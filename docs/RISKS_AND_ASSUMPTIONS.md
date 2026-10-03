@@ -21,15 +21,15 @@ Ranked by impact × likelihood. Review at each phase exit.
 
 ## Assumptions (confirm or correct)
 
-| #   | Assumption                                                                            | Status                                              | Who confirms           |
-| --- | ------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------- |
-| A1  | Owner has a physical iPhone available for testing                                     | **Assumed**: model and iOS version unknown          | Owner (P1-DEV-001)     |
-| A2  | Expo Go from the App Store currently supports SDK 57                                  | Assumed; SDK 57 is npm `latest`                     | Owner, on first launch |
-| A3  | Owner is on Windows 11 with Node 22 and npm                                           | Verified on this machine (Node 22.23.3, npm 10.9.9) | —                      |
-| A4  | GitHub repo `SairamBhargav/MediaCare` is **private**                                  | Not verified from here                              | Owner (repo settings)  |
-| A5  | No paid services until Phase 3                                                        | Assumed                                             | Owner                  |
-| A6  | Primary language English; US locale for passport rules first                          | Assumed                                             | Owner                  |
-| A7  | iPhone-only for now; iPad runs in iPhone compatibility mode (`supportsTablet: false`) | Decided (reversible)                                | —                      |
+| #   | Assumption                                                                                       | Status                                              | Who confirms           |
+| --- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ---------------------- |
+| A1  | Owner has a physical iPhone available for testing                                                | **Assumed**: model and iOS version unknown          | Owner (P1-DEV-001)     |
+| A2  | Expo Go from the App Store currently supports SDK 57                                             | Assumed; SDK 57 is npm `latest`                     | Owner, on first launch |
+| A3  | Owner is on Windows 11 with Node 22 and npm                                                      | Verified on this machine (Node 22.23.3, npm 10.9.9) | —                      |
+| A4  | GitHub repo `SairamBhargav/MediaCare` should be **private** until a license and release decision | **False on 2026-10-02: repo is public**             | Owner (repo settings)  |
+| A5  | No paid services until Phase 3                                                                   | Assumed                                             | Owner                  |
+| A6  | Primary language English; US locale for passport rules first                                     | Assumed                                             | Owner                  |
+| A7  | iPhone-only for now; iPad runs in iPhone compatibility mode (`supportsTablet: false`)            | Decided (reversible)                                | —                      |
 
 ## Owner decisions pending
 

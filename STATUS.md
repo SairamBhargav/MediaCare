@@ -9,16 +9,16 @@ P0-REPO-001 · P0-UI-001 · P0-UI-002 · P0-NAV-001 · P0-MOT-001 (device check 
 
 ## Checks actually run (Windows 11, Node 22.23.3, npm 10.9.9, 2026-10-02)
 
-| Check                            | Result                                            |
-| -------------------------------- | ------------------------------------------------- |
-| `npm run typecheck`              | ✅ pass                                           |
-| `npm run lint`                   | ✅ pass (0 problems)                              |
-| `npm run format:check`           | ✅ pass                                           |
-| `npm test`                       | ✅ 58/58 tests, 4 suites                          |
-| `npx expo-doctor`                | ✅ 21/21 checks                                   |
-| `npx expo export --platform ios` | ✅ iOS Hermes bundle built (3.8 MB)               |
-| Physical iPhone in Expo Go       | ❌ **not yet run**: owner action (P1-DEV-001)     |
-| GitHub Actions CI                | First run triggers on push; check the Actions tab |
+| Check                            | Result                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------- |
+| `npm run typecheck`              | ✅ pass                                                                         |
+| `npm run lint`                   | ✅ pass (0 problems)                                                            |
+| `npm run format:check`           | ✅ pass                                                                         |
+| `npm test`                       | ✅ 58/58 tests, 4 suites                                                        |
+| `npx expo-doctor`                | ✅ 21/21 checks                                                                 |
+| `npx expo export --platform ios` | ✅ iOS Hermes bundle built (3.8 MB)                                             |
+| Physical iPhone in Expo Go       | ❌ **not yet run**: owner action (P1-DEV-001)                                   |
+| GitHub Actions CI                | First run failed at Expo Doctor (script not on PATH); fixed in follow-up commit |
 
 ## Implemented vs. evidence
 
@@ -44,5 +44,5 @@ P0-REPO-001 · P0-UI-001 · P0-UI-002 · P0-NAV-001 · P0-MOT-001 (device check 
 ## Blockers / owner input
 
 - Device facts unknown (assumption A1): iPhone model, iOS version, Expo Go SDK.
-- Confirm the GitHub repo is private (A4).
+- The GitHub repo is **public** (checked 2026-10-02). Make it private in GitHub → Settings → General → Danger Zone unless you intend to publish the code (A4).
 - Not needed until Phase 3: Apple Developer Program decision, bundle identifier.
