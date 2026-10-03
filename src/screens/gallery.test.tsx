@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { usePreferences } from '@/state/preferences';
 
@@ -15,5 +15,5 @@ test('shows every job bar state and switches theme from the gallery', async () =
 
   await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
   expect(usePreferences.getState().appearance).toBe('dark');
-  usePreferences.getState().setAppearance('system');
+  await act(async () => usePreferences.getState().setAppearance('system'));
 });
