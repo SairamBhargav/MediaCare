@@ -15,7 +15,7 @@ Route files live in `src/app/`; bodies in `src/screens/`. "Built" means present 
 ├── gallery        → push      Built (P0, __DEV__ only; redirects home in release)
 │
 ├── onboarding/*               P1-ONB-001..003
-├── scan                       P1-JOB-002 (expanded job detail; formSheet)
+├── scan           → formSheet Built (P1-JOB-002): expanded scan detail
 ├── review/[groupId]           P1-REV-002 (full-screen compare for one group)
 ├── asset/[id]                 P1-LIB-003 (viewer)
 ├── studio/export/[id]         P2-EXP-*
@@ -44,6 +44,18 @@ Route files live in `src/app/`; bodies in `src/screens/`. "Built" means present 
 | Accessibility   | Settings button labelled; tiles are checkboxes (keeper is an image, not a checkbox); summary is a polite live region; Select all/Clear announces result                                                                                                                                                                                                                                                                                                      |
 | Motion          | Press feedback; badge spring; overlay fade. Home reveal is P1-MOT-001                                                                                                                                                                                                                                                                                                                                                                                        |
 | Acceptance (P0) | Keeper can never be selected; summary counts and bytes match the selection; all labels say "Sample"; works in both themes and at largest Dynamic Type without clipping                                                                                                                                                                                                                                                                                       |
+
+## Scan sheet (`/scan`) — Built (P1-JOB-002)
+
+| Aspect       | Spec                                                                                                                                                                                                                                                                  |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Purpose      | Expanded detail of the current scan                                                                                                                                                                                                                                   |
+| Entry / exit | Tap the job bar or "Details" on the scanning card; drag down or "View results"/"Done"                                                                                                                                                                                 |
+| Built now    | Sample scan + Simulated pills, big "48 of 112" count, progress bar, stage list (Finding photos → Checking photos → Grouping results) with done/current/not started, Pause/Resume, Stop scan (keeps results so far), note that closing the sheet doesn't stop the scan |
+| States       | Running, paused, done, stopped (partial results), no scan                                                                                                                                                                                                             |
+| Acceptance   | Progress only from job events; stop keeps progress; nothing claims real photos were read                                                                                                                                                                              |
+
+**Job bar (above the tab bar) — Built.** Floating capsule shown only while a scan exists: title, one-line status, pause/resume (or dismiss when finished), hairline progress. Tap opens the scan sheet, or the results once done. Bottom insets grow while it shows, so it never covers content.
 
 ## Category (`/category/[category]`) — Built (sample)
 

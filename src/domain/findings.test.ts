@@ -1,4 +1,10 @@
-import { candidateIds, summarizeCategories, totalReclaimableBytes, type Finding } from './findings';
+import {
+  candidateIds,
+  findingsWithin,
+  summarizeCategories,
+  totalReclaimableBytes,
+  type Finding,
+} from './findings';
 
 const bytes: Record<string, number> = { a: 100, b: 80, c: 60, d: 500, e: 40, f: 900 };
 const bytesOf = (id: string) => bytes[id];
@@ -54,4 +60,10 @@ test('previews lead with keepers so the card shows the best photo', () => {
 test('the total counts an asset once even when two categories flag it', () => {
   // b (80) + c (60) + e (40) + f (900); b appears in both similar and blurry.
   expect(totalReclaimableBytes(findings, bytesOf)).toBe(1080);
+});
+
+test('partial scans only report findings whose photos were all checked', () => {
+  const checked = new Set(['a', 'b', 'd', 'f']);
+  // g1 needs c (unchecked), g2 needs e (unchecked); the blurry b and large f qualify.
+  expect(findingsWithin(findings, checked).map((finding) => finding.id)).toEqual(['i1', 'i2']);
 });

@@ -35,6 +35,13 @@ const ICONS = {
   flower: { ios: 'camera.macro', android: 'local_florist' },
   motion: { ios: 'circle.dotted.and.circle', android: 'animation' },
   swatch: { ios: 'paintpalette', android: 'palette' },
+  pause: { ios: 'pause.fill', android: 'pause' },
+  play: { ios: 'play.fill', android: 'play_arrow' },
+  stop: { ios: 'stop.fill', android: 'stop' },
+  chevronUp: { ios: 'chevron.up', android: 'expand_less' },
+  checkCircle: { ios: 'checkmark.circle.fill', android: 'check_circle' },
+  circle: { ios: 'circle', android: 'radio_button_unchecked' },
+  scan: { ios: 'sparkle.magnifyingglass', android: 'image_search' },
 } as const satisfies Record<string, { ios: SFSymbol; android: string }>;
 
 export type IconName = keyof typeof ICONS;

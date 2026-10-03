@@ -8,8 +8,8 @@ import { CleanContent } from './clean-content';
 
 export function CleanScreen() {
   const state = useCleanSession((session) => session.state);
-  const showSampleResults = useCleanSession((session) => session.showSampleResults);
-  const reset = useCleanSession((session) => session.reset);
+  const job = useCleanSession((session) => session.job);
+  const { startSampleScan, pauseScan, resumeScan, cancelScan, reset } = useCleanSession.getState();
 
   return (
     <Screen
@@ -22,7 +22,13 @@ export function CleanScreen() {
         />
       }
     >
-      <CleanContent state={state} onShowSample={showSampleResults} onReset={reset} />
+      <CleanContent
+        state={state}
+        job={job}
+        onStartScan={startSampleScan}
+        onReset={reset}
+        scanActions={{ onPause: pauseScan, onResume: resumeScan, onStop: cancelScan }}
+      />
     </Screen>
   );
 }

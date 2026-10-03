@@ -3,8 +3,10 @@ import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useCleanSession } from '@/state/clean-session';
 import { spacing, useTheme } from '@/theme';
 
+import { ActiveJobBar, JOB_BAR_GAP, JOB_BAR_HEIGHT } from './active-job-bar';
 import { AppText } from './app-text';
 import { ChromeBackground } from './chrome-background';
 import { Icon, type IconName } from './icon';
@@ -14,10 +16,14 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>
 /** Height of the tab row above the home-indicator inset. */
 export const TAB_ROW_HEIGHT = 52;
 
-/** Space scroll content must leave at the bottom so nothing hides under the chrome. */
+/**
+ * Space scroll content must leave at the bottom so nothing hides under the
+ * chrome, including the job bar while it is showing.
+ */
 export function useBottomChromeHeight(): number {
   const insets = useSafeAreaInsets();
-  return TAB_ROW_HEIGHT + insets.bottom;
+  const jobVisible = useCleanSession((session) => session.job !== null);
+  return TAB_ROW_HEIGHT + insets.bottom + (jobVisible ? JOB_BAR_HEIGHT + JOB_BAR_GAP : 0);
 }
 
 const TAB_ICONS: Record<string, IconName> = {
@@ -31,61 +37,64 @@ const TAB_ICONS: Record<string, IconName> = {
  * dozens of times a session); the selected tab is shown by tint, weight and
  * the accessibility "selected" state.
  *
- * The compact active-job bar (docs/SCREENS.md) will sit directly above this
- * row, and only while a real job runs. No job exists in Phase 0, so nothing
- * renders there.
+ * The compact active-job bar floats directly above this row, only while a
+ * job exists (docs/SCREENS.md).
  */
 export function TabBar({ state, descriptors, navigation }: TabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const job = useCleanSession((session) => session.job);
 
   return (
-    <View
-      style={[styles.container, { paddingBottom: insets.bottom, borderTopColor: colors.separator }]}
-    >
-      <ChromeBackground />
-      <View style={styles.row} accessibilityRole="tablist">
-        {state.routes.map((route, index) => {
-          const focused = state.index === index;
-          const options = descriptors[route.key].options;
-          const label = typeof options.title === 'string' ? options.title : route.name;
-          const color = focused ? colors.accent : colors.secondaryLabel;
+    <View style={styles.container} pointerEvents="box-none">
+      {job ? <ActiveJobBar job={job} /> : null}
+      <View
+        style={[styles.tabs, { paddingBottom: insets.bottom, borderTopColor: colors.separator }]}
+      >
+        <ChromeBackground />
+        <View style={styles.row} accessibilityRole="tablist">
+          {state.routes.map((route, index) => {
+            const focused = state.index === index;
+            const options = descriptors[route.key].options;
+            const label = typeof options.title === 'string' ? options.title : route.name;
+            const color = focused ? colors.accent : colors.secondaryLabel;
 
-          return (
-            <Pressable
-              key={route.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: focused }}
-              accessibilityLabel={label}
-              style={styles.item}
-              onPress={() => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-                if (!focused && !event.defaultPrevented) {
-                  navigation.navigate(route.name, route.params);
-                }
-              }}
-              onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
-            >
-              <Icon
-                name={TAB_ICONS[route.name] ?? 'photo'}
-                size={24}
-                color={color}
-                weight={focused ? 'semibold' : 'regular'}
-              />
-              <AppText
-                variant="caption"
-                style={{ color, fontWeight: focused ? '600' : '500' }}
-                maxFontSizeMultiplier={1.4}
+            return (
+              <Pressable
+                key={route.key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: focused }}
+                accessibilityLabel={label}
+                style={styles.item}
+                onPress={() => {
+                  const event = navigation.emit({
+                    type: 'tabPress',
+                    target: route.key,
+                    canPreventDefault: true,
+                  });
+                  if (!focused && !event.defaultPrevented) {
+                    navigation.navigate(route.name, route.params);
+                  }
+                }}
+                onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
               >
-                {label}
-              </AppText>
-            </Pressable>
-          );
-        })}
+                <Icon
+                  name={TAB_ICONS[route.name] ?? 'photo'}
+                  size={24}
+                  color={color}
+                  weight={focused ? 'semibold' : 'regular'}
+                />
+                <AppText
+                  variant="caption"
+                  style={{ color, fontWeight: focused ? '600' : '500' }}
+                  maxFontSizeMultiplier={1.4}
+                >
+                  {label}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -97,6 +106,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  tabs: {
     borderTopWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },

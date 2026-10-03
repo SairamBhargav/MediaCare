@@ -11,25 +11,40 @@ import { Surface } from '@/components/surface';
 import { sampleBytes } from '@/demo/sample-library';
 import { formatBytes } from '@/domain/bytes';
 import { summarizeCategories, totalReclaimableBytes } from '@/domain/findings';
+import { isActive, type Job } from '@/domain/jobs';
 import type { CleanHomeState } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
 import { CategoryCard } from './category-card';
+import { ScanningCard, type ScanActions } from './scanning-card';
 
 type CleanContentProps = {
   state: CleanHomeState;
-  onShowSample: () => void;
+  /** The current scan, if any. While it is active it replaces the content below. */
+  job?: Job | null;
+  onStartScan: () => void;
   onReset: () => void;
+  scanActions?: ScanActions;
 };
 
+const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, onStop: () => {} };
+
 /**
- * Everything below the Clean title, driven only by `state`. Kept free of
+ * Everything below the Clean title, driven only by props. Kept free of
  * stores so each state can be rendered in tests and in the dev gallery.
  */
-export function CleanContent({ state, onShowSample, onReset }: CleanContentProps) {
+export function CleanContent({
+  state,
+  job = null,
+  onStartScan,
+  onReset,
+  scanActions = NO_SCAN_ACTIONS,
+}: CleanContentProps) {
+  if (isActive(job)) return <ScanningCard job={job} {...scanActions} />;
+
   switch (state.status) {
     case 'not-scanned':
-      return <NotScanned onShowSample={onShowSample} />;
+      return <NotScanned onStartScan={onStartScan} />;
     case 'failed':
       return (
         <Surface>
@@ -38,7 +53,7 @@ export function CleanContent({ state, onShowSample, onReset }: CleanContentProps
             tone="error"
             title="Scan stopped"
             message={state.message}
-            action={<Button title="Try again" variant="secondary" onPress={onShowSample} />}
+            action={<Button title="Try again" variant="secondary" onPress={onStartScan} />}
           />
         </Surface>
       );
@@ -47,7 +62,7 @@ export function CleanContent({ state, onShowSample, onReset }: CleanContentProps
   }
 }
 
-function NotScanned({ onShowSample }: { onShowSample: () => void }) {
+function NotScanned({ onStartScan }: { onStartScan: () => void }) {
   const { colors } = useTheme();
   return (
     <Surface elevation="raised" style={styles.intro}>
@@ -60,10 +75,11 @@ function NotScanned({ onShowSample }: { onShowSample: () => void }) {
       <View style={[styles.notice, { backgroundColor: colors.surfaceRaised }]}>
         <Icon name="lock" size={16} color={colors.secondaryLabel} />
         <AppText variant="footnote" color="secondaryLabel" style={styles.flex}>
-          This early build doesn’t ask for photo access. Explore how it works with sample images.
+          This early build doesn’t ask for photo access. A simulated scan of sample images shows how
+          it works.
         </AppText>
       </View>
-      <Button title="Explore sample results" onPress={onShowSample} block />
+      <Button title="Run sample scan" icon="scan" onPress={onStartScan} block />
     </Surface>
   );
 }

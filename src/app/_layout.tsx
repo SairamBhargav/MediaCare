@@ -5,7 +5,7 @@ import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { usePreferences, type AppearancePreference } from '@/state/preferences';
-import { useTheme } from '@/theme';
+import { radius, useTheme } from '@/theme';
 
 // Apply the in-app appearance override at the platform level so native
 // chrome (sheets, alerts, keyboard) matches the app's own colors.
@@ -55,6 +55,16 @@ export default function RootLayout() {
               headerShadowVisible: false,
               headerLargeTitleShadowVisible: false,
               headerStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <Stack.Screen
+            name="scan"
+            options={{
+              presentation: 'formSheet',
+              headerShown: false,
+              sheetGrabberVisible: true,
+              sheetAllowedDetents: [0.62, 1],
+              sheetCornerRadius: radius.sheet,
             }}
           />
           <Stack.Screen name="gallery" options={{ title: 'Components & Motion' }} />

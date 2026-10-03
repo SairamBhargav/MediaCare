@@ -198,7 +198,7 @@ export function GalleryScreen() {
         </View>
         <CleanContent
           state={CLEAN_PREVIEWS[cleanPreview]}
-          onShowSample={() => setCleanPreview('results')}
+          onStartScan={() => setCleanPreview('results')}
           onReset={() => setCleanPreview('not scanned')}
         />
       </View>

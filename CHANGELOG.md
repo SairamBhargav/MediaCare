@@ -9,6 +9,10 @@
 - Sample library extended with hand-authored findings (3 burst groups, 2 exact-copy sets, 5 soft-focus photos, 4 panoramas).
 - Findings domain module with tests; shared ChromeBackground component; Clean state previews in the dev gallery.
 - Docs: Windows typed-routes troubleshooting; PRD task-ID formatting fix.
+- Job model: a tested state machine where progress only comes from reported events, never moves backwards, and ignores late events after stop (P1-JOB-001).
+- Simulated sample scan (clearly labelled "Sample scan" and "Simulated") with pause, resume and stop; stopping keeps honest partial results, counting only findings whose photos were all checked.
+- Compact job bar floating above the tab bar, Apple Music mini-player style; expands into a native scan sheet with stages and controls; content insets grow while it shows (P1-JOB-002).
+- Shared ProgressBar (eases between reported values; indeterminate sweep; reduced-motion fallbacks). One success haptic and VoiceOver announcement on completion.
 
 ## 0.1.0 — Phase 0 foundation (2026-10-02)
 

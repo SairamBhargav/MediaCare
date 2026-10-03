@@ -96,3 +96,15 @@ export function totalReclaimableBytes(
 ): number {
   return sumOnce(findings.flatMap(candidateIds), bytesOf);
 }
+
+/**
+ * Findings fully covered by the photos checked so far. A partial scan only
+ * reports a group once every member has been checked, so a stopped scan
+ * never shows a half-formed group.
+ */
+export function findingsWithin(
+  findings: readonly Finding[],
+  checkedIds: ReadonlySet<string>,
+): Finding[] {
+  return findings.filter((finding) => involvedIds(finding).every((id) => checkedIds.has(id)));
+}
