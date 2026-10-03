@@ -2,6 +2,9 @@
 
 ## Unreleased: Phase 1 polish, then exact copies
 
+- Find exact copies (P2-DUP-001): a separate check you start from Clean, with pause, resume and stop (checked photos are remembered, so running it again continues). Only unedited photos stored on this iPhone whose file is proven to be the camera original are checked; Live Photos, iCloud-only, edited and very large photos and videos are listed as not checked, with counts per reason. Matches need equal size and MD5 and then a full byte-by-byte comparison. Fingerprints are stored in a new table (migration 2) and invalidated when a photo changes. Results appear in Exact copies with the usual keeper, protection and favorites rules; removal stays disabled.
+- Diagnostics: Edited photo check and Live Photo check, to gather evidence before widening what the exact copies check covers.
+
 - Fixed: the category and removal plan screens labelled real results "Sample" and spoke of sample sizes; they now say "Your library", show no size for unmeasured photos, and say plainly that removal isn’t available in this version.
 - Accessibility pass (P1-QA-001): an automated check renders eight main screens and fails if anything tappable lacks a VoiceOver role or name (all pass). Device walkthrough for VoiceOver, largest text, Reduce Motion/Transparency and Increase Contrast added to TEST_PLAN §4.
 - Gallery (P1-UI-009): theme switch, Increase Contrast indicator, every job bar state (sample numbers), a button that opens the scan sheet with the labelled sample scan, chips, and a static before/after placeholder.

@@ -5,7 +5,12 @@ import { Platform, ScrollView, Share, StyleSheet } from 'react-native';
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { Surface } from '@/components/surface';
-import { exportCheck, fileCheck } from '@/features/diagnostics/device-checks';
+import {
+  editedCheck,
+  exportCheck,
+  fileCheck,
+  livePhotoCheck,
+} from '@/features/diagnostics/device-checks';
 import { formatFacts, libraryFacts } from '@/features/diagnostics/library-facts';
 import { useCatalog } from '@/state/catalog';
 import { gutter, spacing, useTheme } from '@/theme';
@@ -22,7 +27,9 @@ export function DiagnosticsScreen() {
   const access = useCatalog((catalog) => catalog.access);
   const [fileReport, setFileReport] = useState<string | null>(null);
   const [exportReport, setExportReport] = useState<string | null>(null);
-  const [busy, setBusy] = useState<'file' | 'export' | null>(null);
+  const [editedReport, setEditedReport] = useState<string | null>(null);
+  const [liveReport, setLiveReport] = useState<string | null>(null);
+  const [busy, setBusy] = useState<'file' | 'export' | 'edited' | 'live' | null>(null);
 
   const photos = items.filter((item) => item.kind === 'photo');
   const header = [
@@ -42,12 +49,20 @@ export function DiagnosticsScreen() {
     '',
     'COPY CHECK',
     exportReport ?? 'not run',
+    '',
+    'EDITED PHOTO CHECK',
+    editedReport ?? 'not run',
+    '',
+    'LIVE PHOTO CHECK',
+    liveReport ?? 'not run',
   ].join('\n');
 
-  const run = async (kind: 'file' | 'export') => {
+  const run = async (kind: 'file' | 'export' | 'edited' | 'live') => {
     setBusy(kind);
     try {
       if (kind === 'file') setFileReport(await fileCheck(photos.slice(0, 3)));
+      else if (kind === 'edited') setEditedReport(await editedCheck(items));
+      else if (kind === 'live') setLiveReport(await livePhotoCheck(items));
       else if (photos[0]) setExportReport(await exportCheck(photos[0]));
     } finally {
       setBusy(null);
@@ -100,6 +115,39 @@ export function DiagnosticsScreen() {
           onPress={() => run('export')}
         />
         {exportReport ? <Mono text={exportReport} /> : null}
+      </Surface>
+
+      <Surface style={styles.section}>
+        <AppText variant="headline">Edited photo check</AppText>
+        <AppText variant="footnote" color="secondaryLabel">
+          For exact copies: edit a photo in Photos (crop it), Scan again, then run this. Shows the
+          file iOS returns for the 5 photos modified longest after capture and whether it passes the
+          camera-original test. Photos in iCloud only are skipped, not downloaded.
+        </AppText>
+        <Button
+          title={busy === 'edited' ? 'Checking…' : 'Run edited photo check'}
+          variant="secondary"
+          loading={busy === 'edited'}
+          disabled={photos.length === 0 || busy !== null}
+          onPress={() => run('edited')}
+        />
+        {editedReport ? <Mono text={editedReport} /> : null}
+      </Surface>
+
+      <Surface style={styles.section}>
+        <AppText variant="headline">Live Photo check (up to 3)</AppText>
+        <AppText variant="footnote" color="secondaryLabel">
+          For exact copies: the still file and the paired video iOS returns for Live Photos. Photos
+          in iCloud only are skipped, not downloaded.
+        </AppText>
+        <Button
+          title={busy === 'live' ? 'Checking…' : 'Run Live Photo check'}
+          variant="secondary"
+          loading={busy === 'live'}
+          disabled={photos.length === 0 || busy !== null}
+          onPress={() => run('live')}
+        />
+        {liveReport ? <Mono text={liveReport} /> : null}
       </Surface>
 
       <Button

@@ -59,6 +59,8 @@ action_plan 1─* action_item ─ result     setting (key/value)
 
 `id, resource_id → resource, asset_version, algorithm (sha256|dhash64|phash64|embedding:v1), implementation_version, params (JSON: normalization size, color space), value (BLOB/TEXT), computed_at`. INDEX(algorithm, value) for exact lookups; perceptual lookups use bucketed prefixes (no all-pairs scans).
 
+**Implemented (migration 2, P2-DUP-001):** `fingerprints(asset_id PK, asset_version, status hashed|skipped, skip_reason, representation 'camera-original-file', algorithm 'md5', implementation, byte_size, digest, match_group, checked_at)`, INDEX(byte_size, digest). One row per photo: a fingerprint of the proven camera-original file, or why there isn't one. A row counts only while `asset_version` equals the asset's Photos modification time and `implementation` equals `FINGERPRINT_IMPLEMENTATION`. `match_group` links files confirmed identical by a full byte comparison (MD5 alone never makes a match). Rows are dropped with their assets and by Clear data.
+
 ### finding
 
 `id, asset_id, type (exact_duplicate|similar|blur|exposure|corrupt|large|red_eye), region (JSON, nullable), time_range (video, nullable), evidence (JSON), score, score_meaning (e.g. "laplacian variance at 512px, not a probability"), detector_version, decision (none|keep|ignore|protect|review_removal), decided_at`.

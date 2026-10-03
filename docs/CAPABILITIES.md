@@ -75,6 +75,16 @@ What this changes:
 - Exact duplicates may be feasible in Expo Go for **unedited, local, non-Live** photos by hashing the `getUri()` file, if the file path proves it is the original. Edited, iCloud-only and Live photos must be excluded until tested. Candidate task P2-DUP-001 (see BACKLOG); still no removal before Phase 3.
 - Full-size JPEG copies of HEIC photos are often **larger** than the original. The export screen already reports "Not smaller than the original"; presets should steer to smaller dimensions (P2-EXP-008).
 
+## Find exact copies (P2-DUP-001, 2026-10-03, verified in source; awaiting device)
+
+Built from Device evidence 1 and the installed SDK 57 sources:
+
+- Eligible: photos that aren't Live Photos, have a Photos file name, are on this iPhone (`getIsInCloud()`, asked with network off), and whose `getUri()` file is `…/DCIM/NNNAPPLE/<that file name>` and not under `Mutations`. Everything else is stored and shown as "not checked" with its reason.
+- Caveat from source: if iOS omits the in-cloud flag, `getIsInCloud()` answers false; `getUri()` (network on) could then download that one photo.
+- Fingerprint: byte size + `File.info({ md5: true })` (native, 64 KB chunks, synchronous on the JS thread); files over 64 MB are skipped.
+- Confirmation: same size and MD5 only make a candidate; files are then compared byte by byte with `FileHandle.readBytes` in 256 KB chunks. Any doubt means "not identical". This replaces the SHA-256 option (ADR-0007).
+- Removal stays disabled. Edited and Live Photo behaviour: run Diagnostics → Edited photo check / Live Photo check.
+
 ## Feasibility spikes
 
 Each spike is time-boxed, produces a short report in `docs/spikes/`, and updates this table.
