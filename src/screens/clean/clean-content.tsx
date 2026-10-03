@@ -23,6 +23,7 @@ import type { CleanHomeState } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
 import { CategoryCard } from './category-card';
+import { CopiesCard, type CopyCheckSummary } from './copies-card';
 import { ScanningCard, type ScanActions } from './scanning-card';
 
 export type CleanActions = {
@@ -33,6 +34,8 @@ export type CleanActions = {
   onOpenSettings: () => void;
   onReset: () => void;
   onOpenPlan?: () => void;
+  /** Starts "Find exact copies" (real results only). */
+  onFindCopies?: () => void;
 };
 
 type CleanContentProps = {
@@ -51,6 +54,8 @@ type CleanContentProps = {
   libraryChanged?: boolean;
   /** Play the one-time staggered reveal (P1-MOT-001) as this content mounts. */
   animateReveal?: boolean;
+  /** What the exact copies check covered (real results only). */
+  copyCheck?: CopyCheckSummary;
 };
 
 const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, onStop: () => {} };
@@ -69,6 +74,7 @@ export function CleanContent({
   plannedCount = 0,
   libraryChanged = false,
   animateReveal = false,
+  copyCheck,
 }: CleanContentProps) {
   if (isActive(job)) {
     return (
@@ -111,6 +117,7 @@ export function CleanContent({
           plannedCount={plannedCount}
           libraryChanged={libraryChanged}
           animateReveal={animateReveal}
+          copyCheck={copyCheck}
         />
       );
   }
@@ -196,6 +203,7 @@ function Results({
   plannedCount,
   libraryChanged,
   animateReveal,
+  copyCheck,
 }: {
   state: Extract<CleanHomeState, { status: 'results' }>;
   access: PhotoAccess | 'unknown';
@@ -204,6 +212,7 @@ function Results({
   plannedCount: number;
   libraryChanged: boolean;
   animateReveal: boolean;
+  copyCheck?: CopyCheckSummary;
 }) {
   const { width } = useWindowDimensions();
   const sample = state.sample;
@@ -221,12 +230,17 @@ function Results({
   const footer = sample ? (
     <Button title="Reset sample" variant="plain" onPress={actions.onReset} style={styles.center} />
   ) : (
-    <Button
-      title="Scan again"
-      variant="plain"
-      onPress={actions.onScanLibrary}
-      style={styles.center}
-    />
+    <>
+      {copyCheck && actions.onFindCopies ? (
+        <CopiesCard summary={copyCheck} onStart={actions.onFindCopies} />
+      ) : null}
+      <Button
+        title="Scan again"
+        variant="plain"
+        onPress={actions.onScanLibrary}
+        style={styles.center}
+      />
+    </>
   );
 
   const changedBanner =

@@ -21,6 +21,7 @@ function actions(): jest.Mocked<Required<CleanActions>> {
     onOpenSettings: jest.fn(),
     onReset: jest.fn(),
     onOpenPlan: jest.fn(),
+    onFindCopies: jest.fn(),
   };
 }
 
@@ -124,6 +125,59 @@ describe('real results', () => {
     expect(screen.getByText(/Only the photos you’ve shared/)).toBeOnTheScreen();
     await fireEvent.press(screen.getByLabelText('Manage'));
     expect(handlers.onManageSelection).toHaveBeenCalled();
+  });
+
+  test('exact copies: never run offers the check and explains it', async () => {
+    const handlers = await renderState(real, 'full', {
+      copyCheck: { coverage: { checked: 0, inSets: 0, notChecked: [] }, lastStatus: null, sets: 0 },
+    });
+    expect(screen.getByText(/byte for byte/)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Find exact copies'));
+    expect(handlers.onFindCopies).toHaveBeenCalled();
+  });
+
+  test('exact copies: a finished check reports what was and wasn’t checked', async () => {
+    await renderState(real, 'full', {
+      copyCheck: {
+        coverage: {
+          checked: 900,
+          inSets: 4,
+          notChecked: [
+            { reason: 'live-photo', count: 250 },
+            { reason: 'in-icloud', count: 50 },
+          ],
+        },
+        lastStatus: 'succeeded',
+        sets: 2,
+      },
+    });
+    expect(
+      screen.getByText('2 sets of identical files among 900 checked photos.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Not checked: 300')).toBeOnTheScreen();
+    expect(screen.getByText(/250 · Live Photos aren’t checked yet/)).toBeOnTheScreen();
+    expect(screen.getByText(/50 · Stored in iCloud only/)).toBeOnTheScreen();
+    expect(screen.getByLabelText('Check again')).toBeOnTheScreen();
+  });
+
+  test('exact copies: an unfinished check says so and offers to continue', async () => {
+    await renderState(real, 'full', {
+      copyCheck: {
+        coverage: { checked: 120, inSets: 0, notChecked: [{ reason: 'not-yet', count: 800 }] },
+        lastStatus: 'interrupted',
+        sets: 0,
+      },
+    });
+    expect(screen.getByText(/didn’t finish/)).toBeOnTheScreen();
+    expect(screen.getByText(/800 · Not checked yet/)).toBeOnTheScreen();
+    expect(screen.getByLabelText('Continue checking')).toBeOnTheScreen();
+  });
+
+  test('sample results never offer the exact copies check', async () => {
+    await renderState(sampleResultsState, 'full', {
+      copyCheck: { coverage: { checked: 0, inSets: 0, notChecked: [] }, lastStatus: null, sets: 0 },
+    });
+    expect(screen.queryByLabelText('Find exact copies')).toBeNull();
   });
 
   test('a changed library prompts a new scan', async () => {

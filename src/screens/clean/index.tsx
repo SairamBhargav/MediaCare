@@ -3,6 +3,7 @@ import { router, useIsFocused } from 'expo-router';
 import { IconButton } from '@/components/icon-button';
 import { useSessionReveal } from '@/components/reveal';
 import { Screen } from '@/components/screen';
+import { copyCoverage } from '@/domain/exact-copies';
 import { useActionPlan } from '@/features/clean/use-action-plan';
 import { scanLibrary } from '@/features/media/start-scan';
 import { openSettings } from '@/services/media/photo-library';
@@ -17,6 +18,15 @@ export function CleanScreen() {
   const job = useCleanSession((session) => session.job);
   const access = useCatalog((catalog) => catalog.access);
   const libraryChanged = useCatalog((catalog) => catalog.libraryChanged);
+  const items = useCatalog((catalog) => catalog.items);
+  const fingerprints = useCatalog((catalog) => catalog.fingerprints);
+  const copySets = useCatalog((catalog) => catalog.copySets);
+  const lastCopyCheck = useCatalog((catalog) => catalog.lastCopyCheck);
+  const copyCheck = {
+    coverage: copyCoverage(items, fingerprints, copySets),
+    lastStatus: lastCopyCheck?.status ?? null,
+    sets: copySets.length,
+  };
   const adjustments = useReviewAdjustments();
   const plan = useActionPlan();
   const session = useCleanSession.getState();
@@ -38,6 +48,7 @@ export function CleanScreen() {
       {reveal.ready ? (
         <CleanContent
           animateReveal={reveal.animate}
+          copyCheck={copyCheck}
           state={state}
           access={access}
           job={job}
@@ -55,6 +66,7 @@ export function CleanScreen() {
             },
             onReset: session.reset,
             onOpenPlan: () => router.push('/plan'),
+            onFindCopies: session.startCopyCheck,
           }}
           scanActions={{
             onPause: session.pauseScan,
