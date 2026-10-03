@@ -71,11 +71,16 @@ export default function RootLayout() {
             name="export/[id]"
             options={{ presentation: 'modal', headerShown: false }}
           />
+          {/* The viewer draws its own open/close transition from the tapped tile
+              over the still-visible screen below (docs/MOTION.md). */}
           <Stack.Screen
             name="photo/[id]"
             options={{
-              headerShadowVisible: false,
-              headerStyle: { backgroundColor: colors.background },
+              presentation: 'transparentModal',
+              animation: 'none',
+              headerShown: false,
+              gestureEnabled: false,
+              contentStyle: { backgroundColor: 'transparent' },
             }}
           />
           <Stack.Screen

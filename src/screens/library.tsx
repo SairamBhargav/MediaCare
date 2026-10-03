@@ -19,6 +19,7 @@ import type { MediaItem } from '@/features/media/registry';
 import { hasPhotoAccess, useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
 import { useLibrarySession } from '@/state/library-session';
+import { useViewerOrigin } from '@/state/viewer-origin';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
 const GAP = 2;
@@ -46,6 +47,7 @@ export function LibraryScreen() {
   const selected = useLibrarySession((session) => session.selected);
   const { setSelecting, toggle, retain, rememberOffset } = useLibrarySession.getState();
   // Read once: the list restores from it on mount, then reports back at rest.
+  const hiddenId = useViewerOrigin((viewer) => viewer.hiddenId);
   const [initialOffset] = useState(() => useLibrarySession.getState().scrollOffset);
 
   const items = useCatalog((catalog) => catalog.items);
@@ -140,7 +142,7 @@ export function LibraryScreen() {
       <SectionList
         sections={sections}
         keyExtractor={(row) => row.key}
-        extraData={{ selected, selecting }}
+        extraData={{ selected, selecting, hiddenId }}
         stickySectionHeadersEnabled
         contentOffset={{ x: 0, y: initialOffset }}
         onScrollEndDrag={(event) => rememberOffset(event.nativeEvent.contentOffset.y)}
@@ -167,10 +169,15 @@ export function LibraryScreen() {
                 asset={asset}
                 selectable={selecting}
                 selected={selected.has(asset.id)}
-                onPress={
+                hidden={hiddenId === asset.id}
+                onPress={selecting ? () => toggle(asset.id) : undefined}
+                onOpen={
                   selecting
-                    ? () => toggle(asset.id)
-                    : () => router.push(`/photo/${encodeURIComponent(asset.id)}`)
+                    ? undefined
+                    : (rect) => {
+                        useViewerOrigin.getState().setOrigin(asset.id, rect);
+                        router.push(`/photo/${encodeURIComponent(asset.id)}`);
+                      }
                 }
                 style={{ width: tileSize }}
               />

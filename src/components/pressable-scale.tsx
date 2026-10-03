@@ -1,5 +1,11 @@
-import { useState, type ReactNode } from 'react';
-import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { useState, type ReactNode, type Ref } from 'react';
+import {
+  Pressable,
+  type PressableProps,
+  type StyleProp,
+  type View,
+  type ViewStyle,
+} from 'react-native';
 import Animated, { css } from 'react-native-reanimated';
 
 import { cssEasing, duration, pressScale, useReduceMotion } from '@/theme';
@@ -10,6 +16,8 @@ type PressableScaleProps = Omit<PressableProps, 'style' | 'children'> & {
   style?: StyleProp<ViewStyle>;
   /** Fade the element while disabled. Off for content that is simply not interactive. */
   dimWhenDisabled?: boolean;
+  /** The outer, unscaled pressable (for measuring). */
+  ref?: Ref<View>;
 };
 
 /**
@@ -26,6 +34,7 @@ export function PressableScale({
   onPressOut,
   disabled,
   dimWhenDisabled = true,
+  ref,
   ...props
 }: PressableScaleProps) {
   const [pressed, setPressed] = useState(false);
@@ -33,6 +42,7 @@ export function PressableScale({
 
   return (
     <Pressable
+      ref={ref}
       hitSlop={8}
       pressRetentionOffset={16}
       disabled={disabled}

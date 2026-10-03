@@ -1,6 +1,8 @@
+import { useRef } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { css } from 'react-native-reanimated';
 
+import type { Rect } from '@/domain/viewer-geometry';
 import type { MediaItem } from '@/features/media/registry';
 import { cssEasing, duration, onMedia, radius, spacing, useReduceMotion, useTheme } from '@/theme';
 import { haptics } from '@/utils/haptics';
@@ -23,6 +25,14 @@ type MediaTileProps = {
   isProtected?: boolean;
   onPress?: () => void;
   /**
+   * Called on press (instead of `onPress`) with the tile's rectangle in
+   * window coordinates, so a viewer can grow out of it. `null` if the tile
+   * couldn't be measured.
+   */
+  onOpen?: (rect: Rect | null) => void;
+  /** Keeps the tile's space but hides it (its photo is shown in the viewer). */
+  hidden?: boolean;
+  /**
    * Secondary actions (make keeper, protect). Shown on long-press as a native
    * action sheet and offered to VoiceOver as custom actions.
    */
@@ -43,6 +53,8 @@ export function MediaTile({
   keeper = false,
   isProtected = false,
   onPress,
+  onOpen,
+  hidden = false,
   actions = [],
   appearance = 'grid',
   style,
@@ -51,6 +63,18 @@ export function MediaTile({
   const reduceMotion = useReduceMotion();
   const isCard = appearance === 'card';
   const checkable = selectable && !keeper && !isProtected;
+  const ref = useRef<View>(null);
+  const interactive = Boolean(onOpen ?? onPress);
+
+  const open = onOpen
+    ? () => {
+        const node = ref.current;
+        if (!node) return onOpen(null);
+        node.measureInWindow((x, y, width, height) =>
+          onOpen(width > 0 && height > 0 ? { x, y, width, height } : null),
+        );
+      }
+    : onPress;
 
   const label = [
     asset.description,
@@ -63,11 +87,12 @@ export function MediaTile({
 
   return (
     <PressableScale
+      ref={ref}
       onPress={() => {
         if (checkable) haptics.selection();
-        onPress?.();
+        open?.();
       }}
-      disabled={!onPress && actions.length === 0}
+      disabled={!interactive && actions.length === 0}
       dimWhenDisabled={false}
       onLongPress={
         actions.length > 0
@@ -81,7 +106,7 @@ export function MediaTile({
       onAccessibilityAction={(event) =>
         actions.find((action) => action.label === event.nativeEvent.actionName)?.onPress()
       }
-      accessibilityRole={checkable ? 'checkbox' : onPress ? 'imagebutton' : 'image'}
+      accessibilityRole={checkable ? 'checkbox' : interactive ? 'imagebutton' : 'image'}
       accessibilityLabel={label}
       accessibilityState={checkable ? { checked: selected } : undefined}
       accessibilityHint={checkable ? 'Marks this photo for review' : undefined}
@@ -90,6 +115,7 @@ export function MediaTile({
         { backgroundColor: colors.mediaPlaceholder },
         isCard && styles.card,
         style,
+        hidden && styles.hidden,
       ]}
     >
       <MediaArtwork item={asset} />
@@ -155,6 +181,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     backgroundColor: onMedia.selectedDim,
   },
+  hidden: { opacity: 0 },
   selectedOn: { opacity: 1 },
   selectedOff: { opacity: 0 },
   badge: {
