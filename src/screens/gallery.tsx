@@ -1,19 +1,25 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActiveJobBar } from '@/components/active-job-bar';
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
+import { Chip } from '@/components/chip';
 import { EmptyState } from '@/components/empty-state';
 import { IconButton } from '@/components/icon-button';
 import { MediaTile } from '@/components/media-tile';
+import { SampleArtwork } from '@/components/sample-artwork';
 import { SectionHeader } from '@/components/section-header';
 import { SelectionBadge } from '@/components/selection-badge';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
 import { sampleLibrary } from '@/demo/sample-library';
+import type { Job } from '@/domain/jobs';
 import { CleanContent } from '@/screens/clean/clean-content';
-import { sampleResultsState, type CleanHomeState } from '@/state/clean-session';
+import { sampleResultsState, useCleanSession, type CleanHomeState } from '@/state/clean-session';
+import { usePreferences, type AppearancePreference } from '@/state/preferences';
 import {
   gutter,
   radius,
@@ -46,12 +52,14 @@ const SWATCHES: ColorToken[] = [
  * themes, Dynamic Type and motion on a device. Reached from Settings → Developer.
  */
 export function GalleryScreen() {
-  const { colors, scheme } = useTheme();
+  const { colors, scheme, highContrast } = useTheme();
+  const appearance = usePreferences((state) => state.appearance);
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [badgeOn, setBadgeOn] = useState(false);
   const [cleanPreview, setCleanPreview] = useState<CleanPreview>('results');
+  const [chip, setChip] = useState('Original');
   const tiles = sampleLibrary.slice(0, 6);
 
   return (
@@ -67,6 +75,17 @@ export function GalleryScreen() {
           tone={reduceMotion ? 'warning' : 'success'}
           icon="motion"
         />
+        {highContrast ? <StatusPill label="Increase Contrast" tone="info" /> : null}
+      </View>
+      <View style={styles.inline} accessibilityRole="radiogroup" accessibilityLabel="Theme">
+        {(['system', 'light', 'dark'] as AppearancePreference[]).map((value) => (
+          <Chip
+            key={value}
+            label={value === 'system' ? 'System' : value === 'light' ? 'Light' : 'Dark'}
+            selected={appearance === value}
+            onPress={() => usePreferences.getState().setAppearance(value)}
+          />
+        ))}
       </View>
 
       <View style={styles.section}>
@@ -184,6 +203,69 @@ export function GalleryScreen() {
       </View>
 
       <View style={styles.section}>
+        <SectionHeader eyebrow="Jobs" title="Job bar states" />
+        <AppText variant="footnote" color="secondaryLabel">
+          Previews with made-up sample numbers. Their buttons act on the real session, which has no
+          job here, so they do nothing.
+        </AppText>
+        {JOB_PREVIEWS.map(({ label, job }) => (
+          <View key={label} style={styles.jobPreview}>
+            <AppText variant="caption" color="secondaryLabel">
+              {label}
+            </AppText>
+            <ActiveJobBar job={job} />
+          </View>
+        ))}
+        <Button
+          title="Open the scan sheet with a sample scan"
+          variant="secondary"
+          onPress={() => {
+            useCleanSession.getState().startSampleScan();
+            router.push('/scan');
+          }}
+          accessibilityHint="Starts the labelled, simulated sample scan"
+          block
+        />
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader eyebrow="Controls" title="Chips" />
+        <View style={styles.inline} accessibilityRole="radiogroup">
+          {['Original', '2048 px', '1080 px'].map((label) => (
+            <Chip
+              key={label}
+              label={label}
+              selected={chip === label}
+              onPress={() => setChip(label)}
+            />
+          ))}
+          <Chip label="Unavailable" selected={false} onPress={() => {}} disabled />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader eyebrow="Placeholder" title="Before and after" />
+        <View style={styles.inline}>
+          {[
+            { label: 'Original (sample)', asset: sampleLibrary[0] },
+            { label: 'Copy (sample)', asset: sampleLibrary[0] },
+          ].map(({ label, asset }) => (
+            <View key={label} style={styles.beforeAfter}>
+              <View style={styles.beforeAfterImage}>
+                <SampleArtwork asset={asset} glyphSize={36} />
+              </View>
+              <AppText variant="footnote" color="secondaryLabel">
+                {label}
+              </AppText>
+            </View>
+          ))}
+        </View>
+        <AppText variant="footnote" color="secondaryLabel">
+          Static placeholder. An interactive before/after comparison isn’t built yet.
+        </AppText>
+      </View>
+
+      <View style={styles.section}>
         <SectionHeader eyebrow="Screens" title="Clean home states" />
         <View style={styles.inline}>
           {(Object.keys(CLEAN_PREVIEWS) as CleanPreview[]).map((key) => (
@@ -214,6 +296,32 @@ export function GalleryScreen() {
 
 const resultsPreview = sampleResultsState;
 
+const previewJob = (overrides: Partial<Job>): Job => ({
+  id: 'gallery-preview',
+  kind: 'scan',
+  sample: true,
+  status: 'running',
+  stage: 'checking',
+  processed: 48,
+  total: 120,
+  ...overrides,
+});
+
+const JOB_PREVIEWS: readonly { label: string; job: Job }[] = [
+  { label: 'Running, total known', job: previewJob({}) },
+  { label: 'Running, total not known yet', job: previewJob({ stage: 'listing', total: null }) },
+  { label: 'Paused', job: previewJob({ status: 'paused' }) },
+  {
+    label: 'Finished',
+    job: previewJob({ status: 'succeeded', stage: 'grouping', processed: 120 }),
+  },
+  {
+    label: 'Failed',
+    job: previewJob({ status: 'failed', error: 'Photo access was turned off.' }),
+  },
+  { label: 'Stopped', job: previewJob({ status: 'canceled' }) },
+];
+
 const CLEAN_PREVIEWS: Record<string, CleanHomeState> = {
   'not scanned': { status: 'not-scanned' },
   denied: { status: 'not-scanned' },
@@ -230,6 +338,14 @@ type CleanPreview = keyof typeof CLEAN_PREVIEWS;
 
 const styles = StyleSheet.create({
   content: { padding: gutter, gap: spacing.xxl },
+  jobPreview: { gap: spacing.xxs },
+  beforeAfter: { flex: 1, gap: spacing.xs },
+  beforeAfterImage: {
+    aspectRatio: 3 / 4,
+    borderRadius: radius.media,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+  },
   section: { gap: spacing.sm },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   inline: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
