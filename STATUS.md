@@ -1,22 +1,22 @@
 # Status
 
-**Current phase:** 2 (real photos) built; awaiting the owner's device test before Phase 3
+**Current phase:** Phase 1 polish finished in code (awaiting device check); next P2-DUP-001 Find exact copies
 **Last updated:** 2026-10-03
 
 ## Completed
 
 - **Phase 0**: all tasks (device check pending).
-- **Phase 1**: P1-SET-002, P1-CLN-001, P1-JOB-001, P1-JOB-002, P1-REV-001, P1-REV-002, P1-REV-003 (design checkpoint pending), P1-REV-004, P1-LIB-001, P1-LIB-002.
+- **Phase 1**: P1-SET-002, P1-CLN-001, P1-JOB-001, P1-JOB-002, P1-REV-001, P1-REV-002, P1-REV-003 (design checkpoint pending), P1-REV-004, P1-LIB-001..005, P1-ONB-001..003, P1-MOT-001, P1-UI-006, P1-UI-008, P1-UI-009, P1-QA-001 (automated part; device walkthrough pending). P1-UI-007 skipped (optional; licensing).
 - **Phase 2**: P2-MEDIA-001/002/003/004/006, P2-DB-001..004, P2-JOB-001..003, P2-LIB-001, P2-EXP-001..007, P2-FIND-001, P2-UI-001, P2-DIAG-001. Spike S1 answered from source (needs dev build). Details in [docs/BACKLOG.md](docs/BACKLOG.md).
 
-## Checks actually run (Windows 11, Node 22.23.3, 2026-10-03)
+## Checks actually run (Windows 11, Node 22.23.3, 2026-10-03, after Phase 1 polish)
 
 | Check                  | Result                                      |
 | ---------------------- | ------------------------------------------- |
 | `npm run typecheck`    | ✅ pass (`.expo/types` set aside, as in CI) |
 | `npm run lint`         | ✅ pass                                     |
 | `npm run format:check` | ✅ pass                                     |
-| `npm test`             | ✅ 185/185 tests                            |
+| `npm test`             | ✅ 319/319 tests                            |
 | `npm run doctor`       | ✅ 21/21                                    |
 | `npm run bundle:ios`   | ✅ iOS Hermes bundle (4.3 MB)               |
 | Physical iPhone        | ⏳ not run yet                              |
@@ -28,6 +28,16 @@ iPhone 17 · iOS 26.6.2 · Expo Go SDK 57 · limited access, 25 items. Scan, Lib
 ## What only a device can confirm
 
 Real photo access prompts and limited selection; scan speed and smoothness on your library size; HEIC thumbnails and orientation; copy sizes and what metadata a copy keeps; how Expo Go handles all of this. Nothing here is reported as tested until you run it.
+
+## Phase 1 polish: iPhone checklist (awaiting owner test)
+
+1. **First run**: Settings → Help → Show introduction again. The sample tiles settle in about a second with a "Keep" mark; both buttons work at once. "Explore with samples" closes it. Do it again and tap **Continue**: if iOS hasn't asked about photos yet, the access explanation appears and the iOS prompt only shows after **Continue** there. (In Expo Go, access was probably granted already, so you'll see current access and "Change in iOS Settings" instead.)
+2. **Home reveal**: force-quit and reopen. The Clean cards fade up in turn, once. Switch tabs and come back: no replay. With Settings → Less motion on, nothing animates.
+3. **Viewer**: Library → tap a photo. It grows out of its tile and the tile looks empty underneath. Pinch, pan when zoomed, double-tap to zoom in and out. Drag down slowly a little and let go: it springs back. Drag further or flick: it shrinks back into its tile. **Close** does the same. **Info** shows date source, dimensions, size, source and file. With Less motion on, it fades instead.
+4. **Library keeps its place**: scroll far down, tap Select, pick 3 photos, switch to Clean and back: same position, still selecting, "3 selected".
+5. **Increase Contrast** (iOS Settings → Accessibility → Display & Text Size): secondary text and lines get stronger in both themes.
+6. **Gallery** (Settings → Developer): theme chips, job bar states, sample scan sheet, chips, before/after placeholder.
+7. **Accessibility walkthrough**: docs/TEST_PLAN.md §4, "Phase 1 accessibility pass".
 
 ## Real-photo test (owner)
 
@@ -42,7 +52,7 @@ Real photo access prompts and limited selection; scan speed and smoothness on yo
 
 Device test 1 is done: scan, Library, thumbnails and Compare work (after fixes P2-FIX-001/002); copies keep orientation but not date or location (S5). Work in this order:
 
-1. **Finish Phase 1 polish**, each with tests and a device-checklist line:
+1. ✅ **Finish Phase 1 polish** (done in code 2026-10-03; device checklist above):
    - P1-LIB-003/004: viewer continuity from the tapped tile (measured overlay, no experimental shared-element API) and drag-to-dismiss with a velocity-or-distance threshold, plus a visible Close button
    - P1-LIB-005: keep Library scroll position and selection across tab switches
    - P1-ONB-001..003: value intro, access explainer before the iOS prompt, first-run flag persisted in the kv-store, reachable again from Settings
