@@ -165,7 +165,8 @@ export function GroupReview({ group }: { group: GroupFinding }) {
           icon="compare"
           variant="secondary"
           accessibilityHint={`Opens ${group.title} full screen`}
-          onPress={() => router.push(`/review/${group.id}`)}
+          // Real group ids contain ph:// identifiers with slashes; escape them.
+          onPress={() => router.push(`/review/${encodeURIComponent(group.id)}`)}
         />
       </View>
     </View>

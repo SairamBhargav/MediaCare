@@ -106,3 +106,13 @@ test('choosing a different keeper moves the keep badge', async () => {
   expect(screen.getByLabelText(`${photo.description}. Keeper`)).toBeOnTheScreen();
   expect(screen.getByText('You chose the keeper for this group.')).toBeOnTheScreen();
 });
+
+test('Compare escapes group ids, which contain ph:// identifiers for real photos', async () => {
+  const { router } = jest.requireMock('expo-router') as { router: { push: jest.Mock } };
+  await render(<CategoryScreen category="similar" />);
+  await fireEvent.press(screen.getAllByLabelText('Compare')[0]);
+  const target = router.push.mock.calls.at(-1)?.[0] as string;
+  expect(target).toBe(`/review/${encodeURIComponent(similarGroups[0].id)}`);
+  // A real id like "moments-ph://UUID/L0/001" must stay a single path segment.
+  expect(`/review/${encodeURIComponent('moments-ph://A1B2/L0/001')}`.split('/')).toHaveLength(3);
+});

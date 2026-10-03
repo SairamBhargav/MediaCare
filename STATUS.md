@@ -21,6 +21,10 @@
 | `npm run bundle:ios`   | ✅ iOS Hermes bundle (4.3 MB)               |
 | Physical iPhone        | ⏳ not run yet                              |
 
+## Device test 1 (owner, 2026-10-03)
+
+iPhone 17 · iOS 26.6.2 · Expo Go SDK 57 · limited access, 25 items. Scan, Library and thumbnails work (after fix P2-FIX-001). Compare failed with "page could not be found" (fixed: P2-FIX-002). Diagnostics are recorded in docs/CAPABILITIES.md under "Device evidence 1".
+
 ## What only a device can confirm
 
 Real photo access prompts and limited selection; scan speed and smoothness on your library size; HEIC thumbnails and orientation; copy sizes and what metadata a copy keeps; how Expo Go handles all of this. Nothing here is reported as tested until you run it.
@@ -43,7 +47,6 @@ Real photo access prompts and limited selection; scan speed and smoothness on yo
 
 ## Blockers / owner input
 
-- Device facts unknown (A1): iPhone model, iOS version, Expo Go version.
 - The GitHub repo is **public** (checked 2026-10-02). Make it private unless you intend to publish (A4).
 - Phase 3 needs the Apple Developer decision and a bundle identifier.
 

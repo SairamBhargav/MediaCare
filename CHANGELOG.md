@@ -2,6 +2,8 @@
 
 ## Unreleased: Phase 2 (real photos) built, awaiting device test
 
+- Fixed from the first device test (iPhone 17): gray thumbnails (asset ids already include ph://), and Compare opening "page could not be found" for real groups (ids with slashes are now escaped).
+
 - Real photo access (full, limited, denied) with Manage selected photos and Open Settings; access rechecked when the app returns to the foreground.
 - On-device SQLite catalog (metadata only) filled by a resumable, checkpointed scan that reads no files and downloads nothing; rescans skip unchanged items; interrupted scans are recorded as interrupted.
 - Real findings limited to what metadata supports: moments taken within 2 seconds, screenshots, long videos. Favorites are never suggested; no sizes are claimed.

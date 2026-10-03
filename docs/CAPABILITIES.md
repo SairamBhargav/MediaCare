@@ -58,6 +58,23 @@ Read in the installed SDK 57 native sources (`node_modules/expo-media-library/io
 
 The in-app **Diagnostics** screen (Settings → Developer) collects device evidence for S1, S3 and S5 into a shareable report.
 
+## Device evidence 1 (2026-10-03, owner)
+
+iPhone 17 · iOS 26.6.2 · Expo Go, SDK 57 · **limited** access, 25 items (24 photos, 1 video; HEIC 20, PNG 4, MOV 1; Live Photo 4, screenshot 4).
+
+| Question                                                            | Result                                                                                                                          | Status                                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Limited access, scan, catalog                                       | Works; 25 shared items cataloged                                                                                                | `verified-on-device`                                                           |
+| Photos thumbnails via expo-image `ph://` (S3)                       | Work after fixing a doubled `ph://` prefix (asset ids already include it)                                                       | `verified-on-device`                                                           |
+| `getUri()` for unedited, local HEIC photos (S1)                     | Returned the camera file itself (`DCIM/100APPLE/IMG_0212.HEIC`, name matches), ~50 ms, MD5 readable                             | `verified-on-device` for this case only                                        |
+| `getUri()` for **edited**, **iCloud-only** and **Live** photos (S1) | Not tested yet; source says edited photos return a rendition and iCloud ones download                                           | `spike-required`                                                               |
+| JPEG copies (S5)                                                    | All decode. Full-size q90 copy was **3.2 MB vs a 1.8 MB HEIC original** (bigger); q75 at 2048 px: 381 KB; q60 at 1080 px: 90 KB | `verified-on-device` (sizes); orientation and metadata still to check visually |
+
+What this changes:
+
+- Exact duplicates may be feasible in Expo Go for **unedited, local, non-Live** photos by hashing the `getUri()` file, if the file path proves it is the original. Edited, iCloud-only and Live photos must be excluded until tested. Candidate task P2-DUP-001 (see BACKLOG); still no removal before Phase 3.
+- Full-size JPEG copies of HEIC photos are often **larger** than the original. The export screen already reports "Not smaller than the original"; presets should steer to smaller dimensions (P2-EXP-008).
+
 ## Feasibility spikes
 
 Each spike is time-boxed, produces a short report in `docs/spikes/`, and updates this table.
