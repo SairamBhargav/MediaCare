@@ -1,20 +1,19 @@
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { css } from 'react-native-reanimated';
 
-import type { SampleAsset } from '@/demo/sample-library';
+import type { MediaItem } from '@/features/media/registry';
 import { cssEasing, duration, onMedia, radius, spacing, useReduceMotion, useTheme } from '@/theme';
 import { haptics } from '@/utils/haptics';
 import { showPhotoActions, type PhotoAction } from '@/utils/photo-actions';
 
 import { AppText } from './app-text';
 import { Icon } from './icon';
+import { MediaArtwork } from './media-artwork';
 import { PressableScale } from './pressable-scale';
 import { SelectionBadge } from './selection-badge';
 
 type MediaTileProps = {
-  asset: SampleAsset;
+  asset: MediaItem;
   /** Shows the selection ring and exposes checkbox semantics. */
   selectable?: boolean;
   selected?: boolean;
@@ -53,7 +52,12 @@ export function MediaTile({
   const isCard = appearance === 'card';
   const checkable = selectable && !keeper && !isProtected;
 
-  const label = [asset.description, keeper && 'Keeper', isProtected && 'Protected']
+  const label = [
+    asset.description,
+    asset.isFavorite && 'Favorite',
+    keeper && 'Keeper',
+    isProtected && 'Protected',
+  ]
     .filter(Boolean)
     .join('. ');
 
@@ -88,7 +92,7 @@ export function MediaTile({
         style,
       ]}
     >
-      <SampleArtwork asset={asset} />
+      <MediaArtwork item={asset} />
 
       {/* Selected state dims the photo slightly so the badge and ring read clearly. */}
       <Animated.View
@@ -103,7 +107,7 @@ export function MediaTile({
         ]}
       />
 
-      {keeper || isProtected ? (
+      {keeper || isProtected || asset.isFavorite ? (
         <View style={styles.pills} accessibilityElementsHidden>
           {keeper ? (
             <View style={styles.pill}>
@@ -111,6 +115,11 @@ export function MediaTile({
               <AppText variant="caption" style={styles.onMediaText}>
                 Keep
               </AppText>
+            </View>
+          ) : null}
+          {asset.isFavorite ? (
+            <View style={styles.pill}>
+              <Icon name="heart" size={10} color={onMedia.foreground} weight="bold" />
             </View>
           ) : null}
           {isProtected ? (
@@ -133,36 +142,6 @@ export function MediaTile({
   );
 }
 
-/**
- * Synthetic stand-in image for a sample asset: a gradient with a subject
- * glyph. `soft` samples are drawn out of focus. Fills its parent.
- */
-export function SampleArtwork({
-  asset,
-  glyphSize = 28,
-}: {
-  asset: SampleAsset;
-  glyphSize?: number;
-}) {
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <LinearGradient
-        colors={asset.colors}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.subject}>
-        <Icon name={asset.subject} size={glyphSize} color={onMedia.sampleGlyph} />
-      </View>
-      {asset.look === 'soft' ? (
-        // A static blur layer (never animated) makes the stand-in read as out of focus.
-        <BlurView intensity={28} tint="default" style={StyleSheet.absoluteFill} />
-      ) : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   tile: {
     aspectRatio: 1,
@@ -171,11 +150,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radius.media,
     borderCurve: 'continuous',
-  },
-  subject: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   selectedOverlay: {
     borderWidth: 3,

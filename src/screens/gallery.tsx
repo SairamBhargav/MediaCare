@@ -198,8 +198,14 @@ export function GalleryScreen() {
         </View>
         <CleanContent
           state={CLEAN_PREVIEWS[cleanPreview]}
-          onStartScan={() => setCleanPreview('results')}
-          onReset={() => setCleanPreview('not scanned')}
+          access={cleanPreview === 'denied' ? 'denied' : 'undetermined'}
+          actions={{
+            onScanLibrary: () => setCleanPreview('results'),
+            onSampleScan: () => setCleanPreview('results'),
+            onManageSelection: () => {},
+            onOpenSettings: () => {},
+            onReset: () => setCleanPreview('not scanned'),
+          }}
         />
       </View>
     </ScrollView>
@@ -210,6 +216,7 @@ const resultsPreview = sampleResultsState;
 
 const CLEAN_PREVIEWS: Record<string, CleanHomeState> = {
   'not scanned': { status: 'not-scanned' },
+  denied: { status: 'not-scanned' },
   results: resultsPreview,
   partial: { ...resultsPreview, analyzed: 40 },
   'no findings': { ...resultsPreview, findings: [] },

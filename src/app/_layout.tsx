@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { useBootstrap } from '@/features/media/use-bootstrap';
 import { usePreferences, type AppearancePreference } from '@/state/preferences';
 import { radius, useTheme } from '@/theme';
 
@@ -20,6 +21,7 @@ applyAppearance(usePreferences.getState().appearance);
 export default function RootLayout() {
   const appearance = usePreferences((state) => state.appearance);
   const { scheme, colors } = useTheme();
+  useBootstrap();
 
   useEffect(() => {
     applyAppearance(appearance);

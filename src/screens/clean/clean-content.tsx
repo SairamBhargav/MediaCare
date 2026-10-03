@@ -8,32 +8,46 @@ import { Icon } from '@/components/icon';
 import { SectionHeader } from '@/components/section-header';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
-import { sampleBytes } from '@/demo/sample-library';
 import { formatBytes } from '@/domain/bytes';
 import {
+  candidateCount,
   summarizeCategories,
   totalReclaimableBytes,
   type ReviewAdjustments,
 } from '@/domain/findings';
 import { isActive, type Job } from '@/domain/jobs';
+import { knownBytes } from '@/features/media/registry';
+import type { PhotoAccess } from '@/services/media/photo-library';
 import type { CleanHomeState } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
 import { CategoryCard } from './category-card';
 import { ScanningCard, type ScanActions } from './scanning-card';
 
+export type CleanActions = {
+  /** Real scan of the Photos library (asks for access first if needed). */
+  onScanLibrary: () => void;
+  onSampleScan: () => void;
+  onManageSelection: () => void;
+  onOpenSettings: () => void;
+  onReset: () => void;
+  onOpenPlan?: () => void;
+};
+
 type CleanContentProps = {
   state: CleanHomeState;
+  /** Current photo access. `unknown` until checked. */
+  access: PhotoAccess | 'unknown';
   /** The current scan, if any. While it is active it replaces the content below. */
   job?: Job | null;
-  onStartScan: () => void;
-  onReset: () => void;
+  actions: CleanActions;
   scanActions?: ScanActions;
   /** Review choices (protected, skipped, keeper changes) that totals must respect. */
   adjustments?: ReviewAdjustments;
   /** Photos currently in the removal plan; shows a shortcut to it when > 0. */
   plannedCount?: number;
-  onOpenPlan?: () => void;
+  /** Photos reported changes since the last scan. */
+  libraryChanged?: boolean;
 };
 
 const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, onStop: () => {} };
@@ -44,19 +58,19 @@ const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, on
  */
 export function CleanContent({
   state,
+  access,
   job = null,
-  onStartScan,
-  onReset,
+  actions,
   scanActions = NO_SCAN_ACTIONS,
   adjustments = {},
   plannedCount = 0,
-  onOpenPlan,
+  libraryChanged = false,
 }: CleanContentProps) {
   if (isActive(job)) return <ScanningCard job={job} {...scanActions} />;
 
   switch (state.status) {
     case 'not-scanned':
-      return <NotScanned onStartScan={onStartScan} />;
+      return <NotScanned access={access} actions={actions} />;
     case 'failed':
       return (
         <Surface>
@@ -65,7 +79,9 @@ export function CleanContent({
             tone="error"
             title="Scan stopped"
             message={state.message}
-            action={<Button title="Try again" variant="secondary" onPress={onStartScan} />}
+            action={
+              <Button title="Try again" variant="secondary" onPress={actions.onScanLibrary} />
+            }
           />
         </Surface>
       );
@@ -73,96 +89,198 @@ export function CleanContent({
       return (
         <Results
           state={state}
+          access={access}
+          actions={actions}
           adjustments={adjustments}
-          onReset={onReset}
           plannedCount={plannedCount}
-          onOpenPlan={onOpenPlan}
+          libraryChanged={libraryChanged}
         />
       );
   }
 }
 
-function NotScanned({ onStartScan }: { onStartScan: () => void }) {
+function Notice({ icon, children }: { icon: 'lock' | 'info' | 'warning'; children: string }) {
   const { colors } = useTheme();
+  return (
+    <View style={[styles.notice, { backgroundColor: colors.surfaceRaised }]}>
+      <Icon name={icon} size={16} color={colors.secondaryLabel} />
+      <AppText variant="footnote" color="secondaryLabel" style={styles.flex}>
+        {children}
+      </AppText>
+    </View>
+  );
+}
+
+function NotScanned({
+  access,
+  actions,
+}: {
+  access: PhotoAccess | 'unknown';
+  actions: CleanActions;
+}) {
   return (
     <Surface elevation="raised" style={styles.intro}>
       <StatusPill label="Not scanned" icon="info" />
       <AppText variant="title1">Keep the memories that matter.</AppText>
       <AppText variant="body" color="secondaryLabel">
-        MediaCare finds repeat shots, copies and photos that didn’t turn out, then lets you decide
-        what stays. Nothing is removed without your review.
+        MediaCare finds bursts, screenshots and long videos, then lets you decide what stays.
+        Nothing is removed without your review.
       </AppText>
-      <View style={[styles.notice, { backgroundColor: colors.surfaceRaised }]}>
-        <Icon name="lock" size={16} color={colors.secondaryLabel} />
-        <AppText variant="footnote" color="secondaryLabel" style={styles.flex}>
-          This early build doesn’t ask for photo access. A simulated scan of sample images shows how
-          it works.
-        </AppText>
-      </View>
-      <Button title="Run sample scan" icon="scan" onPress={onStartScan} block />
+
+      {access === 'denied' ? (
+        <>
+          <Notice icon="warning">
+            MediaCare doesn’t have access to your photos. You can turn it on in Settings, under
+            Photos.
+          </Notice>
+          <Button title="Open Settings" icon="settings" onPress={actions.onOpenSettings} block />
+        </>
+      ) : (
+        <>
+          <Notice icon="lock">
+            Your photos are checked on this iPhone. Nothing is uploaded, and scanning reads only
+            dates, sizes and types, not the pictures themselves.
+          </Notice>
+          <Button
+            title={access === 'limited' ? 'Scan selected photos' : 'Scan my library'}
+            icon="scan"
+            onPress={actions.onScanLibrary}
+            block
+            accessibilityHint={
+              access === 'full' || access === 'limited' ? undefined : 'Asks for photo access first'
+            }
+          />
+          {access === 'limited' ? (
+            <Button
+              title="Manage selected photos"
+              variant="plain"
+              onPress={actions.onManageSelection}
+            />
+          ) : null}
+        </>
+      )}
+      <Button
+        title="Try with sample photos"
+        variant="secondary"
+        onPress={actions.onSampleScan}
+        block
+      />
     </Surface>
   );
 }
 
 function Results({
   state,
+  access,
+  actions,
   adjustments,
-  onReset,
   plannedCount,
-  onOpenPlan,
+  libraryChanged,
 }: {
   state: Extract<CleanHomeState, { status: 'results' }>;
+  access: PhotoAccess | 'unknown';
+  actions: CleanActions;
   adjustments: ReviewAdjustments;
-  onReset: () => void;
   plannedCount: number;
-  onOpenPlan?: () => void;
+  libraryChanged: boolean;
 }) {
   const { width } = useWindowDimensions();
-  const summaries = summarizeCategories(state.findings, sampleBytes, adjustments);
-  const total = totalReclaimableBytes(state.findings, sampleBytes, adjustments);
+  const sample = state.sample;
+  const summaries = summarizeCategories(state.findings, knownBytes, adjustments);
+  const totalBytes = totalReclaimableBytes(state.findings, knownBytes, adjustments);
+  const candidates = candidateCount(state.findings, adjustments);
   const setAside = (adjustments.protectedIds?.size ?? 0) + (adjustments.skippedIds?.size ?? 0) > 0;
   const partial = state.analyzed < state.total;
   const cardWidth = Math.min(300, Math.round(width * 0.72));
+  const noun = sample ? 'sample photos' : 'photos and videos';
   const coverage = partial
-    ? `${state.analyzed.toLocaleString()} of ${state.total.toLocaleString()} sample photos checked so far`
-    : `All ${state.total.toLocaleString()} sample photos checked`;
+    ? `${state.analyzed.toLocaleString()} of ${state.total.toLocaleString()} ${noun} checked so far`
+    : `All ${state.total.toLocaleString()} ${noun} checked`;
+
+  const footer = sample ? (
+    <Button title="Reset sample" variant="plain" onPress={actions.onReset} style={styles.center} />
+  ) : (
+    <Button
+      title="Scan again"
+      variant="plain"
+      onPress={actions.onScanLibrary}
+      style={styles.center}
+    />
+  );
+
+  const changedBanner =
+    !sample && libraryChanged ? (
+      <Surface style={styles.row}>
+        <View style={styles.flex}>
+          <AppText variant="headline">Photos changed</AppText>
+          <AppText variant="footnote" color="secondaryLabel">
+            Your library changed since this scan.
+          </AppText>
+        </View>
+        <Button title="Scan again" onPress={actions.onScanLibrary} />
+      </Surface>
+    ) : null;
 
   if (summaries.length === 0) {
     return (
-      <Surface>
-        <EmptyState
-          icon="check"
-          title="Nothing to clean up"
-          message={`None of the ${state.analyzed.toLocaleString()} photos checked are repeats, copies or unusually large.`}
-          action={<Button title="Reset sample" variant="secondary" onPress={onReset} />}
-        />
-      </Surface>
+      <>
+        {changedBanner}
+        <Surface>
+          <EmptyState
+            icon="check"
+            title="Nothing to clean up"
+            message={
+              sample
+                ? `None of the ${state.analyzed.toLocaleString()} photos checked are repeats, copies or unusually large.`
+                : `No bursts, screenshots or long videos among the ${state.analyzed.toLocaleString()} items checked.`
+            }
+          />
+        </Surface>
+        {footer}
+      </>
     );
   }
 
   return (
     <>
+      {changedBanner}
       <Surface elevation="raised" style={styles.intro}>
         <View style={styles.pills}>
-          <StatusPill label="Sample results" tone="accent" icon="photo" />
+          <StatusPill
+            label={sample ? 'Sample results' : 'Your library'}
+            tone="accent"
+            icon="photo"
+          />
           {partial ? <StatusPill label="Partial" tone="warning" icon="warning" /> : null}
         </View>
         <AppText variant="title1" style={styles.numbers}>
-          Could free up to {formatBytes(total)}
+          {sample
+            ? `Could free up to ${formatBytes(totalBytes)}`
+            : `${candidates.toLocaleString()} ${candidates === 1 ? 'item' : 'items'} to review`}
         </AppText>
         <AppText variant="body" color="secondaryLabel">
-          {partial ? 'Results so far. Photos not checked yet aren’t included. ' : ''}
-          Each photo is counted once
+          {partial ? 'Results so far. Items not checked yet aren’t included. ' : ''}
+          {sample
+            ? 'Each photo is counted once'
+            : 'Favorites aren’t suggested, sizes aren’t measured yet'}
           {setAside ? ', protected photos and skipped groups aren’t counted' : ''}, and nothing is
           removed until you review it.
         </AppText>
         <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
           {coverage}
         </AppText>
+        {!sample && access === 'limited' ? (
+          <View style={styles.row}>
+            <AppText variant="footnote" color="secondaryLabel" style={styles.flex}>
+              Only the photos you’ve shared with MediaCare are included.
+            </AppText>
+            <Button title="Manage" variant="plain" onPress={actions.onManageSelection} />
+          </View>
+        ) : null}
       </Surface>
 
       <View style={styles.section}>
-        <SectionHeader eyebrow="Sample" title="Findings" />
+        <SectionHeader eyebrow={sample ? 'Sample' : 'Your library'} title="Findings" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -177,6 +295,7 @@ function Results({
             <CategoryCard
               key={summary.category}
               summary={summary}
+              sample={sample}
               width={cardWidth}
               onPress={() => router.push(`/category/${summary.category}`)}
             />
@@ -184,8 +303,8 @@ function Results({
         </ScrollView>
       </View>
 
-      {plannedCount > 0 && onOpenPlan ? (
-        <Surface style={styles.planRow}>
+      {plannedCount > 0 && actions.onOpenPlan ? (
+        <Surface style={styles.row}>
           <View style={styles.flex}>
             <AppText variant="headline">
               {plannedCount} {plannedCount === 1 ? 'photo' : 'photos'} marked
@@ -194,11 +313,11 @@ function Results({
               See exactly what would be removed and kept.
             </AppText>
           </View>
-          <Button title="Review plan" onPress={onOpenPlan} />
+          <Button title="Review plan" onPress={actions.onOpenPlan} />
         </Surface>
       ) : null}
 
-      <Button title="Reset sample" variant="plain" onPress={onReset} style={styles.reset} />
+      {footer}
     </>
   );
 }
@@ -224,6 +343,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     gap: spacing.sm,
   },
-  reset: { alignSelf: 'center' },
-  planRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  center: { alignSelf: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

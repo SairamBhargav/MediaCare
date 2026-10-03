@@ -27,6 +27,7 @@ const ICONS = {
   warning: { ios: 'exclamationmark.triangle', android: 'warning' },
   photo: { ios: 'photo', android: 'image' },
   star: { ios: 'star.fill', android: 'star' },
+  heart: { ios: 'heart.fill', android: 'favorite' },
   sun: { ios: 'sun.horizon.fill', android: 'wb_twilight' },
   water: { ios: 'water.waves', android: 'waves' },
   leaf: { ios: 'leaf.fill', android: 'eco' },

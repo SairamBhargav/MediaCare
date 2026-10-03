@@ -28,6 +28,9 @@ export type SampleAsset = {
   readonly look?: 'soft';
   /** VoiceOver description of the stand-in image. */
   readonly description: string;
+  /** Samples are never Photos favorites. */
+  readonly isFavorite: false;
+  readonly kind: 'photo';
 };
 
 type Scene = { name: string; colors: Gradient; subject: IconName };
@@ -85,8 +88,8 @@ function shift(colors: Gradient, amount: number): Gradient {
 const assets: SampleAsset[] = [];
 const findings: Finding[] = [];
 
-function addAsset(asset: Omit<SampleAsset, 'source'>): SampleAsset {
-  const full: SampleAsset = { ...asset, source: 'sample' };
+function addAsset(asset: Omit<SampleAsset, 'source' | 'isFavorite' | 'kind'>): SampleAsset {
+  const full: SampleAsset = { ...asset, source: 'sample', isFavorite: false, kind: 'photo' };
   assets.push(full);
   return full;
 }

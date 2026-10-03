@@ -46,3 +46,8 @@ export function sumUniqueBytes(items: readonly { id: string; bytes: number }[]):
   }
   return total;
 }
+
+/** Like `formatBytes`, but says so plainly when a size has not been measured. */
+export function formatSize(bytes: number | null): string {
+  return bytes === null ? 'Size not measured' : formatBytes(bytes);
+}

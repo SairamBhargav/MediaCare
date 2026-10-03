@@ -39,6 +39,26 @@ export const CATEGORY_META: Record<FindingCategory, CategoryMeta> = {
     description: 'The biggest items, like panoramas.',
     unit: ['file', 'files'],
   },
+  moments: {
+    title: 'Taken moments apart',
+    icon: 'stack',
+    description:
+      'Photos taken within two seconds of each other with the same size, like bursts. Grouped by timing, not by how they look.',
+    unit: ['moment', 'moments'],
+  },
+  screenshots: {
+    title: 'Screenshots',
+    icon: 'photo',
+    description: 'Screenshots often stop being useful once you’ve used them.',
+    unit: ['screenshot', 'screenshots'],
+  },
+  'long-videos': {
+    title: 'Long videos',
+    icon: 'storage',
+    description:
+      'Videos a minute or longer usually take the most space. Sizes aren’t measured yet.',
+    unit: ['video', 'videos'],
+  },
 };
 
 export function countLabel(count: number, [singular, plural]: [string, string]): string {

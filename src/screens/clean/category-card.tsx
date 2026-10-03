@@ -1,10 +1,11 @@
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
-import { SampleArtwork } from '@/components/media-tile';
+import { MediaArtwork } from '@/components/media-artwork';
 import { PressableScale } from '@/components/pressable-scale';
-import { getSampleAsset } from '@/demo/sample-library';
+import { getMediaItem, isSample } from '@/features/media/registry';
 import { formatBytes } from '@/domain/bytes';
 import type { CategorySummary } from '@/domain/findings';
 import { CATEGORY_META, countLabel } from '@/features/clean/category-meta';
@@ -12,6 +13,8 @@ import { radius, shadows, spacing, useTheme } from '@/theme';
 
 type CategoryCardProps = {
   summary: CategorySummary;
+  /** Sample results show sizes and a Sample label; real results don't claim sizes. */
+  sample: boolean;
   width: number;
   onPress: () => void;
 };
@@ -31,23 +34,23 @@ const THUMB = 116;
  * tinted from the lead photo (artwork-led, like an album card). Text below
  * says what the category is, how much it holds, and that it is sample data.
  */
-export function CategoryCard({ summary, width, onPress }: CategoryCardProps) {
+export function CategoryCard({ summary, sample, width, onPress }: CategoryCardProps) {
   const { colors, scheme } = useTheme();
   const meta = CATEGORY_META[summary.category];
-  const previews = summary.previewAssetIds.map(getSampleAsset);
+  const previews = summary.previewAssetIds.map(getMediaItem);
   const lead = previews[0];
   // Draw back-to-front so the lead photo sits on top.
   const layers = previews.length === 1 ? [lead] : [...previews.slice(1), lead];
   const fan = FAN.slice(FAN.length - layers.length);
 
   const counts = `${countLabel(summary.findingCount, meta.unit)} · ${countLabel(summary.photoCount, ['photo', 'photos'])}`;
-  const size = `Up to ${formatBytes(summary.reclaimableBytes)}`;
+  const size = sample ? `Up to ${formatBytes(summary.reclaimableBytes)}` : null;
 
   return (
     <PressableScale
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${meta.title}, sample. ${counts}. ${size}.`}
+      accessibilityLabel={`${[meta.title + (sample ? ', sample' : ''), counts, size].filter(Boolean).join('. ')}.`}
       accessibilityHint="Opens this category"
       style={[
         styles.card,
@@ -56,12 +59,20 @@ export function CategoryCard({ summary, width, onPress }: CategoryCardProps) {
       ]}
     >
       <View style={styles.art}>
-        <LinearGradient
-          colors={lead.colors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[StyleSheet.absoluteFill, { opacity: scheme === 'dark' ? 0.28 : 0.38 }]}
-        />
+        {isSample(lead) ? (
+          <LinearGradient
+            colors={lead.colors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[StyleSheet.absoluteFill, { opacity: scheme === 'dark' ? 0.28 : 0.38 }]}
+          />
+        ) : (
+          // Real photos: the lead photo, heavily blurred, tints the backdrop.
+          <View style={[StyleSheet.absoluteFill, { opacity: scheme === 'dark' ? 0.55 : 0.45 }]}>
+            <MediaArtwork item={lead} />
+            <BlurView intensity={80} tint={scheme} style={StyleSheet.absoluteFill} />
+          </View>
+        )}
         {layers.map((asset, index) => (
           <View
             key={asset.id}
@@ -76,21 +87,25 @@ export function CategoryCard({ summary, width, onPress }: CategoryCardProps) {
               },
             ]}
           >
-            <SampleArtwork asset={asset} glyphSize={30} />
+            <MediaArtwork item={asset} glyphSize={30} />
           </View>
         ))}
       </View>
       <View style={styles.text}>
-        <AppText variant="eyebrow" color="accentText">
-          Sample
-        </AppText>
+        {sample ? (
+          <AppText variant="eyebrow" color="accentText">
+            Sample
+          </AppText>
+        ) : null}
         <AppText variant="headline">{meta.title}</AppText>
         <AppText variant="subhead" color="secondaryLabel">
           {counts}
         </AppText>
-        <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
-          {size}
-        </AppText>
+        {size ? (
+          <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
+            {size}
+          </AppText>
+        ) : null}
       </View>
     </PressableScale>
   );

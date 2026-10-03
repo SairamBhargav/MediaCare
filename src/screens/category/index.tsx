@@ -8,7 +8,7 @@ import { ChromeBackground } from '@/components/chrome-background';
 import { EmptyState } from '@/components/empty-state';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
-import { sampleBytes } from '@/demo/sample-library';
+import { knownBytes } from '@/features/media/registry';
 import { formatBytes } from '@/domain/bytes';
 import {
   CATEGORY_ORDER,
@@ -53,7 +53,7 @@ export function CategoryScreen({ category }: { category: FindingCategory }) {
     ...items.map((item) => item.assetId).filter((id) => review.itemSelectedIds.has(id)),
   ]);
   let selectedBytes = 0;
-  for (const id of selectedIds) selectedBytes += sampleBytes(id);
+  for (const id of selectedIds) selectedBytes += knownBytes(id);
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>

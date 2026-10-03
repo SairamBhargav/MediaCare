@@ -1,14 +1,14 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { FlatList, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { SampleArtwork } from '@/components/media-tile';
-import type { SampleAsset } from '@/demo/sample-library';
+import { MediaArtwork } from '@/components/media-artwork';
+import type { MediaItem } from '@/features/media/registry';
 import { gutter, radius, useReduceMotion, useTheme } from '@/theme';
 
 export type PhotoPagerHandle = { scrollTo: (index: number) => void };
 
 type PhotoPagerProps = {
-  photos: readonly SampleAsset[];
+  photos: readonly MediaItem[];
   initialIndex: number;
   onIndexChange: (index: number) => void;
   /** Max photo height so the pager leaves room for details below it. */
@@ -27,7 +27,7 @@ export const PhotoPager = forwardRef<PhotoPagerHandle, PhotoPagerProps>(function
 ) {
   const { width } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
-  const list = useRef<FlatList<SampleAsset>>(null);
+  const list = useRef<FlatList<MediaItem>>(null);
 
   useImperativeHandle(ref, () => ({
     scrollTo: (index) => list.current?.scrollToIndex({ index, animated: !reduceMotion }),
@@ -64,7 +64,7 @@ function ZoomablePhoto({
   maxHeight,
   label,
 }: {
-  photo: SampleAsset;
+  photo: MediaItem;
   width: number;
   maxHeight: number;
   label: string;
@@ -96,7 +96,7 @@ function ZoomablePhoto({
           { width: photoWidth, height, backgroundColor: colors.mediaPlaceholder },
         ]}
       >
-        <SampleArtwork asset={photo} glyphSize={64} />
+        <MediaArtwork item={photo} glyphSize={64} />
       </View>
     </ScrollView>
   );

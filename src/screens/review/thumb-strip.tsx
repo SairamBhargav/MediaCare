@@ -1,12 +1,12 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon, type IconName } from '@/components/icon';
-import { SampleArtwork } from '@/components/media-tile';
-import type { SampleAsset } from '@/demo/sample-library';
+import { MediaArtwork } from '@/components/media-artwork';
+import type { MediaItem } from '@/features/media/registry';
 import { gutter, onMedia, radius, spacing, useTheme } from '@/theme';
 
 type ThumbStripProps = {
-  photos: readonly SampleAsset[];
+  photos: readonly MediaItem[];
   currentIndex: number;
   keeperId: string;
   selectedIds: ReadonlySet<string>;
@@ -64,7 +64,7 @@ export function ThumbStrip({
             style={[styles.thumb, { borderColor: current ? colors.accent : 'transparent' }]}
           >
             <View style={styles.inner}>
-              <SampleArtwork asset={photo} glyphSize={18} />
+              <MediaArtwork item={photo} glyphSize={18} />
             </View>
             {marker ? (
               <View style={[styles.marker, { backgroundColor: colors.accentFill }]}>

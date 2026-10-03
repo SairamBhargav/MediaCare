@@ -11,11 +11,24 @@
  * each asset counted once even when several findings include it
  * (docs/PRIVACY_AND_SAFETY.md, honest storage accounting).
  */
-export type GroupCategory = 'similar' | 'exact';
-export type ItemCategory = 'blurry' | 'large';
+/**
+ * Categories. Sample data uses similar/exact/blurry/large. Real-library
+ * scans in Phase 2 only produce categories that metadata can support
+ * honestly: moments (taken seconds apart), screenshots, long videos.
+ */
+export type GroupCategory = 'similar' | 'exact' | 'moments';
+export type ItemCategory = 'blurry' | 'large' | 'screenshots' | 'long-videos';
 export type FindingCategory = GroupCategory | ItemCategory;
 
-export const CATEGORY_ORDER: readonly FindingCategory[] = ['similar', 'exact', 'blurry', 'large'];
+export const CATEGORY_ORDER: readonly FindingCategory[] = [
+  'similar',
+  'moments',
+  'exact',
+  'blurry',
+  'screenshots',
+  'large',
+  'long-videos',
+];
 
 export type GroupFinding = {
   readonly kind: 'group';
@@ -148,4 +161,12 @@ export function findingsWithin(
   checkedIds: ReadonlySet<string>,
 ): Finding[] {
   return findings.filter((finding) => involvedIds(finding).every((id) => checkedIds.has(id)));
+}
+
+/** Distinct photos that could be removed across all findings, after review choices. */
+export function candidateCount(
+  findings: readonly Finding[],
+  adjustments: ReviewAdjustments = NO_ADJUSTMENTS,
+): number {
+  return new Set(findings.flatMap((finding) => candidateIds(finding, adjustments))).size;
 }

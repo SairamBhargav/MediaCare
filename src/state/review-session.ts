@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 
 import type { GroupFinding, ReviewAdjustments } from '@/domain/findings';
+import { useCatalog } from '@/state/catalog';
 import {
   createReviewSelection,
   setKeeper,
@@ -28,9 +29,15 @@ type ReviewSession = {
   toggleItem: (assetId: string) => void;
   toggleProtected: (assetId: string) => void;
   skip: (groupId: string) => void;
+  /** Start a review with these photos protected (app protection and Photos favorites). */
+  seedProtected: (ids: Iterable<string>) => void;
   unskip: (groupId: string) => void;
   reset: () => void;
 };
+
+function isSampleId(id: string): boolean {
+  return id.startsWith('sample-');
+}
 
 const empty = {
   selections: {},
@@ -66,7 +73,11 @@ export const useReviewSession = create<ReviewSession>()((set, get) => ({
     if (get().protectedIds.has(assetId)) return;
     set((state) => ({ itemSelectedIds: toggled(state.itemSelectedIds, assetId) }));
   },
-  toggleProtected: (assetId) =>
+  seedProtected: (ids) => set({ protectedIds: new Set(ids) }),
+  toggleProtected: (assetId) => {
+    const protecting = !get().protectedIds.has(assetId);
+    // Real photos keep their protection across scans and launches.
+    if (!isSampleId(assetId)) useCatalog.getState().setProtected(assetId, protecting);
     set((state) => {
       const protecting = !state.protectedIds.has(assetId);
       if (!protecting) return { protectedIds: withoutId(state.protectedIds, assetId) };
@@ -82,7 +93,8 @@ export const useReviewSession = create<ReviewSession>()((set, get) => ({
         selections,
         itemSelectedIds: withoutId(state.itemSelectedIds, assetId),
       };
-    }),
+    });
+  },
   skip: (groupId) =>
     set((state) => {
       const { [groupId]: _dropped, ...selections } = state.selections;

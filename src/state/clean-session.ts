@@ -1,17 +1,25 @@
 import { AccessibilityInfo } from 'react-native';
 import { create } from 'zustand';
 
+import { loadVersions, markSeen, removeUnseen, saveScanJob, upsertAssets } from '@/db/catalog-repo';
 import { sampleFindings, sampleLibrary } from '@/demo/sample-library';
-import { runSampleScan, type ScanControls } from '@/demo/sample-scan';
+import { runSampleScan } from '@/demo/sample-scan';
 import { findingsWithin, type Finding } from '@/domain/findings';
 import { isActive, reduceJob, startJob, type Job, type JobEvent } from '@/domain/jobs';
+import type { PhotoItem } from '@/domain/media';
+import { favoriteIds, findRealFindings } from '@/domain/real-findings';
+import { getSubtypes, listAllMetadata, toRecord } from '@/services/media/photo-library';
+import { runLibraryScan } from '@/services/scan/library-scan';
 import { haptics } from '@/utils/haptics';
 
+import { hasPhotoAccess, useCatalog } from './catalog';
 import { useReviewSession } from './review-session';
 
 /** New or cleared results invalidate review choices made on the old ones. */
-function clearReview() {
-  useReviewSession.getState().reset();
+function clearReview(protectedIds?: Iterable<string>) {
+  const review = useReviewSession.getState();
+  review.reset();
+  if (protectedIds) review.seedProtected(protectedIds);
 }
 
 /**
@@ -19,24 +27,31 @@ function clearReview() {
  * visible states: complete (analyzed === total), partial (analyzed < total,
  * e.g. a stopped scan) and no findings (empty `findings`). While a scan runs,
  * the active `job` is shown on top of this.
+ *
+ * `sample: true` results come from the synthetic sample library and show
+ * illustrative sizes. `sample: false` results come from the real catalog and
+ * never claim sizes, which aren't measured in Phase 2.
  */
 export type CleanHomeState =
   | { readonly status: 'not-scanned' }
   | {
       readonly status: 'results';
-      /** Always true in Phase 1. Real results arrive in Phase 2–3. */
-      readonly sample: true;
+      readonly sample: boolean;
       readonly analyzed: number;
       readonly total: number;
       readonly findings: readonly Finding[];
     }
   | { readonly status: 'failed'; readonly message: string };
 
+type ScanHandle = { pause: () => void; resume: () => void; cancel: () => void };
+
 type CleanSession = {
   state: CleanHomeState;
   /** The current or just-finished scan. Drives the job bar and scan sheet. */
   job: Job | null;
   startSampleScan: () => void;
+  /** Real scan of the accessible Photos library; asks for access first if needed. */
+  startLibraryScan: () => Promise<void>;
   pauseScan: () => void;
   resumeScan: () => void;
   cancelScan: () => void;
@@ -44,6 +59,8 @@ type CleanSession = {
   dismissJob: () => void;
   /** Jump straight to complete sample results (tests and dev gallery). */
   showSampleResults: () => void;
+  /** Show results computed from the catalog already on this iPhone. */
+  showCatalogResults: () => void;
   reset: () => void;
 };
 
@@ -58,8 +75,8 @@ export const sampleResultsState: Extract<CleanHomeState, { status: 'results' }> 
 /** A finished job stays visible in the job bar this long, then clears itself. */
 export const FINISHED_JOB_VISIBLE_MS = 4000;
 
-/** Results for the first `processed` photos in scan order (newest first). */
-function partialResults(processed: number): CleanHomeState {
+/** Sample results for the first `processed` photos in scan order (newest first). */
+function partialSampleResults(processed: number): CleanHomeState {
   if (processed <= 0) return { status: 'not-scanned' };
   const checked = new Set(sampleLibrary.slice(0, processed).map((asset) => asset.id));
   return {
@@ -71,10 +88,25 @@ function partialResults(processed: number): CleanHomeState {
   };
 }
 
-let controls: ScanControls | null = null;
+function catalogResults(
+  items: readonly PhotoItem[],
+  analyzed: number,
+  total: number,
+): CleanHomeState {
+  return { status: 'results', sample: false, analyzed, total, findings: findRealFindings(items) };
+}
+
+function catalogProtection(items: readonly PhotoItem[]): Set<string> {
+  return new Set([...useCatalog.getState().protectedIds, ...favoriteIds(items)]);
+}
+
+let controls: ScanHandle | null = null;
 let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** Session-only: sample results are not persisted and never mix with real data. */
+/**
+ * Session state for the Clean tab. Sample results are never persisted and
+ * never mix with real data; real results are recomputed from the catalog.
+ */
 export const useCleanSession = create<CleanSession>()((set, get) => {
   const scheduleDismiss = (jobId: string) => {
     if (dismissTimer) clearTimeout(dismissTimer);
@@ -83,42 +115,115 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     }, FINISHED_JOB_VISIBLE_MS);
   };
 
-  const onEvent = (jobId: string) => (event: JobEvent) => {
-    const current = get().job;
-    if (!current || current.id !== jobId) return;
-    const job = reduceJob(current, event);
-    if (job === current) return;
+  /** Applies job events; `finish` runs once when the job reaches a final state. */
+  const onEvent =
+    (jobId: string, finish: (job: Job) => void | Promise<void>) => (event: JobEvent) => {
+      const current = get().job;
+      if (!current || current.id !== jobId) return;
+      const job = reduceJob(current, event);
+      if (job === current) return;
+      set({ job });
+      if (!isActive(job)) {
+        controls = null;
+        const finished = finish(job);
+        if (finished instanceof Promise) finished.finally(() => scheduleDismiss(job.id));
+        else scheduleDismiss(job.id);
+      }
+    };
 
+  const finishSample = (job: Job) => {
     if (job.status === 'succeeded') {
-      controls = null;
       clearReview();
-      set({ job, state: sampleResultsState });
+      set({ state: sampleResultsState });
       haptics.success();
       AccessibilityInfo.announceForAccessibility('Sample scan complete');
-      scheduleDismiss(job.id);
     } else if (job.status === 'canceled') {
-      controls = null;
       clearReview();
-      set({ job, state: partialResults(job.processed) });
+      set({ state: partialSampleResults(job.processed) });
       AccessibilityInfo.announceForAccessibility(
         job.processed > 0 ? 'Scan stopped. Results so far are shown.' : 'Scan stopped.',
       );
-      scheduleDismiss(job.id);
-    } else {
-      set({ job });
+    }
+  };
+
+  const finishLibrary = async (job: Job) => {
+    await useCatalog.getState().load();
+    const { items } = useCatalog.getState();
+    if (job.status === 'failed') {
+      haptics.error();
+      AccessibilityInfo.announceForAccessibility('Scan stopped because of an error');
+      // With nothing cataloged there are no results to fall back on.
+      if (items.length === 0) {
+        set({
+          state: { status: 'failed', message: job.error ?? 'The scan stopped unexpectedly.' },
+        });
+        return;
+      }
+    }
+    clearReview(catalogProtection(items));
+    const total = job.total ?? items.length;
+    set({
+      state:
+        items.length === 0 && job.status !== 'succeeded'
+          ? { status: 'not-scanned' }
+          : catalogResults(items, job.status === 'succeeded' ? total : job.processed, total),
+    });
+    if (job.status === 'succeeded') {
+      haptics.success();
+      AccessibilityInfo.announceForAccessibility('Library scan complete');
+    } else if (job.status === 'canceled') {
+      AccessibilityInfo.announceForAccessibility('Scan stopped. Results so far are shown.');
     }
   };
 
   return {
     state: { status: 'not-scanned' },
     job: null,
+
     startSampleScan: () => {
       if (isActive(get().job)) return;
       if (dismissTimer) clearTimeout(dismissTimer);
       const job = startJob(`sample-scan-${Date.now()}`, true);
       set({ job });
-      controls = runSampleScan(sampleLibrary.length, onEvent(job.id));
+      controls = runSampleScan(sampleLibrary.length, onEvent(job.id, finishSample));
     },
+
+    startLibraryScan: async () => {
+      if (isActive(get().job)) return;
+      const catalog = useCatalog.getState();
+      let access = catalog.access;
+      if (!hasPhotoAccess(access)) access = await catalog.requestAccess();
+      if (!hasPhotoAccess(access)) return;
+      if (dismissTimer) clearTimeout(dismissTimer);
+
+      const job = startJob(`library-scan-${Date.now()}`, false);
+      const startedAt = Date.now();
+      set({ job });
+      controls = runLibraryScan(
+        job.id,
+        {
+          listAllMetadata,
+          getSubtypes,
+          toRecord,
+          loadVersions,
+          upsertAssets,
+          markSeen,
+          removeUnseen,
+          checkpoint: ({ status, processed, total, error }) =>
+            saveScanJob({
+              id: job.id,
+              status,
+              processed,
+              total,
+              startedAt,
+              finishedAt: status === 'running' || status === 'paused' ? null : Date.now(),
+              error: error ?? null,
+            }),
+        },
+        onEvent(job.id, finishLibrary),
+      );
+    },
+
     pauseScan: () => controls?.pause(),
     resumeScan: () => controls?.resume(),
     cancelScan: () => controls?.cancel(),
@@ -128,6 +233,15 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     showSampleResults: () => {
       clearReview();
       set({ state: sampleResultsState });
+    },
+    showCatalogResults: () => {
+      const { items, lastScan } = useCatalog.getState();
+      if (items.length === 0) return;
+      clearReview(catalogProtection(items));
+      const total = lastScan?.total ?? items.length;
+      const analyzed =
+        lastScan?.status === 'succeeded' ? total : (lastScan?.processed ?? items.length);
+      set({ state: catalogResults(items, Math.min(analyzed, total), total) });
     },
     reset: () => {
       controls?.cancel();

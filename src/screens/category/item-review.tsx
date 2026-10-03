@@ -2,8 +2,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { MediaTile } from '@/components/media-tile';
-import { getSampleAsset } from '@/demo/sample-library';
-import { formatBytes } from '@/domain/bytes';
+import { getMediaItem } from '@/features/media/registry';
+import { formatSize } from '@/domain/bytes';
 import type { ItemFinding } from '@/domain/findings';
 import { useReviewSession } from '@/state/review-session';
 import { spacing } from '@/theme';
@@ -20,7 +20,7 @@ export function ItemReview({ findings }: { findings: readonly ItemFinding[] }) {
     <View style={styles.section}>
       <View style={styles.grid}>
         {findings.map((finding) => {
-          const asset = getSampleAsset(finding.assetId);
+          const asset = getMediaItem(finding.assetId);
           const isProtected = protectedIds.has(asset.id);
           return (
             <View key={finding.id} style={styles.cell}>
@@ -41,7 +41,9 @@ export function ItemReview({ findings }: { findings: readonly ItemFinding[] }) {
               <View style={styles.caption}>
                 <AppText variant="footnote">{finding.reason}</AppText>
                 <AppText variant="caption" color="secondaryLabel" style={styles.numbers}>
-                  {formatBytes(asset.bytes)} · sample size
+                  {asset.source === 'sample'
+                    ? `${formatSize(asset.bytes)} · sample size`
+                    : formatSize(asset.bytes)}
                 </AppText>
               </View>
             </View>

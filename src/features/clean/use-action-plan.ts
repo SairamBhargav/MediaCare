@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { sampleBytes } from '@/demo/sample-library';
+import { knownBytes } from '@/features/media/registry';
 import { buildActionPlan, type ActionPlan } from '@/domain/action-plan';
 import { useCleanSession } from '@/state/clean-session';
 import { useReviewAdjustments, useReviewSession } from '@/state/review-session';
@@ -20,7 +20,7 @@ export function useActionPlan(): ActionPlan {
     return buildActionPlan(
       findings,
       { ...adjustments, groupSelections, itemSelectedIds },
-      sampleBytes,
+      knownBytes,
     );
   }, [state, selections, itemSelectedIds, adjustments]);
 }

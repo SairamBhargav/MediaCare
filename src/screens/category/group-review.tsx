@@ -7,7 +7,7 @@ import { Icon } from '@/components/icon';
 import { MediaTile } from '@/components/media-tile';
 import { SectionHeader } from '@/components/section-header';
 import { Surface } from '@/components/surface';
-import { getSampleAsset } from '@/demo/sample-library';
+import { getMediaItem } from '@/features/media/registry';
 import type { GroupFinding } from '@/domain/findings';
 import {
   canSelect,
@@ -33,7 +33,7 @@ export function GroupReview({ group }: { group: GroupFinding }) {
   const reviewGroup = toReviewGroup(group, review);
   const selection = selectionFor(group, review);
   const skipped = review.skippedIds.has(group.id);
-  const members = group.memberIds.map(getSampleAsset);
+  const members = group.memberIds.map(getMediaItem);
   const selectableIds = group.memberIds.filter((id) => canSelect(reviewGroup, selection, id));
   const allSelected =
     selectableIds.length > 0 && selectableIds.every((id) => selection.selectedIds.has(id));

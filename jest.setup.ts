@@ -35,3 +35,43 @@ jest.mock(
   'react-native-safe-area-context',
   () => require('react-native-safe-area-context/jest/mock').default,
 );
+
+// Photos library and SQLite are native. Tests that need behavior use injected
+// fakes (see library-scan.test.ts); everything else gets inert stand-ins:
+// no access, an empty library, an empty database.
+jest.mock('expo-media-library', () => ({
+  AssetField: { CREATION_TIME: 'creationTime', MEDIA_TYPE: 'mediaType' },
+  MediaType: { IMAGE: 'image', VIDEO: 'video', AUDIO: 'audio', UNKNOWN: 'unknown' },
+  Query: jest.fn(),
+  Asset: jest.fn(),
+  getPermissionsAsync: jest.fn(async () => ({
+    granted: false,
+    canAskAgain: true,
+    status: 'undetermined',
+  })),
+  requestPermissionsAsync: jest.fn(async () => ({
+    granted: false,
+    canAskAgain: false,
+    status: 'denied',
+  })),
+  presentPermissionsPicker: jest.fn(async () => {}),
+  addListener: jest.fn(() => ({ remove: jest.fn() })),
+}));
+
+jest.mock('expo-sqlite', () => {
+  const db: Record<string, unknown> = {};
+  Object.assign(db, {
+    execAsync: jest.fn(async () => {}),
+    runAsync: jest.fn(async () => ({ changes: 0, lastInsertRowId: 0 })),
+    getAllAsync: jest.fn(async () => []),
+    getFirstAsync: jest.fn(async () => ({ user_version: 1 })),
+    withExclusiveTransactionAsync: jest.fn(async (task: (txn: unknown) => Promise<void>) => {
+      await task(db);
+    }),
+    prepareAsync: jest.fn(async () => ({
+      executeAsync: jest.fn(async () => ({})),
+      finalizeAsync: jest.fn(async () => {}),
+    })),
+  });
+  return { openDatabaseAsync: jest.fn(async () => db) };
+});

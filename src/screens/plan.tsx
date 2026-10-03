@@ -7,11 +7,11 @@ import { Button } from '@/components/button';
 import { ChromeBackground } from '@/components/chrome-background';
 import { EmptyState } from '@/components/empty-state';
 import { Icon } from '@/components/icon';
-import { SampleArtwork } from '@/components/media-tile';
+import { MediaArtwork } from '@/components/media-artwork';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
-import { getSampleAsset } from '@/demo/sample-library';
-import { formatBytes } from '@/domain/bytes';
+import { getMediaItem } from '@/features/media/registry';
+import { formatBytes, formatSize } from '@/domain/bytes';
 import { CATEGORY_META, countLabel } from '@/features/clean/category-meta';
 import { useActionPlan } from '@/features/clean/use-action-plan';
 import { gutter, radius, spacing, useTheme } from '@/theme';
@@ -99,7 +99,7 @@ export function PlanScreen() {
                   <View style={styles.flex}>
                     <AppText variant="subhead">Keeping 1 photo</AppText>
                     <AppText variant="footnote" color="secondaryLabel">
-                      {getSampleAsset(keeperId).description}
+                      {getMediaItem(keeperId).description}
                     </AppText>
                   </View>
                 </View>
@@ -121,7 +121,7 @@ export function PlanScreen() {
                     <View style={styles.flex}>
                       <AppText variant="subhead">{CATEGORY_META[finding.category].title}</AppText>
                       <AppText variant="footnote" color="secondaryLabel">
-                        {finding.reason} · {formatBytes(getSampleAsset(finding.assetId).bytes)}
+                        {finding.reason} · {formatSize(getMediaItem(finding.assetId).bytes)}
                       </AppText>
                     </View>
                   </View>
@@ -158,7 +158,7 @@ export function PlanScreen() {
 
 function Thumb({ id, showSize = false }: { id: string; showSize?: boolean }) {
   const { colors } = useTheme();
-  const asset = getSampleAsset(id);
+  const asset = getMediaItem(id);
   return (
     <View style={styles.thumbWrap}>
       <View
@@ -167,11 +167,11 @@ function Thumb({ id, showSize = false }: { id: string; showSize?: boolean }) {
         accessibilityRole="image"
         accessibilityLabel={asset.description}
       >
-        <SampleArtwork asset={asset} glyphSize={20} />
+        <MediaArtwork item={asset} glyphSize={20} />
       </View>
       {showSize ? (
         <AppText variant="caption" color="secondaryLabel" style={styles.numbers}>
-          {formatBytes(asset.bytes)}
+          {formatSize(asset.bytes)}
         </AppText>
       ) : null}
     </View>

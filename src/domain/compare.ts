@@ -3,11 +3,21 @@ import { formatBytes } from './bytes';
 /** What the compare view needs to know about one photo. */
 export type ComparablePhoto = {
   readonly id: string;
-  readonly capturedAt: string;
+  readonly capturedAt: string | null;
+  /** Exact instant when known; preferred over the ISO string, which drops milliseconds. */
+  readonly capturedMs?: number | null;
   readonly width: number;
   readonly height: number;
-  readonly bytes: number;
+  /** Null when not measured; then no size difference is claimed. */
+  readonly bytes: number | null;
 };
+
+function instantOf(photo: ComparablePhoto): number | null {
+  if (photo.capturedMs !== undefined && photo.capturedMs !== null) return photo.capturedMs;
+  if (!photo.capturedAt) return null;
+  const ms = Date.parse(photo.capturedAt);
+  return Number.isFinite(ms) ? ms : null;
+}
 
 /**
  * Plain-language differences between a photo and the keeper, e.g.
@@ -18,15 +28,22 @@ export function describeDifferences(photo: ComparablePhoto, keeper: ComparablePh
   if (photo.id === keeper.id) return ['This is the keeper'];
   const lines: string[] = [];
 
-  const seconds = Math.round((Date.parse(photo.capturedAt) - Date.parse(keeper.capturedAt)) / 1000);
+  const photoAt = instantOf(photo);
+  const keeperAt = instantOf(keeper);
+  const seconds =
+    photoAt !== null && keeperAt !== null ? Math.round((photoAt - keeperAt) / 1000) : Number.NaN;
+  const subSecond = photoAt !== null && keeperAt !== null ? photoAt - keeperAt : 0;
   if (Number.isFinite(seconds)) {
-    if (seconds === 0) lines.push('Taken at the same moment');
+    if (seconds === 0 && subSecond === 0) lines.push('Taken at the same moment');
+    else if (seconds === 0) lines.push(`Less than a second ${subSecond > 0 ? 'later' : 'earlier'}`);
     else lines.push(`${formatDuration(Math.abs(seconds))} ${seconds > 0 ? 'later' : 'earlier'}`);
   }
 
-  const bytes = photo.bytes - keeper.bytes;
-  if (bytes === 0) lines.push('Same file size');
-  else lines.push(`${formatBytes(Math.abs(bytes))} ${bytes > 0 ? 'larger' : 'smaller'}`);
+  if (photo.bytes !== null && keeper.bytes !== null) {
+    const bytes = photo.bytes - keeper.bytes;
+    if (bytes === 0) lines.push('Same file size');
+    else lines.push(`${formatBytes(Math.abs(bytes))} ${bytes > 0 ? 'larger' : 'smaller'}`);
+  }
 
   lines.push(
     photo.width === keeper.width && photo.height === keeper.height

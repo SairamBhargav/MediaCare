@@ -7,11 +7,11 @@ import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { EmptyState } from '@/components/empty-state';
 import { IconButton } from '@/components/icon-button';
-import { SampleArtwork } from '@/components/media-tile';
+import { MediaArtwork } from '@/components/media-artwork';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
-import { getSampleAsset, type SampleAsset } from '@/demo/sample-library';
-import { formatBytes } from '@/domain/bytes';
+import { getMediaItem, type MediaItem } from '@/features/media/registry';
+import { formatSize } from '@/domain/bytes';
 import { describeDifferences } from '@/domain/compare';
 import type { GroupFinding } from '@/domain/findings';
 import { toggleSelected } from '@/domain/review-selection';
@@ -103,8 +103,8 @@ function GroupReviewBody({
 
   const reviewGroup = toReviewGroup(group, review);
   const selection = selectionFor(group, review);
-  const photos = group.memberIds.map(getSampleAsset);
-  const keeper = getSampleAsset(selection.keeperId);
+  const photos = group.memberIds.map(getMediaItem);
+  const keeper = getMediaItem(selection.keeperId);
   const firstOther = Math.max(
     0,
     photos.findIndex((photo) => photo.id !== selection.keeperId),
@@ -214,7 +214,9 @@ function GroupReviewBody({
                 {status}
               </AppText>
               <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
-                {formatBytes(photo.bytes)} · sample size
+                {photo.source === 'sample'
+                  ? `${formatSize(photo.bytes)} · sample size`
+                  : formatSize(photo.bytes)}
               </AppText>
             </View>
             {isKeeper ? (
@@ -297,8 +299,8 @@ function SideBySide({
   photo,
   width,
 }: {
-  keeper: SampleAsset;
-  photo: SampleAsset;
+  keeper: MediaItem;
+  photo: MediaItem;
   width: number;
 }) {
   const { colors } = useTheme();
@@ -323,7 +325,7 @@ function SideBySide({
               },
             ]}
           >
-            <SampleArtwork asset={asset} glyphSize={40} />
+            <MediaArtwork item={asset} glyphSize={40} />
           </View>
           <AppText variant="caption" color="secondaryLabel">
             {label}
