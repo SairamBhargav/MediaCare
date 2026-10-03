@@ -25,7 +25,7 @@ import {
  * (metadata only, a few hundred bytes per item), app-level protection, the
  * last scan, current photo access, and whether Photos changed since.
  */
-type CatalogState = {
+export type CatalogState = {
   access: PhotoAccess | 'unknown';
   loaded: boolean;
   items: readonly PhotoItem[];

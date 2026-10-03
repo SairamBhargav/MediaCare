@@ -1,7 +1,7 @@
 import { defaultPreferences, sanitizePreferences } from './preferences-schema';
 
 test('valid stored preferences are kept as-is', () => {
-  const stored = { appearance: 'dark', lessMotion: true, haptics: false };
+  const stored = { appearance: 'dark', lessMotion: true, haptics: false, onboardingSeen: true };
   expect(sanitizePreferences(stored)).toEqual(stored);
 });
 
@@ -17,7 +17,14 @@ test('invalid fields fall back individually; valid ones survive', () => {
     appearance: 'system',
     lessMotion: false,
     haptics: false,
+    onboardingSeen: false,
   });
+});
+
+test('preferences saved before onboarding existed show the introduction once', () => {
+  const beforeOnboarding = { appearance: 'dark', lessMotion: false, haptics: true };
+  expect(sanitizePreferences(beforeOnboarding).onboardingSeen).toBe(false);
+  expect(sanitizePreferences(beforeOnboarding).appearance).toBe('dark');
 });
 
 test('unknown extra fields are dropped', () => {

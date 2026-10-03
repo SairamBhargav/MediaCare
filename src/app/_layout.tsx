@@ -93,6 +93,11 @@ export default function RootLayout() {
               sheetCornerRadius: radius.sheet,
             }}
           />
+          <Stack.Screen
+            name="welcome"
+            options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }}
+          />
+          <Stack.Screen name="access" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="gallery" options={{ title: 'Components & Motion' }} />
           <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
         </Stack>

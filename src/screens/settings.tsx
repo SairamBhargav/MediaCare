@@ -150,6 +150,25 @@ export function SettingsScreen() {
             </FieldGroup.SectionFooter>
           </FieldGroup.Section>
 
+          <FieldGroup.Section title="Help">
+            <NativeButton
+              variant="text"
+              label="Show introduction again"
+              onPress={() => {
+                router.back();
+                router.push('/welcome');
+              }}
+            />
+            <NativeButton
+              variant="text"
+              label="About photo access"
+              onPress={() => {
+                router.back();
+                router.push('/access');
+              }}
+            />
+          </FieldGroup.Section>
+
           {__DEV__ ? (
             <FieldGroup.Section title="Developer">
               <NativeButton

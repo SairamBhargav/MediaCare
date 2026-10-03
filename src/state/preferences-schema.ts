@@ -11,6 +11,8 @@ export type Preferences = {
   /** In-app "less motion". Can only reduce motion, never override the system setting. */
   lessMotion: boolean;
   haptics: boolean;
+  /** The first-run introduction was finished or skipped (P1-ONB-003). */
+  onboardingSeen: boolean;
 };
 
 export const PREFERENCES_VERSION = 1;
@@ -19,6 +21,7 @@ export const defaultPreferences: Preferences = {
   appearance: 'system',
   lessMotion: false,
   haptics: true,
+  onboardingSeen: false,
 };
 
 const APPEARANCES: readonly AppearancePreference[] = ['system', 'light', 'dark'];
@@ -36,5 +39,9 @@ export function sanitizePreferences(input: unknown): Preferences {
     lessMotion:
       typeof record.lessMotion === 'boolean' ? record.lessMotion : defaultPreferences.lessMotion,
     haptics: typeof record.haptics === 'boolean' ? record.haptics : defaultPreferences.haptics,
+    onboardingSeen:
+      typeof record.onboardingSeen === 'boolean'
+        ? record.onboardingSeen
+        : defaultPreferences.onboardingSeen,
   };
 }

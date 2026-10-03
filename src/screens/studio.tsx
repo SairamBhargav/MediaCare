@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppText } from '@/components/app-text';
+import { scanLibrary } from '@/features/media/start-scan';
 import { Button } from '@/components/button';
 import { EmptyState } from '@/components/empty-state';
 import { MediaTile } from '@/components/media-tile';
@@ -13,7 +14,6 @@ import { listDerivatives, type DerivativeRow } from '@/db/catalog-repo';
 import { formatBytes } from '@/domain/bytes';
 import { savings } from '@/domain/compress';
 import { hasPhotoAccess, useCatalog } from '@/state/catalog';
-import { useCleanSession } from '@/state/clean-session';
 import { gutter, spacing } from '@/theme';
 
 const RECENT = 9;
@@ -58,12 +58,7 @@ export function StudioScreen() {
               <Button
                 title={hasPhotoAccess(access) ? 'Scan my library' : 'Allow access and scan'}
                 icon="scan"
-                onPress={() => {
-                  useCleanSession
-                    .getState()
-                    .startLibraryScan()
-                    .catch(() => {});
-                }}
+                onPress={scanLibrary}
               />
             }
           />

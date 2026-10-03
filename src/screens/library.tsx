@@ -4,6 +4,7 @@ import { SectionList, StyleSheet, View, useWindowDimensions } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/app-text';
+import { scanLibrary } from '@/features/media/start-scan';
 import { Button } from '@/components/button';
 import { ChromeBackground } from '@/components/chrome-background';
 import { MediaTile } from '@/components/media-tile';
@@ -79,13 +80,6 @@ export function LibraryScreen() {
     retain(new Set(source.map((item) => item.id)));
   }, [source, retain]);
 
-  const scan = () => {
-    useCleanSession
-      .getState()
-      .startLibraryScan()
-      .catch(() => {});
-  };
-
   const banner = showingReal ? (
     access === 'limited' ? (
       <View style={styles.bannerRow}>
@@ -130,7 +124,7 @@ export function LibraryScreen() {
         <Button
           title={hasPhotoAccess(access) ? 'Scan my library' : 'Allow access and scan'}
           icon="scan"
-          onPress={scan}
+          onPress={scanLibrary}
           block
         />
       ) : null}

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 
 import { IconButton } from '@/components/icon-button';
+import { scanLibrary } from '@/features/media/start-scan';
 import { Screen } from '@/components/screen';
 import { useActionPlan } from '@/features/clean/use-action-plan';
 import { openSettings } from '@/services/media/photo-library';
@@ -35,9 +36,7 @@ export function CleanScreen() {
         access={access}
         job={job}
         actions={{
-          onScanLibrary: () => {
-            session.startLibraryScan().catch(() => {});
-          },
+          onScanLibrary: scanLibrary,
           onSampleScan: session.startSampleScan,
           onManageSelection: () => {
             useCatalog

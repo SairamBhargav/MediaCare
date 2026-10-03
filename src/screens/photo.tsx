@@ -430,7 +430,7 @@ function InfoPanel({
       ];
 
   return (
-    <Surface style={[styles.info, { maxHeight }]}>
+    <Surface padded={false} style={[styles.info, { maxHeight }]}>
       <ScrollView contentContainerStyle={styles.infoContent}>
         <View style={styles.pills}>
           {kinds.map((kind) => (
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
   },
   toolbar: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   toolbarButton: { flexGrow: 1, borderRadius: radius.full },
-  info: { padding: 0, overflow: 'hidden' },
+  info: { overflow: 'hidden' },
   infoContent: { gap: spacing.xs, padding: spacing.lg },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
