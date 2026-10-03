@@ -3,12 +3,14 @@ import { router } from 'expo-router';
 import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
 import { useCleanSession } from '@/state/clean-session';
+import { useReviewAdjustments } from '@/state/review-session';
 
 import { CleanContent } from './clean-content';
 
 export function CleanScreen() {
   const state = useCleanSession((session) => session.state);
   const job = useCleanSession((session) => session.job);
+  const adjustments = useReviewAdjustments();
   const { startSampleScan, pauseScan, resumeScan, cancelScan, reset } = useCleanSession.getState();
 
   return (
@@ -28,6 +30,7 @@ export function CleanScreen() {
         onStartScan={startSampleScan}
         onReset={reset}
         scanActions={{ onPause: pauseScan, onResume: resumeScan, onStop: cancelScan }}
+        adjustments={adjustments}
       />
     </Screen>
   );

@@ -7,6 +7,13 @@ import { findingsWithin, type Finding } from '@/domain/findings';
 import { isActive, reduceJob, startJob, type Job, type JobEvent } from '@/domain/jobs';
 import { haptics } from '@/utils/haptics';
 
+import { useReviewSession } from './review-session';
+
+/** New or cleared results invalidate review choices made on the old ones. */
+function clearReview() {
+  useReviewSession.getState().reset();
+}
+
 /**
  * What the Clean home shows when no scan is running. `results` covers three
  * visible states: complete (analyzed === total), partial (analyzed < total,
@@ -84,12 +91,14 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
 
     if (job.status === 'succeeded') {
       controls = null;
+      clearReview();
       set({ job, state: sampleResultsState });
       haptics.success();
       AccessibilityInfo.announceForAccessibility('Sample scan complete');
       scheduleDismiss(job.id);
     } else if (job.status === 'canceled') {
       controls = null;
+      clearReview();
       set({ job, state: partialResults(job.processed) });
       AccessibilityInfo.announceForAccessibility(
         job.processed > 0 ? 'Scan stopped. Results so far are shown.' : 'Scan stopped.',
@@ -116,11 +125,15 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     dismissJob: () => {
       if (!isActive(get().job)) set({ job: null });
     },
-    showSampleResults: () => set({ state: sampleResultsState }),
+    showSampleResults: () => {
+      clearReview();
+      set({ state: sampleResultsState });
+    },
     reset: () => {
       controls?.cancel();
       controls = null;
       if (dismissTimer) clearTimeout(dismissTimer);
+      clearReview();
       set({ state: { status: 'not-scanned' }, job: null });
     },
   };

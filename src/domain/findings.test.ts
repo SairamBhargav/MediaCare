@@ -67,3 +67,33 @@ test('partial scans only report findings whose photos were all checked', () => {
   // g1 needs c (unchecked), g2 needs e (unchecked); the blurry b and large f qualify.
   expect(findingsWithin(findings, checked).map((finding) => finding.id)).toEqual(['i1', 'i2']);
 });
+
+describe('review adjustments', () => {
+  const [similar] = findings;
+
+  test('protecting a photo removes it from every total', () => {
+    const adjustments = { protectedIds: new Set(['b']) };
+    expect(candidateIds(similar, adjustments)).toEqual(['c']);
+    // b was counted via both similar and blurry; now neither counts it.
+    expect(totalReclaimableBytes(findings, bytesOf, adjustments)).toBe(60 + 40 + 900);
+  });
+
+  test('a skipped finding contributes nothing', () => {
+    const adjustments = { skippedIds: new Set(['g1']) };
+    expect(candidateIds(similar, adjustments)).toEqual([]);
+    // b is still a candidate through the blurry finding.
+    expect(totalReclaimableBytes(findings, bytesOf, adjustments)).toBe(80 + 40 + 900);
+  });
+
+  test('a keeper override swaps which photo is kept', () => {
+    const adjustments = { keeperOverrides: { g1: 'c' } };
+    expect(candidateIds(similar, adjustments)).toEqual(['a', 'b']);
+    const [summary] = summarizeCategories(findings, bytesOf, adjustments);
+    expect(summary.previewAssetIds[0]).toBe('c');
+    expect(summary.reclaimableBytes).toBe(100 + 80);
+  });
+
+  test('an override naming a non-member is ignored', () => {
+    expect(candidateIds(similar, { keeperOverrides: { g1: 'zzz' } })).toEqual(['b', 'c']);
+  });
+});

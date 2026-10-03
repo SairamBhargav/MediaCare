@@ -10,7 +10,11 @@ import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
 import { sampleBytes } from '@/demo/sample-library';
 import { formatBytes } from '@/domain/bytes';
-import { summarizeCategories, totalReclaimableBytes } from '@/domain/findings';
+import {
+  summarizeCategories,
+  totalReclaimableBytes,
+  type ReviewAdjustments,
+} from '@/domain/findings';
 import { isActive, type Job } from '@/domain/jobs';
 import type { CleanHomeState } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
@@ -25,6 +29,8 @@ type CleanContentProps = {
   onStartScan: () => void;
   onReset: () => void;
   scanActions?: ScanActions;
+  /** Review choices (protected, skipped, keeper changes) that totals must respect. */
+  adjustments?: ReviewAdjustments;
 };
 
 const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, onStop: () => {} };
@@ -39,6 +45,7 @@ export function CleanContent({
   onStartScan,
   onReset,
   scanActions = NO_SCAN_ACTIONS,
+  adjustments = {},
 }: CleanContentProps) {
   if (isActive(job)) return <ScanningCard job={job} {...scanActions} />;
 
@@ -58,7 +65,7 @@ export function CleanContent({
         </Surface>
       );
     case 'results':
-      return <Results state={state} onReset={onReset} />;
+      return <Results state={state} adjustments={adjustments} onReset={onReset} />;
   }
 }
 
@@ -86,14 +93,17 @@ function NotScanned({ onStartScan }: { onStartScan: () => void }) {
 
 function Results({
   state,
+  adjustments,
   onReset,
 }: {
   state: Extract<CleanHomeState, { status: 'results' }>;
+  adjustments: ReviewAdjustments;
   onReset: () => void;
 }) {
   const { width } = useWindowDimensions();
-  const summaries = summarizeCategories(state.findings, sampleBytes);
-  const total = totalReclaimableBytes(state.findings, sampleBytes);
+  const summaries = summarizeCategories(state.findings, sampleBytes, adjustments);
+  const total = totalReclaimableBytes(state.findings, sampleBytes, adjustments);
+  const setAside = (adjustments.protectedIds?.size ?? 0) + (adjustments.skippedIds?.size ?? 0) > 0;
   const partial = state.analyzed < state.total;
   const cardWidth = Math.min(300, Math.round(width * 0.72));
   const coverage = partial
@@ -125,7 +135,9 @@ function Results({
         </AppText>
         <AppText variant="body" color="secondaryLabel">
           {partial ? 'Results so far. Photos not checked yet aren’t included. ' : ''}
-          Each photo is counted once, and nothing is removed until you review it.
+          Each photo is counted once
+          {setAside ? ', protected photos and skipped groups aren’t counted' : ''}, and nothing is
+          removed until you review it.
         </AppText>
         <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
           {coverage}

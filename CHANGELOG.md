@@ -12,6 +12,7 @@
 - Job model: a tested state machine where progress only comes from reported events, never moves backwards, and ignores late events after stop (P1-JOB-001).
 - Simulated sample scan (clearly labelled "Sample scan" and "Simulated") with pause, resume and stop; stopping keeps honest partial results, counting only findings whose photos were all checked.
 - Compact job bar floating above the tab bar, Apple Music mini-player style; expands into a native scan sheet with stages and controls; content insets grow while it shows (P1-JOB-002).
+- Review choices (P1-REV-001): Skip a group (collapses with Undo), Protect/Unprotect a photo, "Keep this one instead" to change the keeper, via a touch-and-hold native action sheet or VoiceOver custom actions. Choices persist for the session and clear when results change. Protected photos and skipped groups drop out of every total; keeper changes are reflected.
 - Shared ProgressBar (eases between reported values; indeterminate sweep; reduced-motion fallbacks). One success haptic and VoiceOver announcement on completion.
 
 ## 0.1.0 — Phase 0 foundation (2026-10-02)

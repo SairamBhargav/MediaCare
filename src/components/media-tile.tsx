@@ -6,6 +6,7 @@ import Animated, { css } from 'react-native-reanimated';
 import type { SampleAsset } from '@/demo/sample-library';
 import { cssEasing, duration, onMedia, radius, spacing, useReduceMotion, useTheme } from '@/theme';
 import { haptics } from '@/utils/haptics';
+import { showPhotoActions, type PhotoAction } from '@/utils/photo-actions';
 
 import { AppText } from './app-text';
 import { Icon } from './icon';
@@ -17,9 +18,16 @@ type MediaTileProps = {
   /** Shows the selection ring and exposes checkbox semantics. */
   selectable?: boolean;
   selected?: boolean;
-  /** Marks the recommended keeper in a review group. Keepers are never selectable. */
+  /** Marks the keeper in a review group. Keepers are never selectable. */
   keeper?: boolean;
+  /** Protected by the user: never selectable for removal. */
+  isProtected?: boolean;
   onPress?: () => void;
+  /**
+   * Secondary actions (make keeper, protect). Shown on long-press as a native
+   * action sheet and offered to VoiceOver as custom actions.
+   */
+  actions?: readonly PhotoAction[];
   /** `grid` is dense and square-cornered; `card` is a rounded review card. */
   appearance?: 'grid' | 'card';
   style?: StyleProp<ViewStyle>;
@@ -34,16 +42,20 @@ export function MediaTile({
   selectable = false,
   selected = false,
   keeper = false,
+  isProtected = false,
   onPress,
+  actions = [],
   appearance = 'grid',
   style,
 }: MediaTileProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const isCard = appearance === 'card';
-  const checkable = selectable && !keeper;
+  const checkable = selectable && !keeper && !isProtected;
 
-  const label = keeper ? `${asset.description}. Recommended keeper` : asset.description;
+  const label = [asset.description, keeper && 'Keeper', isProtected && 'Protected']
+    .filter(Boolean)
+    .join('. ');
 
   return (
     <PressableScale
@@ -51,8 +63,20 @@ export function MediaTile({
         if (checkable) haptics.selection();
         onPress?.();
       }}
-      disabled={!onPress}
+      disabled={!onPress && actions.length === 0}
       dimWhenDisabled={false}
+      onLongPress={
+        actions.length > 0
+          ? () => {
+              haptics.light();
+              showPhotoActions(asset.description, actions);
+            }
+          : undefined
+      }
+      accessibilityActions={actions.map((action) => ({ name: action.label, label: action.label }))}
+      onAccessibilityAction={(event) =>
+        actions.find((action) => action.label === event.nativeEvent.actionName)?.onPress()
+      }
       accessibilityRole={checkable ? 'checkbox' : onPress ? 'imagebutton' : 'image'}
       accessibilityLabel={label}
       accessibilityState={checkable ? { checked: selected } : undefined}
@@ -79,12 +103,24 @@ export function MediaTile({
         ]}
       />
 
-      {keeper ? (
-        <View style={styles.keeperPill} accessibilityElementsHidden>
-          <Icon name="star" size={11} color={onMedia.foreground} weight="bold" />
-          <AppText variant="caption" style={styles.onMediaText}>
-            Keep
-          </AppText>
+      {keeper || isProtected ? (
+        <View style={styles.pills} accessibilityElementsHidden>
+          {keeper ? (
+            <View style={styles.pill}>
+              <Icon name="star" size={11} color={onMedia.foreground} weight="bold" />
+              <AppText variant="caption" style={styles.onMediaText}>
+                Keep
+              </AppText>
+            </View>
+          ) : null}
+          {isProtected ? (
+            <View style={styles.pill}>
+              <Icon name="lock" size={10} color={onMedia.foreground} weight="bold" />
+              <AppText variant="caption" style={styles.onMediaText}>
+                Protected
+              </AppText>
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -156,10 +192,16 @@ const styles = StyleSheet.create({
     right: spacing.sm,
     bottom: spacing.sm,
   },
-  keeperPill: {
+  pills: {
     position: 'absolute',
     left: spacing.sm,
     top: spacing.sm,
+    right: spacing.sm,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xxs,
+  },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xxs,

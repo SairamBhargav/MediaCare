@@ -89,3 +89,20 @@ test('an active scan replaces the content with honest progress and controls', as
   await fireEvent.press(screen.getByLabelText('Stop scan'));
   expect(actions.onStop).toHaveBeenCalled();
 });
+
+test('protected photos and skipped groups drop out of the headline total', async () => {
+  const protectedIds = new Set(['sample-pano-1']);
+  const adjustments = { protectedIds };
+  await render(
+    <CleanContent
+      state={sampleResultsState}
+      onStartScan={jest.fn()}
+      onReset={jest.fn()}
+      adjustments={adjustments}
+    />,
+  );
+  const total = formatBytes(totalReclaimableBytes(sampleFindings, sampleBytes, adjustments));
+  expect(total).not.toBe(formatBytes(totalReclaimableBytes(sampleFindings, sampleBytes)));
+  expect(screen.getByText(`Could free up to ${total}`)).toBeOnTheScreen();
+  expect(screen.getByText(/protected photos and skipped groups aren’t counted/)).toBeOnTheScreen();
+});

@@ -58,3 +58,51 @@ test('without results the category explains how to get some', async () => {
   await render(<CategoryScreen category="large" />);
   expect(screen.getByText('Nothing here yet')).toBeOnTheScreen();
 });
+
+test('selections survive leaving the category and coming back', async () => {
+  const photo = nonKeeper(similarGroups[0]);
+  const first = await render(<CategoryScreen category="similar" />);
+  await fireEvent.press(screen.getByLabelText(photo.description));
+  await first.unmount();
+
+  await render(<CategoryScreen category="similar" />);
+  expect(screen.getByLabelText(photo.description)).toBeChecked();
+});
+
+test('skipping a group collapses it, clears its selection and can be undone', async () => {
+  const group = similarGroups[0];
+  const photo = nonKeeper(group);
+  await render(<CategoryScreen category="similar" />);
+  await fireEvent.press(screen.getByLabelText(photo.description));
+  await fireEvent.press(screen.getAllByLabelText('Skip')[0]);
+
+  expect(
+    screen.getByText('Skipped. These photos won’t be counted or suggested.'),
+  ).toBeOnTheScreen();
+  expect(screen.queryByLabelText(photo.description)).toBeNull();
+  expect(screen.getByText('Tap photos you might not need')).toBeOnTheScreen();
+
+  await fireEvent.press(screen.getByLabelText('Undo'));
+  expect(screen.getByLabelText(photo.description)).not.toBeChecked();
+});
+
+test('protecting a photo through its VoiceOver action removes the checkbox', async () => {
+  const photo = nonKeeper(similarGroups[0]);
+  await render(<CategoryScreen category="similar" />);
+  const tile = screen.getByLabelText(photo.description);
+  await fireEvent(tile, 'accessibilityAction', { nativeEvent: { actionName: 'Protect' } });
+
+  const protectedTile = screen.getByLabelText(`${photo.description}. Protected`);
+  expect(protectedTile.props.accessibilityRole).not.toBe('checkbox');
+});
+
+test('choosing a different keeper moves the keep badge', async () => {
+  const group = similarGroups[0];
+  const photo = nonKeeper(group);
+  await render(<CategoryScreen category="similar" />);
+  await fireEvent(screen.getByLabelText(photo.description), 'accessibilityAction', {
+    nativeEvent: { actionName: 'Keep this one instead' },
+  });
+  expect(screen.getByLabelText(`${photo.description}. Keeper`)).toBeOnTheScreen();
+  expect(screen.getByText('You chose the keeper for this group.')).toBeOnTheScreen();
+});

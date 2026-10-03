@@ -49,11 +49,42 @@ export type CategorySummary = {
   readonly previewAssetIds: readonly string[];
 };
 
-/** Asset ids that could be removed if the user agreed: never a group's keeper. */
-export function candidateIds(finding: Finding): readonly string[] {
-  return finding.kind === 'group'
-    ? finding.memberIds.filter((id) => id !== finding.keeperId)
-    : [finding.assetId];
+/**
+ * The user's review choices that change what counts as removable:
+ * a different keeper for a group, photos they protected, groups they skipped.
+ */
+export type ReviewAdjustments = {
+  readonly keeperOverrides?: Readonly<Record<string, string>>;
+  readonly protectedIds?: ReadonlySet<string>;
+  readonly skippedIds?: ReadonlySet<string>;
+};
+
+const NO_ADJUSTMENTS: ReviewAdjustments = {};
+
+/** The keeper in effect: the user's choice if they made one, else the suggestion. */
+export function effectiveKeeperId(
+  finding: GroupFinding,
+  adjustments: ReviewAdjustments = NO_ADJUSTMENTS,
+): string {
+  const override = adjustments.keeperOverrides?.[finding.id];
+  return override && finding.memberIds.includes(override) ? override : finding.keeperId;
+}
+
+/**
+ * Asset ids that could be removed if the user agreed. Never a group's keeper,
+ * never a protected photo, nothing from a skipped finding.
+ */
+export function candidateIds(
+  finding: Finding,
+  adjustments: ReviewAdjustments = NO_ADJUSTMENTS,
+): readonly string[] {
+  if (adjustments.skippedIds?.has(finding.id)) return [];
+  const ids =
+    finding.kind === 'group'
+      ? finding.memberIds.filter((id) => id !== effectiveKeeperId(finding, adjustments))
+      : [finding.assetId];
+  const protectedIds = adjustments.protectedIds;
+  return protectedIds ? ids.filter((id) => !protectedIds.has(id)) : ids;
 }
 
 function involvedIds(finding: Finding): readonly string[] {
@@ -69,20 +100,26 @@ function sumOnce(ids: Iterable<string>, bytesOf: (id: string) => number): number
 export function summarizeCategories(
   findings: readonly Finding[],
   bytesOf: (id: string) => number,
+  adjustments: ReviewAdjustments = NO_ADJUSTMENTS,
 ): CategorySummary[] {
   return CATEGORY_ORDER.flatMap((category) => {
     const inCategory = findings.filter((finding) => finding.category === category);
     if (inCategory.length === 0) return [];
     const involved = new Set(inCategory.flatMap(involvedIds));
     const preview = inCategory
-      .map((finding) => (finding.kind === 'group' ? finding.keeperId : finding.assetId))
+      .map((finding) =>
+        finding.kind === 'group' ? effectiveKeeperId(finding, adjustments) : finding.assetId,
+      )
       .slice(0, 3);
     return [
       {
         category,
         findingCount: inCategory.length,
         photoCount: involved.size,
-        reclaimableBytes: sumOnce(inCategory.flatMap(candidateIds), bytesOf),
+        reclaimableBytes: sumOnce(
+          inCategory.flatMap((finding) => candidateIds(finding, adjustments)),
+          bytesOf,
+        ),
         previewAssetIds: preview,
       },
     ];
@@ -93,8 +130,12 @@ export function summarizeCategories(
 export function totalReclaimableBytes(
   findings: readonly Finding[],
   bytesOf: (id: string) => number,
+  adjustments: ReviewAdjustments = NO_ADJUSTMENTS,
 ): number {
-  return sumOnce(findings.flatMap(candidateIds), bytesOf);
+  return sumOnce(
+    findings.flatMap((finding) => candidateIds(finding, adjustments)),
+    bytesOf,
+  );
 }
 
 /**
