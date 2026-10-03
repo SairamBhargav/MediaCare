@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck, lint, format, test, bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install (from lockfile)
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Unit and component tests
+        run: npm test -- --ci
+
+      - name: Expo Doctor
+        run: npm run doctor
+
+      # Proves the JavaScript bundles for iOS. It does NOT prove native iOS
+      # behavior: that needs a physical iPhone (docs/TEST_PLAN.md).
+      - name: Bundle for iOS
+        run: npm run bundle:ios
