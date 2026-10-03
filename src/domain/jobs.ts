@@ -14,9 +14,12 @@ export type JobStage = 'listing' | 'checking' | 'grouping';
 
 export const JOB_STAGES: readonly JobStage[] = ['listing', 'checking', 'grouping'];
 
+/** `scan` catalogs the library; `copies` fingerprints photos to find exact copies. */
+export type JobKind = 'scan' | 'copies';
+
 export type Job = {
   readonly id: string;
-  readonly kind: 'scan';
+  readonly kind: JobKind;
   /** True for the simulated sample scan. Sample jobs never produce real statistics. */
   readonly sample: boolean;
   readonly status: JobStatus;
@@ -36,10 +39,10 @@ export type JobEvent =
   | { readonly type: 'succeed' }
   | { readonly type: 'fail'; readonly message: string };
 
-export function startJob(id: string, sample: boolean): Job {
+export function startJob(id: string, sample: boolean, kind: JobKind = 'scan'): Job {
   return {
     id,
-    kind: 'scan',
+    kind,
     sample,
     status: 'running',
     stage: 'listing',
@@ -96,3 +99,13 @@ export const STAGE_LABEL: Record<JobStage, string> = {
   checking: 'Checking photos',
   grouping: 'Grouping results',
 };
+
+const COPIES_STAGE_LABEL: Record<JobStage, string> = {
+  listing: 'Choosing photos to check',
+  checking: 'Fingerprinting files',
+  grouping: 'Comparing matches byte by byte',
+};
+
+export function stageLabel(job: Pick<Job, 'kind'>, stage: JobStage): string {
+  return (job.kind === 'copies' ? COPIES_STAGE_LABEL : STAGE_LABEL)[stage];
+}

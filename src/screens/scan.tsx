@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Icon } from '@/components/icon';
 import { ProgressBar } from '@/components/progress-bar';
 import { StatusPill } from '@/components/status-pill';
-import { JOB_STAGES, STAGE_LABEL, isActive, jobFraction, type Job } from '@/domain/jobs';
+import { JOB_STAGES, isActive, jobFraction, stageLabel, type Job } from '@/domain/jobs';
 import { jobProgressText, jobStatusLine, jobTitle } from '@/features/clean/job-text';
 import { useCleanSession } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
@@ -55,12 +55,19 @@ function ScanDetail({ job }: { job: Job }) {
         </View>
         <AppText variant="title1" style={styles.numbers} accessibilityLiveRegion="polite">
           {job.total === null
-            ? 'Finding photos…'
+            ? `${stageLabel(job, 'listing')}…`
             : `${job.processed.toLocaleString()} of ${job.total.toLocaleString()}`}
         </AppText>
         <AppText variant="body" color="secondaryLabel">
           {jobStatusLine(job)}
         </AppText>
+        {job.kind === 'copies' ? (
+          <AppText variant="footnote" color="secondaryLabel">
+            Reads the original files of unedited photos stored on this iPhone. Photos in iCloud
+            only, Live Photos, edited photos and videos are listed as not checked. Nothing is
+            downloaded, uploaded or removed.
+          </AppText>
+        ) : null}
       </View>
 
       <ProgressBar
@@ -80,7 +87,7 @@ function ScanDetail({ job }: { job: Job }) {
               key={stage}
               style={styles.stage}
               accessible
-              accessibilityLabel={`${STAGE_LABEL[stage]}, ${state}`}
+              accessibilityLabel={`${stageLabel(job, stage)}, ${state}`}
             >
               <Icon
                 name={done ? 'checkCircle' : 'circle'}
@@ -88,7 +95,7 @@ function ScanDetail({ job }: { job: Job }) {
                 color={done || current ? colors.accent : colors.tertiaryLabel}
               />
               <AppText variant="body" color={done || current ? 'label' : 'secondaryLabel'}>
-                {STAGE_LABEL[stage]}
+                {stageLabel(job, stage)}
               </AppText>
               {current && job.status === 'paused' ? (
                 <AppText variant="footnote" color="secondaryLabel">

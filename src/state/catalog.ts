@@ -4,12 +4,14 @@ import {
   clearCatalog,
   deleteAssets,
   loadAssets,
+  loadFingerprints,
   loadLastScanJob,
   loadProtectedIds,
   markInterruptedScans,
   setProtected as persistProtected,
   type ScanJobRow,
 } from '@/db/catalog-repo';
+import { confirmedSets, type FingerprintRow } from '@/domain/exact-copies';
 import { toPhotoItem, type PhotoItem } from '@/domain/media';
 import { useLibrarySession } from '@/state/library-session';
 import {
@@ -32,6 +34,11 @@ export type CatalogState = {
   byId: ReadonlyMap<string, PhotoItem>;
   protectedIds: ReadonlySet<string>;
   lastScan: ScanJobRow | null;
+  /** Stored fingerprints (or skip reasons) from "Find exact copies", by asset id. */
+  fingerprints: ReadonlyMap<string, FingerprintRow>;
+  /** Confirmed exact-copy sets whose members haven't changed since they were checked. */
+  copySets: readonly (readonly string[])[];
+  lastCopyCheck: ScanJobRow | null;
   /** Photos reported changes (or access changed) since the catalog was last loaded. */
   libraryChanged: boolean;
   load: () => Promise<void>;
@@ -51,22 +58,32 @@ export const useCatalog = create<CatalogState>()((set, get) => ({
   byId: new Map(),
   protectedIds: new Set(),
   lastScan: null,
+  fingerprints: new Map(),
+  copySets: [],
+  lastCopyCheck: null,
   libraryChanged: false,
 
   load: async () => {
     await markInterruptedScans();
-    const [records, protectedIds, lastScan, access] = await Promise.all([
-      loadAssets(),
-      loadProtectedIds(),
-      loadLastScanJob(),
-      getAccess().catch(() => 'unknown' as const),
-    ]);
+    const [records, protectedIds, lastScan, fingerprintRows, lastCopyCheck, access] =
+      await Promise.all([
+        loadAssets(),
+        loadProtectedIds(),
+        loadLastScanJob(),
+        loadFingerprints().catch(() => [] as FingerprintRow[]),
+        loadLastScanJob('copy-check').catch(() => null),
+        getAccess().catch(() => 'unknown' as const),
+      ]);
     const items = records.map(toPhotoItem);
+    const byId = new Map(items.map((item) => [item.id, item]));
     set({
       items,
-      byId: new Map(items.map((item) => [item.id, item])),
+      byId,
       protectedIds,
       lastScan,
+      fingerprints: new Map(fingerprintRows.map((row) => [row.assetId, row])),
+      copySets: confirmedSets(fingerprintRows, byId),
+      lastCopyCheck,
       access,
       loaded: true,
       libraryChanged: false,
@@ -103,7 +120,15 @@ export const useCatalog = create<CatalogState>()((set, get) => ({
 
   clear: async () => {
     await clearCatalog();
-    set({ items: [], byId: new Map(), protectedIds: new Set(), lastScan: null });
+    set({
+      items: [],
+      byId: new Map(),
+      protectedIds: new Set(),
+      lastScan: null,
+      fingerprints: new Map(),
+      copySets: [],
+      lastCopyCheck: null,
+    });
     useLibrarySession.getState().reset();
   },
 }));

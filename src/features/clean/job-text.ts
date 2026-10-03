@@ -1,7 +1,8 @@
-import { STAGE_LABEL, type Job } from '@/domain/jobs';
+import { stageLabel, type Job } from '@/domain/jobs';
 
 /** Title for a job anywhere it appears. Sample jobs always say so. */
 export function jobTitle(job: Job): string {
+  if (job.kind === 'copies') return 'Exact copies';
   return job.sample ? 'Sample scan' : 'Scan';
 }
 
@@ -16,8 +17,8 @@ export function jobStatusLine(job: Job): string {
   switch (job.status) {
     case 'running':
       return job.stage === 'listing'
-        ? STAGE_LABEL.listing
-        : `${STAGE_LABEL[job.stage]} · ${counts(job)}`;
+        ? stageLabel(job, 'listing')
+        : `${stageLabel(job, job.stage)} · ${counts(job)}`;
     case 'paused':
       return `Paused · ${counts(job)}`;
     case 'succeeded':

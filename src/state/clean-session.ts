@@ -1,14 +1,32 @@
 import { AccessibilityInfo } from 'react-native';
 import { create } from 'zustand';
 
-import { loadVersions, markSeen, removeUnseen, saveScanJob, upsertAssets } from '@/db/catalog-repo';
+import {
+  loadFingerprints,
+  loadVersions,
+  markSeen,
+  removeUnseen,
+  saveFingerprints,
+  saveMatchGroups,
+  saveScanJob,
+  upsertAssets,
+} from '@/db/catalog-repo';
 import { sampleFindings, sampleLibrary } from '@/demo/sample-library';
 import { runSampleScan } from '@/demo/sample-scan';
+import { exactCopyFindings } from '@/domain/exact-copies';
 import { findingsWithin, type Finding } from '@/domain/findings';
 import { isActive, reduceJob, startJob, type Job, type JobEvent } from '@/domain/jobs';
 import type { PhotoItem } from '@/domain/media';
 import { favoriteIds, findRealFindings } from '@/domain/real-findings';
+import {
+  fileMd5,
+  fileSize,
+  isInCloud,
+  resolveUri,
+  sameBytes,
+} from '@/services/media/file-fingerprint';
 import { getSubtypes, listAllMetadata, toRecord } from '@/services/media/photo-library';
+import { runCopyCheck } from '@/services/scan/copy-check';
 import { runLibraryScan } from '@/services/scan/library-scan';
 import { haptics } from '@/utils/haptics';
 
@@ -52,6 +70,12 @@ type CleanSession = {
   startSampleScan: () => void;
   /** Real scan of the accessible Photos library; asks for access first if needed. */
   startLibraryScan: () => Promise<void>;
+  /**
+   * "Find exact copies" over the cataloged photos (P2-DUP-001). Started
+   * only by the user; needs photo access and a catalog. Pause, resume and
+   * stop use the same controls as a scan.
+   */
+  startCopyCheck: () => void;
   pauseScan: () => void;
   resumeScan: () => void;
   cancelScan: () => void;
@@ -93,7 +117,13 @@ function catalogResults(
   analyzed: number,
   total: number,
 ): CleanHomeState {
-  return { status: 'results', sample: false, analyzed, total, findings: findRealFindings(items) };
+  return { status: 'results', sample: false, analyzed, total, findings: realFindings(items) };
+}
+
+/** Metadata findings plus confirmed exact copies from the last copies check. */
+function realFindings(items: readonly PhotoItem[]): Finding[] {
+  const { copySets, byId } = useCatalog.getState();
+  return [...findRealFindings(items), ...exactCopyFindings(copySets, byId)];
 }
 
 function catalogProtection(items: readonly PhotoItem[]): Set<string> {
@@ -176,6 +206,33 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     }
   };
 
+  const finishCopies = async (job: Job) => {
+    await useCatalog.getState().load();
+    const { items, copySets } = useCatalog.getState();
+    const state = get().state;
+    if (state.status === 'results' && !state.sample) {
+      // Other findings keep their ids, so review choices on them stay valid.
+      set({ state: { ...state, findings: realFindings(items) } });
+    } else {
+      get().showCatalogResults();
+    }
+    if (job.status === 'succeeded') {
+      haptics.success();
+      AccessibilityInfo.announceForAccessibility(
+        copySets.length === 0
+          ? 'Exact copies check complete. No exact copies found.'
+          : `Exact copies check complete. ${copySets.length} ${copySets.length === 1 ? 'set' : 'sets'} found.`,
+      );
+    } else if (job.status === 'failed') {
+      haptics.error();
+      AccessibilityInfo.announceForAccessibility('Exact copies check stopped because of an error');
+    } else if (job.status === 'canceled') {
+      AccessibilityInfo.announceForAccessibility(
+        'Check stopped. Photos checked so far are kept for next time.',
+      );
+    }
+  };
+
   return {
     state: { status: 'not-scanned' },
     job: null,
@@ -221,6 +278,42 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
             }),
         },
         onEvent(job.id, finishLibrary),
+      );
+    },
+
+    startCopyCheck: () => {
+      if (isActive(get().job)) return;
+      const catalog = useCatalog.getState();
+      if (!hasPhotoAccess(catalog.access) || catalog.items.length === 0) return;
+      if (dismissTimer) clearTimeout(dismissTimer);
+
+      const job = startJob(`copy-check-${Date.now()}`, false, 'copies');
+      const startedAt = Date.now();
+      set({ job });
+      controls = runCopyCheck(
+        {
+          listItems: async () => useCatalog.getState().items,
+          loadFingerprints,
+          isInCloud,
+          resolveUri,
+          fileSize,
+          fileMd5,
+          sameBytes,
+          saveFingerprints,
+          saveMatchGroups,
+          checkpoint: ({ status, processed, total, error }) =>
+            saveScanJob({
+              id: job.id,
+              kind: 'copy-check',
+              status,
+              processed,
+              total,
+              startedAt,
+              finishedAt: status === 'running' || status === 'paused' ? null : Date.now(),
+              error: error ?? null,
+            }),
+        },
+        onEvent(job.id, finishCopies),
       );
     },
 
