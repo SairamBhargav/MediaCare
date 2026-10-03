@@ -2,6 +2,7 @@
 
 ## Unreleased: Phase 1 polish, then exact copies
 
+- Accessibility pass (P1-QA-001): an automated check renders eight main screens and fails if anything tappable lacks a VoiceOver role or name (all pass). Device walkthrough for VoiceOver, largest text, Reduce Motion/Transparency and Increase Contrast added to TEST_PLAN §4.
 - Gallery (P1-UI-009): theme switch, Increase Contrast indicator, every job bar state (sample numbers), a button that opens the scan sheet with the labelled sample scan, chips, and a static before/after placeholder.
 - Home reveal (P1-MOT-001): the Clean screen’s content fades up in at most four groups, 40 ms apart, once per session and only once it’s actually on screen; never under Reduce Motion or Less motion.
 - Onboarding (P1-ONB-001..003): a one-screen introduction on first run (sample photos, labelled, settle in under 1.2 s; buttons usable at once), then an explanation of photo access before iOS asks. Every "Scan my library" button now explains first if iOS hasn’t asked yet. The seen flag is stored with preferences; Settings → Help reopens the introduction and the access explanation.

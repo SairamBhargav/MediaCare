@@ -44,6 +44,16 @@ Record: iPhone model, iOS version, Expo Go version / build type, date.
 
 Report failures with a screenshot or screen recording and the step number.
 
+**Phase 1 accessibility pass (P1-QA-001)**
+
+Automated: `src/screens/accessibility.test.tsx` renders Welcome, the access explainer, Clean (not scanned, results), Library, the photo viewer, the removal plan and the gallery, and fails if anything tappable lacks a VoiceOver role or name. On the iPhone:
+
+1. **VoiceOver** (triple-click the side button if set up): swipe through Welcome, the access explainer, Clean, a category, a review group, the plan, Library, the viewer, Studio, Settings. Every control reads a name and a type (button, tab, checkbox, image); nothing reads as "button" alone. In the viewer, Close is reachable and a two-finger scrub (Z shape) closes it.
+2. **Largest text** (Settings → Accessibility → Display & Text Size → Larger Text, max slider): repeat on the same screens. Text wraps rather than clipping; Welcome and the access explainer scroll with buttons still visible; Library drops to 2 columns; the viewer toolbar wraps.
+3. **Reduce Motion** on: the viewer fades instead of growing from the tile; the home reveal doesn't play; selection badges fade.
+4. **Reduce Transparency** on: tab bar, month headers and job bar are solid.
+5. **Increase Contrast** on (Display & Text Size): secondary text and separators get visibly stronger in light and dark; the gallery shows an "Increase Contrast" pill.
+
 **Later phases** add: permission states (denied / limited / full, changes while app is backgrounded), HEIC/orientation, export fidelity, deletion semantics on disposable assets, interrupted scans (force-quit mid-scan), memory over a 1k → 10k asset library.
 
 ## 5. Visual and motion QA
