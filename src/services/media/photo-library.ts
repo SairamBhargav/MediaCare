@@ -101,7 +101,13 @@ export function watchLibrary(listener: (event: MediaLibraryAssetsChangeEvent) =>
   return addListener(listener);
 }
 
-/** `ph://` URL that expo-image and expo-image-manipulator load straight from Photos. */
+/**
+ * `ph://` URL that expo-image and expo-image-manipulator load straight from
+ * Photos. In the SDK 57 object API, asset ids already are
+ * `ph://<localIdentifier>` (expo-media-library iOS AssetMapper), so they are
+ * used as-is; a bare local identifier gets the prefix. Doubling it
+ * (`ph://ph://…`) makes every thumbnail fail to load.
+ */
 export function photoUri(id: string): string {
-  return `ph://${id}`;
+  return id.startsWith('ph://') ? id : `ph://${id}`;
 }
