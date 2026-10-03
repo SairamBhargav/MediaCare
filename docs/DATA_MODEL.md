@@ -1,6 +1,6 @@
 # Data model
 
-Planned catalog for Phase 2–3, stored in SQLite (`expo-sqlite`) with hand-written, versioned migrations (ADR-0003). Nothing here is implemented yet except the pure review-selection rules in `src/domain/review-selection.ts`.
+Planned catalog for Phase 2–3, stored in SQLite (`expo-sqlite`) with hand-written, versioned migrations (ADR-0003). Nothing here is implemented yet except the pure review-selection rules in `src/domain/review-selection.ts`. (Preferences already use `expo-sqlite/kv-store`, a separate key-value database, not this catalog.)
 
 ## Identity and resource semantics (read this first)
 

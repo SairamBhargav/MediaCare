@@ -61,7 +61,7 @@ Shows one honest empty state: tools need photo access, originals never change. N
 
 ## Settings (`/settings`, modal) — Built
 
-Native grouped Form via `@expo/ui`: Appearance (System/Light/Dark menu), Motion & Feedback (Less motion, Haptics, explanatory footer), Privacy statement, Developer (gallery link, dev only), About (version, SDK). Next: persistence (P1-SET-002), cache size and clearing (P2), photo access status + "Manage selected photos" (P2), processing policy (P5).
+Native grouped Form via `@expo/ui`: Appearance (System/Light/Dark menu), Motion & Feedback (Less motion, Haptics, explanatory footer), Privacy statement, Developer (gallery link, dev only), About (version, SDK). Preferences persist across launches (P1-SET-002). Next: cache size and clearing (P2), photo access status + "Manage selected photos" (P2), processing policy (P5).
 
 Acceptance: Appearance change applies app-wide including native chrome; Less motion never overrides system Reduce Motion; Done and swipe-down both dismiss.
 

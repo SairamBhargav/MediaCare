@@ -100,13 +100,13 @@ Heavy work never runs on the UI thread and is not assumed to be parallel just be
 
 ## 4. Data ownership
 
-| Data                                                                       | Owner                                              | Notes                                                      |
-| -------------------------------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------- |
-| Media bytes                                                                | iOS Photos                                         | Never copied wholesale; temp files are bounded and cleaned |
-| Catalog (assets, resources, fingerprints, findings, groups, jobs, actions) | SQLite (`src/db`)                                  | Source of truth for app knowledge; see DATA_MODEL.md       |
-| UI state (selection mode, sheet state)                                     | React state / Zustand                              | Ephemeral                                                  |
-| Preferences                                                                | Zustand now → `expo-sqlite/kv-store` in P1-SET-002 | No media content in preferences                            |
-| Derivatives                                                                | Photos (new asset) or app temp dir until saved     | Lineage row links source and output                        |
+| Data                                                                       | Owner                                                                         | Notes                                                      |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Media bytes                                                                | iOS Photos                                                                    | Never copied wholesale; temp files are bounded and cleaned |
+| Catalog (assets, resources, fingerprints, findings, groups, jobs, actions) | SQLite (`src/db`)                                                             | Source of truth for app knowledge; see DATA_MODEL.md       |
+| UI state (selection mode, sheet state)                                     | React state / Zustand                                                         | Ephemeral                                                  |
+| Preferences                                                                | Zustand, persisted to `expo-sqlite/kv-store` (synchronous, validated on read) | No media content in preferences                            |
+| Derivatives                                                                | Photos (new asset) or app temp dir until saved                                | Lineage row links source and output                        |
 
 ## 5. Native escape hatch (Phase 3)
 

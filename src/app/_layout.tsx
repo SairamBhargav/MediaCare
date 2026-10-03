@@ -4,17 +4,25 @@ import { useEffect } from 'react';
 import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { usePreferences } from '@/state/preferences';
+import { usePreferences, type AppearancePreference } from '@/state/preferences';
 import { useTheme } from '@/theme';
+
+// Apply the in-app appearance override at the platform level so native
+// chrome (sheets, alerts, keyboard) matches the app's own colors.
+function applyAppearance(appearance: AppearancePreference) {
+  Appearance.setColorScheme(appearance === 'system' ? 'unspecified' : appearance);
+}
+
+// Preferences hydrate synchronously from disk, so the saved theme is applied
+// before the first frame renders instead of flashing the system theme.
+applyAppearance(usePreferences.getState().appearance);
 
 export default function RootLayout() {
   const appearance = usePreferences((state) => state.appearance);
   const { scheme, colors } = useTheme();
 
-  // Apply the in-app appearance override at the platform level so native
-  // chrome (sheets, alerts, keyboard) matches the app's own colors.
   useEffect(() => {
-    Appearance.setColorScheme(appearance === 'system' ? 'unspecified' : appearance);
+    applyAppearance(appearance);
   }, [appearance]);
 
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;

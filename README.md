@@ -67,6 +67,5 @@ src/state/       small UI stores             docs/            plan, specs, decis
 ## Known limits
 
 - Sample data only; no photo access, scanning, exports or removal yet.
-- Preferences reset on relaunch (persistence is P1-SET-002).
 - Nothing has been verified on an iPhone yet. CI proves the code compiles and tests pass, not native behavior.
 - No license has been chosen; all rights reserved.

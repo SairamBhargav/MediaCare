@@ -17,3 +17,15 @@ jest.mock('react-native-reanimated', () => {
 
 // Accessibility-aware matchers such as toBeChecked() and toBeOnTheScreen().
 require('@testing-library/react-native/dist/matchers/extend-expect');
+
+// expo-sqlite is native. Preferences use its key-value store; give tests an
+// in-memory stand-in with the same synchronous API.
+jest.mock('expo-sqlite/kv-store', () => {
+  const memory = new Map<string, string>();
+  const Storage = {
+    getItemSync: (key: string) => memory.get(key) ?? null,
+    setItemSync: (key: string, value: string) => void memory.set(key, value),
+    removeItemSync: (key: string) => memory.delete(key),
+  };
+  return { __esModule: true, Storage, default: Storage };
+});
