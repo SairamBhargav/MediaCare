@@ -2,6 +2,7 @@
 
 ## Unreleased: Phase 1 polish, then exact copies
 
+- Increase Contrast (P1-UI-006): when iOS Increase Contrast is on, the app uses stronger palettes (black or white labels, 7:1 body text, visible separators, near-opaque bars). Tests check they meet every standard pair and never lower one.
 - Removed unused template packages expo-glass-effect, expo-device and expo-web-browser (P1-UI-008). Doctor 21/21, iOS bundle exports.
 
 ## Unreleased: Phase 2 (real photos) built, awaiting device test

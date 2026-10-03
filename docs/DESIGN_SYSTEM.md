@@ -97,7 +97,7 @@ Rules: screens import components; components import tokens; nobody hardcodes hex
 
 - Dynamic Type on; layouts grow (min-heights and padding, not fixed heights). Test at the largest accessibility size.
 - VoiceOver: every interactive element has a role and label; selection uses checkbox semantics; counts are announced (`accessibilityLiveRegion`, `announceForAccessibility`).
-- Reduce Motion, Reduce Transparency, Increase Contrast respected (Increase Contrast palette is P1-UI-006).
+- Reduce Motion, Reduce Transparency, Increase Contrast respected. Increase Contrast swaps in `highContrastPalettes` (black/white labels, 7:1 body text, stronger separators, near-opaque chrome) via `useTheme()`; tested never to lower any pair.
 - Destructive actions use text ("Remove 3 photos"), not color alone.
 
 ## Fixtures and imagery

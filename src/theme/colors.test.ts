@@ -1,8 +1,10 @@
-import { palettes, type ColorToken, type Palette } from './colors';
+import { highContrastPalettes, palettes, type ColorToken, type Palette } from './colors';
 import { contrastRatio } from './contrast';
 
 const TEXT = 4.5;
 const UI = 3;
+/** WCAG AAA for body text; what Increase Contrast should deliver. */
+const ENHANCED = 7;
 
 type Pair = [foreground: ColorToken, background: ColorToken, minimum: number];
 
@@ -26,9 +28,43 @@ const requiredPairs: Pair[] = [
   ['info', 'background', TEXT],
 ];
 
-describe.each(Object.entries(palettes) as [string, Palette][])('%s palette', (_, palette) => {
+const allPalettes: [string, Palette][] = [
+  ['light', palettes.light],
+  ['dark', palettes.dark],
+  ['light high-contrast', highContrastPalettes.light],
+  ['dark high-contrast', highContrastPalettes.dark],
+];
+
+describe.each(allPalettes)('%s palette', (_, palette) => {
   test.each(requiredPairs)('%s on %s meets %d:1', (foreground, background, minimum) => {
     expect(contrastRatio(palette[foreground], palette[background])).toBeGreaterThanOrEqual(minimum);
+  });
+});
+
+describe.each(['light', 'dark'] as const)('%s Increase Contrast palette', (scheme) => {
+  const standard = palettes[scheme];
+  const high = highContrastPalettes[scheme];
+
+  test.each(requiredPairs)('%s on %s is never lower than standard', (foreground, background) => {
+    expect(contrastRatio(high[foreground], high[background])).toBeGreaterThanOrEqual(
+      contrastRatio(standard[foreground], standard[background]) - 0.01,
+    );
+  });
+
+  test.each([
+    ['label', 'surfaceRaised'],
+    ['secondaryLabel', 'background'],
+    ['secondaryLabel', 'surface'],
+    ['secondaryLabel', 'surfaceRaised'],
+    ['accentText', 'background'],
+    ['accentText', 'surface'],
+    ['onAccent', 'accentFill'],
+  ] as [ColorToken, ColorToken][])('%s on %s reaches 7:1', (foreground, background) => {
+    expect(contrastRatio(high[foreground], high[background])).toBeGreaterThanOrEqual(ENHANCED);
+  });
+
+  test('separator is visible against surfaces (3:1)', () => {
+    expect(contrastRatio(high.separator, high.surface)).toBeGreaterThanOrEqual(UI);
   });
 });
 

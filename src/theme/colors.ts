@@ -89,6 +89,59 @@ export const palettes: Record<ColorScheme, Palette> = {
   },
 };
 
+/**
+ * Used when iOS Settings → Accessibility → Display & Text Size → Increase
+ * Contrast is on: stronger labels, separators and tints, and near-opaque
+ * chrome. `colors.test.ts` checks these meet every pair the standard
+ * palettes meet, never fall below them, and reach 7:1 for body text.
+ */
+export const highContrastPalettes: Record<ColorScheme, Palette> = {
+  light: {
+    background: '#F6F6F8',
+    surface: '#FFFFFF',
+    surfaceRaised: '#EFEFF3',
+    chrome: 'rgba(246, 246, 248, 0.94)',
+    chromeSolid: '#F6F6F8',
+    label: '#000000',
+    secondaryLabel: '#3C3C43',
+    tertiaryLabel: '#6C6C74',
+    separator: '#8E8E96',
+    accent: '#C40E3A',
+    accentText: '#A3002B',
+    accentFill: '#B0002E',
+    onAccent: '#FFFFFF',
+    danger: '#A30011',
+    dangerFill: '#A30011',
+    warning: '#6E3700',
+    success: '#11521F',
+    info: '#00449A',
+    mediaScrim: 'rgba(0, 0, 0, 0.5)',
+    mediaPlaceholder: '#D9D9DF',
+  },
+  dark: {
+    background: '#000000',
+    surface: '#121216',
+    surfaceRaised: '#1C1C22',
+    chrome: 'rgba(18, 18, 22, 0.94)',
+    chromeSolid: '#121216',
+    label: '#FFFFFF',
+    secondaryLabel: '#CFCFD6',
+    tertiaryLabel: '#8E8E98',
+    separator: '#71717B',
+    accent: '#FF7A93',
+    accentText: '#FF9AAE',
+    accentFill: '#B0002E',
+    onAccent: '#FFFFFF',
+    danger: '#FF9A94',
+    dangerFill: '#A30011',
+    warning: '#FFC266',
+    success: '#5BE38A',
+    info: '#8CC4FF',
+    mediaScrim: 'rgba(0, 0, 0, 0.55)',
+    mediaPlaceholder: '#1C1C22',
+  },
+};
+
 export type ColorToken = keyof Palette;
 
 /**

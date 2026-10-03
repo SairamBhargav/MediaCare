@@ -3,7 +3,9 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { usePreferences } from '@/state/preferences';
 
-import { palettes, type ColorScheme, type Palette } from './colors';
+import { useIncreaseContrast } from '@/hooks/use-increase-contrast';
+
+import { highContrastPalettes, palettes, type ColorScheme, type Palette } from './colors';
 
 export * from './colors';
 export * from './motion';
@@ -13,11 +15,13 @@ export * from './tokens';
  * The resolved color scheme and palette. The appearance preference is applied
  * through `Appearance.setColorScheme` in the root layout, so
  * `useColorScheme` already reflects a light/dark override and native chrome
- * (sheets, alerts, keyboards) follows it too.
+ * (sheets, alerts, keyboards) follows it too. With iOS Increase Contrast on,
+ * the high-contrast variant of the scheme is used.
  */
-export function useTheme(): { scheme: ColorScheme; colors: Palette } {
+export function useTheme(): { scheme: ColorScheme; colors: Palette; highContrast: boolean } {
   const scheme: ColorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  return { scheme, colors: palettes[scheme] };
+  const highContrast = useIncreaseContrast();
+  return { scheme, colors: (highContrast ? highContrastPalettes : palettes)[scheme], highContrast };
 }
 
 /**
