@@ -38,6 +38,8 @@ export function CategoryScreen({ category }: { category: FindingCategory }) {
   const { colors } = useTheme();
   const state = useCleanSession((session) => session.state);
   const meta = CATEGORY_META[category];
+  // Real results never borrow the sample labels or sample sizes.
+  const sample = state.status === 'results' && state.sample;
   const findings =
     state.status === 'results'
       ? state.findings.filter((finding) => finding.category === category)
@@ -68,13 +70,17 @@ export function CategoryScreen({ category }: { category: FindingCategory }) {
             <EmptyState
               icon={meta.icon}
               title="Nothing here yet"
-              message="Show sample results on the Clean tab to explore this category."
+              message={
+                state.status === 'results' && !state.sample
+                  ? 'Nothing in this category in your library right now.'
+                  : 'Show sample results on the Clean tab to explore this category.'
+              }
             />
           </Surface>
         ) : (
           <>
             <View style={styles.intro}>
-              <StatusPill label="Sample" tone="accent" icon="photo" />
+              <StatusPill label={sample ? 'Sample' : 'Your library'} tone="accent" icon="photo" />
               <AppText variant="body" color="secondaryLabel">
                 {meta.description}
               </AppText>
@@ -87,19 +93,29 @@ export function CategoryScreen({ category }: { category: FindingCategory }) {
         )}
       </ScrollView>
       {findings.length > 0 ? (
-        <SelectionSummary count={selectedIds.size} bytes={selectedBytes} />
+        <SelectionSummary count={selectedIds.size} bytes={selectedBytes} sample={sample} />
       ) : null}
     </View>
   );
 }
 
-function SelectionSummary({ count, bytes }: { count: number; bytes: number }) {
+function SelectionSummary({
+  count,
+  bytes,
+  sample,
+}: {
+  count: number;
+  bytes: number;
+  sample: boolean;
+}) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const text =
     count === 0
       ? 'Tap photos you might not need'
-      : `${count} selected · ${formatBytes(bytes)} (sample sizes)`;
+      : sample
+        ? `${count} selected · ${formatBytes(bytes)} (sample sizes)`
+        : `${count} selected`;
 
   return (
     <View

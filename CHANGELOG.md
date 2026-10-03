@@ -2,6 +2,7 @@
 
 ## Unreleased: Phase 1 polish, then exact copies
 
+- Fixed: the category and removal plan screens labelled real results "Sample" and spoke of sample sizes; they now say "Your library", show no size for unmeasured photos, and say plainly that removal isn’t available in this version.
 - Accessibility pass (P1-QA-001): an automated check renders eight main screens and fails if anything tappable lacks a VoiceOver role or name (all pass). Device walkthrough for VoiceOver, largest text, Reduce Motion/Transparency and Increase Contrast added to TEST_PLAN §4.
 - Gallery (P1-UI-009): theme switch, Increase Contrast indicator, every job bar state (sample numbers), a button that opens the scan sheet with the labelled sample scan, chips, and a static before/after placeholder.
 - Home reveal (P1-MOT-001): the Clean screen’s content fades up in at most four groups, 40 ms apart, once per session and only once it’s actually on screen; never under Reduce Motion or Less motion.

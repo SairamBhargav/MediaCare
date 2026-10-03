@@ -14,6 +14,7 @@ import { getMediaItem } from '@/features/media/registry';
 import { formatBytes, formatSize } from '@/domain/bytes';
 import { CATEGORY_META, countLabel } from '@/features/clean/category-meta';
 import { useActionPlan } from '@/features/clean/use-action-plan';
+import { useCleanSession } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
 const PHOTOS: [string, string] = ['photo', 'photos'];
@@ -29,6 +30,8 @@ export function PlanScreen() {
   const insets = useSafeAreaInsets();
   const plan = useActionPlan();
   const count = plan.assetIds.length;
+  const state = useCleanSession((session) => session.state);
+  const sample = state.status !== 'results' || state.sample;
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -54,13 +57,16 @@ export function PlanScreen() {
         ) : (
           <>
             <View style={styles.summary}>
-              <StatusPill label="Sample" tone="accent" icon="photo" />
+              <StatusPill label={sample ? 'Sample' : 'Your library'} tone="accent" icon="photo" />
               <AppText variant="title1" style={styles.numbers}>
                 {countLabel(count, PHOTOS)}
               </AppText>
               <AppText variant="body" color="secondaryLabel" style={styles.numbers}>
-                Could free up to {formatBytes(plan.bytes)} (sample sizes). The real space freed is
-                only known after removal, and Photos keeps removed items for a while.
+                {sample
+                  ? `Could free up to ${formatBytes(plan.bytes)} (sample sizes). `
+                  : 'Sizes of your photos aren’t measured yet, so no space estimate is shown. '}
+                The real space freed is only known after removal, and Photos keeps removed items for
+                a while.
               </AppText>
             </View>
 
@@ -145,11 +151,15 @@ export function PlanScreen() {
           icon="warning"
           disabled
           block
-          accessibilityHint="Not available for sample photos"
+          accessibilityHint={
+            sample ? 'Not available for sample photos' : 'Not available in this version'
+          }
         />
         <AppText variant="footnote" color="secondaryLabel" style={styles.center}>
-          Sample results can’t be removed. Removal arrives with real photo access, and will always
-          ask iOS to confirm.
+          {sample
+            ? 'Sample results can’t be removed.'
+            : 'Removing from Photos isn’t available in this version yet.'}{' '}
+          When it arrives, iOS will always ask you to confirm.
         </AppText>
       </View>
     </View>
