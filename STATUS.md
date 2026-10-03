@@ -38,12 +38,27 @@ Real photo access prompts and limited selection; scan speed and smoothness on yo
 5. Settings → Developer → **Diagnostics** → Run file check and Run copy check → **Share report** and send it to me.
 6. Report: iPhone model, iOS version, library size roughly, scan time, anything wrong.
 
-## Next actionable tasks
+## Next actionable tasks (agreed with owner, 2026-10-03)
 
-1. **Owner**: real-photo test above plus the Phase 1 design checkpoint.
-2. Fix whatever the device test finds (expected: some layout and iOS-behavior surprises).
-3. Remaining Phase 1 polish: viewer drag-to-dismiss (P1-LIB-004), onboarding (P1-ONB-001..003), home reveal (P1-MOT-001), Increase Contrast palette (P1-UI-006), accessibility pass (P1-QA-001).
-4. **Phase 3 decision (owner)**: Apple Developer Program membership for a development build. Exact duplicates, blur detection and removal need native code that Expo Go can't load.
+Device test 1 is done: scan, Library, thumbnails and Compare work (after fixes P2-FIX-001/002); copies keep orientation but not date or location (S5). Work in this order:
+
+1. **Finish Phase 1 polish**, each with tests and a device-checklist line:
+   - P1-LIB-003/004: viewer continuity from the tapped tile (measured overlay, no experimental shared-element API) and drag-to-dismiss with a velocity-or-distance threshold, plus a visible Close button
+   - P1-LIB-005: keep Library scroll position and selection across tab switches
+   - P1-ONB-001..003: value intro, access explainer before the iOS prompt, first-run flag persisted in the kv-store, reachable again from Settings
+   - P1-MOT-001: home reveal stagger (once per session, at most 4 groups, skipped under reduced motion)
+   - P1-UI-006: Increase Contrast palette, covered by the contrast tests
+   - P1-UI-008: prune unused template deps (expo-glass-effect, expo-device, expo-web-browser) if still unused; doctor and bundle must pass
+   - P1-UI-009: gallery completion (job bar states, sheets, chips)
+   - P1-QA-001: accessibility pass (labels, roles, largest Dynamic Type, Reduce Motion, Reduce Transparency)
+   - P1-UI-007 (licensed fixture photos) is optional; skip if licensing is uncertain
+2. **Then P2-DUP-001 "Find exact copies"**: a separate, user-started, pausable job (about 50 ms per photo measured on iPhone 17, so roughly 8 minutes for 10,000 photos).
+   - Eligible only: not a Live Photo; `getIsInCloud()` false (so nothing downloads); the `getUri()` file proves it is the camera original (path under `DCIM`, file name matches the catalog filename). Everything else is reported as "not checked" with the reason.
+   - Hash with `File.info({ md5: true })`; only compare files of equal byte size; confirm candidates with a second, stronger check (SHA-256 via expo-crypto if it works in Expo Go SDK 57, otherwise full byte comparison) before calling them exact copies.
+   - Persist fingerprints in a new migration with representation, algorithm, implementation version and the asset's modification time; invalidate on change.
+   - Results feed the existing "exact" category and review flow. Keeper rule, protection, favorites-never-suggested and the disabled Remove button all stay.
+   - Add Diagnostics checks for an **edited** photo and a **Live Photo** to gather evidence before widening eligibility.
+3. **Owner**: Phase 1 design checkpoint; Phase 3 decision (Apple Developer Program) when ready. Removal, blur detection and metadata-preserving copies need native code.
 
 ## Blockers / owner input
 
