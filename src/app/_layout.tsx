@@ -58,6 +58,13 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="review/[groupId]"
+            options={{
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <Stack.Screen
             name="scan"
             options={{
               presentation: 'formSheet',

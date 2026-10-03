@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
@@ -155,9 +156,18 @@ export function GroupReview({ group }: { group: GroupFinding }) {
           );
         })}
       </View>
-      <AppText variant="footnote" color="secondaryLabel">
-        Touch and hold a photo to keep it instead or to protect it.
-      </AppText>
+      <View style={styles.footer}>
+        <AppText variant="footnote" color="secondaryLabel" style={styles.flex}>
+          Touch and hold a photo to keep it instead or to protect it.
+        </AppText>
+        <Button
+          title="Compare"
+          icon="compare"
+          variant="secondary"
+          accessibilityHint={`Opens ${group.title} full screen`}
+          onPress={() => router.push(`/review/${group.id}`)}
+        />
+      </View>
     </View>
   );
 }
@@ -174,5 +184,6 @@ const styles = StyleSheet.create({
   },
   // Two columns. No flexGrow: an odd last photo keeps its size instead of stretching.
   cell: { width: '48%' },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   skipped: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

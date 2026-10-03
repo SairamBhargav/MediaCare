@@ -16,7 +16,7 @@ Route files live in `src/app/`; bodies in `src/screens/`. "Built" means present 
 │
 ├── onboarding/*               P1-ONB-001..003
 ├── scan           → formSheet Built (P1-JOB-002): expanded scan detail
-├── review/[groupId]           P1-REV-002 (full-screen compare for one group)
+├── review/[groupId] → push  Built (P1-REV-002/003): full-screen review of one group
 ├── asset/[id]                 P1-LIB-003 (viewer)
 ├── studio/export/[id]         P2-EXP-*
 └── activity                   P3-ACT-001
@@ -56,6 +56,15 @@ Route files live in `src/app/`; bodies in `src/screens/`. "Built" means present 
 | Acceptance   | Progress only from job events; stop keeps progress; nothing claims real photos were read                                                                                                                                                                              |
 
 **Job bar (above the tab bar) — Built.** Floating capsule shown only while a scan exists: title, one-line status, pause/resume (or dismiss when finished), hairline progress. Tap opens the scan sheet, or the results once done. Bottom insets grow while it shows, so it never covers content.
+
+## Group review (`/review/[groupId]`) — Built (sample)
+
+| Aspect       | Spec                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Purpose      | Inspect one group closely and decide                                                                                                                                                                                                                                                                                                                                                                                              |
+| Entry / exit | "Compare" on a group in its category; back swipe, "Done" on the last group                                                                                                                                                                                                                                                                                                                                                        |
+| Built now    | Group position pill; **One at a time** (native paging + pinch zoom) or **Side by side** (keeper next to this photo); Previous/Next buttons and a thumbnail strip with keeper/protected/marked markers; status (Keeper, Protected, Marked for review, Not marked), sample size and plain-language differences from the keeper; Mark for review / Unmark, Keep this one, Protect/Unprotect; **Next group** with a settle transition |
+| Acceptance   | Swiping only changes the viewed photo; keeper and protected photos can't be marked; choices are shared with the category screen; every gesture has a button alternative                                                                                                                                                                                                                                                           |
 
 ## Category (`/category/[category]`) — Built (sample)
 
