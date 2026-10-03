@@ -83,7 +83,7 @@ Device test 1 is done: scan, Library, thumbnails and Compare work (after fixes P
 
 - The GitHub repo is **public** (checked 2026-10-02). Make it private unless you intend to publish (A4).
 - **Decided 2026-10-03: the owner is enrolling in the Apple Developer Program** (so face/eye analysis, similarity and blur can use Apple Vision, and the owner's dad can test via TestFlight). Still needed from the owner: membership approved, a bundle identifier (e.g. `com.<name>.mediacare`), and a go-ahead before the first EAS build.
-- Both libraries are real and personal (the owner's and the dad's); test photos are used for testing, never treated as disposable. Removal stays disabled in every build until it is proven only on test photos the owner deliberately creates for that purpose (e.g. screenshots taken for the test), with the owner's explicit go-ahead each time. **On hold until the Apple Developer account is approved (owner, 2026-10-03).**
+- Both libraries are real and personal (the owner's and the dad's); test photos are used for testing, never treated as disposable. Removal stays disabled in every build until it is proven only on test photos the owner deliberately creates for that purpose (e.g. screenshots taken for the test), with the owner's explicit go-ahead each time. **Apple Developer Program purchased 2026-10-03**; waiting for the bundle identifier and the go-ahead for Phase 3 setup.
 
 ## Notes
 
