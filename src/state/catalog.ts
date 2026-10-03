@@ -11,6 +11,7 @@ import {
   type ScanJobRow,
 } from '@/db/catalog-repo';
 import { toPhotoItem, type PhotoItem } from '@/domain/media';
+import { useLibrarySession } from '@/state/library-session';
 import {
   getAccess,
   manageSelection,
@@ -103,6 +104,7 @@ export const useCatalog = create<CatalogState>()((set, get) => ({
   clear: async () => {
     await clearCatalog();
     set({ items: [], byId: new Map(), protectedIds: new Set(), lastScan: null });
+    useLibrarySession.getState().reset();
   },
 }));
 

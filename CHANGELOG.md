@@ -2,6 +2,7 @@
 
 ## Unreleased: Phase 1 polish, then exact copies
 
+- Library keeps its place (P1-LIB-005): Select mode, the selection and the scroll position survive tab switches and the screen being rebuilt; photos that leave the library drop out of the selection; Clear data resets it.
 - Increase Contrast (P1-UI-006): when iOS Increase Contrast is on, the app uses stronger palettes (black or white labels, 7:1 body text, visible separators, near-opaque bars). Tests check they meet every standard pair and never lower one.
 - Removed unused template packages expo-glass-effect, expo-device and expo-web-browser (P1-UI-008). Doctor 21/21, iOS bundle exports.
 

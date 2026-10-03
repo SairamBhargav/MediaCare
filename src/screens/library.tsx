@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SectionList, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -18,6 +18,7 @@ import { jobProgressText } from '@/features/clean/job-text';
 import type { MediaItem } from '@/features/media/registry';
 import { hasPhotoAccess, useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
+import { useLibrarySession } from '@/state/library-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
 const GAP = 2;
@@ -32,14 +33,20 @@ type Row = { key: string; assets: MediaItem[] };
  * Shows your Photos library once it has been cataloged; until then, the
  * sample library with a way to scan. Thumbnails are decoded by iOS at tile
  * size; nothing full-size is loaded here. Tap a photo to open it.
+ *
+ * Select mode, the selection and the scroll position live in the library
+ * session, so switching tabs (or the screen being rebuilt) keeps them.
  */
 export function LibraryScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomChrome = useBottomChromeHeight();
   const { width, fontScale } = useWindowDimensions();
-  const [selecting, setSelecting] = useState(false);
-  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const selecting = useLibrarySession((session) => session.selecting);
+  const selected = useLibrarySession((session) => session.selected);
+  const { setSelecting, toggle, retain, rememberOffset } = useLibrarySession.getState();
+  // Read once: the list restores from it on mount, then reports back at rest.
+  const [initialOffset] = useState(() => useLibrarySession.getState().scrollOffset);
 
   const items = useCatalog((catalog) => catalog.items);
   const access = useCatalog((catalog) => catalog.access);
@@ -65,14 +72,10 @@ export function LibraryScreen() {
     [source, columns],
   );
 
-  const toggle = useCallback((id: string) => {
-    setSelected((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  // Photos removed from the library (or no longer shared) leave the selection.
+  useEffect(() => {
+    retain(new Set(source.map((item) => item.id)));
+  }, [source, retain]);
 
   const scan = () => {
     useCleanSession
@@ -139,6 +142,9 @@ export function LibraryScreen() {
         keyExtractor={(row) => row.key}
         extraData={{ selected, selecting }}
         stickySectionHeadersEnabled
+        contentOffset={{ x: 0, y: initialOffset }}
+        onScrollEndDrag={(event) => rememberOffset(event.nativeEvent.contentOffset.y)}
+        onMomentumScrollEnd={(event) => rememberOffset(event.nativeEvent.contentOffset.y)}
         initialNumToRender={12}
         windowSize={7}
         maxToRenderPerBatch={8}
@@ -178,10 +184,7 @@ export function LibraryScreen() {
               <Button
                 title={selecting ? 'Done' : 'Select'}
                 variant="secondary"
-                onPress={() => {
-                  setSelecting((value) => !value);
-                  setSelected(new Set());
-                }}
+                onPress={() => setSelecting(!selecting)}
                 style={styles.selectButton}
               />
             </View>
