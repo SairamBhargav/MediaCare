@@ -24,6 +24,7 @@ These rules override convenience. Code reviews check them.
 ## Editing and exports
 
 - Originals are never modified. Outputs are new files with lineage (source, operations, versions).
+- Copies made with the Phase 2 exporter keep orientation but **not** the capture date or location (verified on device 2026-10-03). The app says so before you make a copy. Preserving metadata needs native code (Phase 3).
 - An export is accepted only after it decodes and meets requested constraints (dimensions, bytes). Insufficient disk is handled; temp files are cleaned.
 - Transparency, HDR, high bit depth, animation and paired media are never flattened silently. A transparent PNG becomes JPEG only with a chosen background and confirmation.
 - GPS: "Remove location when sharing" is offered separately from archival metadata preservation.

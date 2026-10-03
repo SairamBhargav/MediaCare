@@ -90,6 +90,8 @@ export function ExportScreen({ id }: { id: string }) {
 
   const longEdge = Math.max(item.width, item.height);
   const edges = MAX_EDGES.filter((edge) => edge === null || edge < longEdge);
+  // Device evidence 1: a full-size q90 JPEG of a 1.8 MB HEIC came out at 3.2 MB.
+  const isHeic = /\.(heic|heif)$/i.test(item.filename ?? '');
 
   const run = async () => {
     session.current?.cleanup();
@@ -229,6 +231,12 @@ export function ExportScreen({ id }: { id: string }) {
                   />
                 ))}
               </View>
+              {maxEdge === null && isHeic ? (
+                <AppText variant="footnote" color="warning">
+                  Full-size JPEG copies of HEIC photos are often larger than the original. A smaller
+                  largest side usually saves space.
+                </AppText>
+              ) : null}
             </>
           ) : (
             <>
@@ -266,8 +274,8 @@ export function ExportScreen({ id }: { id: string }) {
           )}
 
           <Note icon="lock">
-            The copy is a JPEG. Your original stays exactly as it is. The copy may not keep the
-            original’s location or camera details, and appears in Photos with today’s date.
+            The copy is a JPEG and your original stays exactly as it is. The copy doesn’t keep the
+            original’s date or location: it appears in Photos as a new photo dated today.
           </Note>
           <Button title="Make copy" icon="photo" onPress={run} block />
         </View>
