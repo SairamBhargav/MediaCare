@@ -68,6 +68,17 @@ export default function RootLayout() {
           />
           <Stack.Screen name="plan" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen
+            name="export/[id]"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="photo/[id]"
+            options={{
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <Stack.Screen
             name="scan"
             options={{
               presentation: 'formSheet',

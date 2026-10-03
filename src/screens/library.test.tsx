@@ -17,7 +17,7 @@ test('the library opens on the newest month with its count', async () => {
   const [newest] = groupByMonth(sampleLibrary);
   await render(<LibraryScreen />);
   expect(screen.getByText(newest.title)).toBeOnTheScreen();
-  expect(screen.getByText(`${newest.items.length} photos`)).toBeOnTheScreen();
+  expect(screen.getByText(`${newest.items.length} items`)).toBeOnTheScreen();
   expect(screen.getByText(`${sampleLibrary.length} sample images`)).toBeOnTheScreen();
 });
 

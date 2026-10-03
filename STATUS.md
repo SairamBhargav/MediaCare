@@ -1,7 +1,15 @@
 # Status
 
-**Current phase:** 1 (polished Expo Go experience on sample data), in progress
-**Last updated:** 2026-10-02
+**Current phase:** 2 (real photos) in progress, paused mid-phase; Phase 1 owner checkpoint still pending
+**Last updated:** 2026-10-03
+
+## Phase 2 progress
+
+Built and pushed: photo access (full/limited/denied), SQLite catalog, resumable metadata-only library scan, honest real findings (moments within 2 s, screenshots, long videos; favorites never suggested), Clean home for real results, Library showing real photos, photo viewer with Protect, and **Make a smaller copy** (quality or target size, measured bytes, decode check, save as a new photo, share). 183 tests pass.
+
+Evidence from expo-media-library's iOS source: `getUri()` / `getInfo()` return the current (edited) rendition and download from iCloud, so exact duplicates need a native module (Phase 3). Video duration from metadata is already in milliseconds.
+
+**Remaining before Phase 2 exit:** Studio entry point and copies list; Settings photo-access row and "Clear MediaCare data"; on-device diagnostics screen for spikes S1/S3/S5; docs (CAPABILITIES, SCREENS, DATA_MODEL, BACKLOG, CHANGELOG); then the owner's real-photo test.
 
 ## Completed
 
