@@ -26,7 +26,7 @@ You develop on Windows and test on a physical iPhone. No Mac, Xcode or iOS Simul
 npm start
 ```
 
-A QR code appears in the terminal. On the iPhone, open the **Camera** app, point it at the QR code and tap the banner. Expo Go opens and loads the app. Save a file on the PC and the phone reloads.
+A QR code appears in the terminal. On the iPhone, open the **Camera** app, point it at the QR code and tap the banner. Expo Go opens and loads the app. Save a file on the PC and the phone reloads. (`npm start` is pinned to Expo Go with `--go`; once the development build is installed, use `npm run start:dev-client` instead.)
 
 Useful keys in the terminal: `r` reload, `j` open debugger, `?` all commands.
 
