@@ -8,10 +8,12 @@
     "scheme": "mediacare",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.bhargav.mediacare",
       "icon": "./assets/expo.icon",
       "supportsTablet": false,
       "infoPlist": {
-        "CADisableMinimumFrameDurationOnPhone": true
+        "CADisableMinimumFrameDurationOnPhone": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
