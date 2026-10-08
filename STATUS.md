@@ -117,3 +117,10 @@ Done in code (408 tests, doctor 21/21, iOS bundle):
 - Native v2 (needs the next build): body pose + layout checks for similar shots (P3-SIM-002), exact copies for edited and Live Photos via SHA-256 of every Photos resource (P3-DUP-002). Stored analysis carries the native version, so results are redone after updating.
 
 Next: owner decides between building now (compile native v2 early) or after Studio hub (P5) and video (P6).
+
+## Next session (handoff, 2026-10-08)
+
+- The dev build is on the owner's iPhone and loads after `npx expo start --dev-client --clear` (a plain restart left stale code after the package updates).
+- Owner to test with a reload: safe removal (on purpose-made screenshots only, after turning on Settings → Allow removing photos) and Passport photo (U.S.).
+- Decision pending: next EAS development build now (compiles native v2: pose/layout, exact copies for edited and Live Photos) or after Studio hub (P5) and video (P6).
+- Then: re-run "Look at my photos" after the new build; tune thresholds from Compare's tuning line; production build → TestFlight for the owner and his dad.
