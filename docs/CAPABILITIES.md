@@ -87,14 +87,14 @@ Built from Device evidence 1 and the installed SDK 57 sources:
 
 ## Phase 3/4 native analysis (2026-10-07, written, not yet compiled)
 
-| Capability                            | Delivery                     | Status                               | Notes                                                                                                           |
-| ------------------------------------- | ---------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Vision feature prints (similar shots) | MediaCare app build          | `implemented` · awaiting first build | `VNGenerateImageFeaturePrintRequest` on a ≤512 px local rendition; JS normalizes and compares within 10 minutes |
-| Sharpness / blur                      | MediaCare app build          | `implemented` · awaiting first build | Laplacian variance on 256 px greyscale, whole frame and sharpest of 4×4 tiles                                   |
-| Faces: capture quality, eyes          | MediaCare app build          | `implemented` · awaiting first build | `VNDetectFaceLandmarksRequest` + `VNDetectFaceCaptureQualityRequest`; eye openness = outline height/width       |
-| Exposure                              | MediaCare app build          | `implemented` · awaiting first build | Mean brightness, share near black / near white                                                                  |
-| Enhance, red-eye                      | MediaCare app build          | `implemented` · awaiting first build | `CIImage.autoAdjustmentFilters`; red-eye reports when nothing was found                                         |
-| Background removal                    | MediaCare app build, iOS 17+ | `implemented` · awaiting first build | `VNGenerateForegroundInstanceMaskRequest`, transparent PNG cropped to the subject                               |
+| Capability                            | Delivery                     | Status                                                                   | Notes                                                                                                           |
+| ------------------------------------- | ---------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Vision feature prints (similar shots) | MediaCare app build          | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | `VNGenerateImageFeaturePrintRequest` on a ≤512 px local rendition; JS normalizes and compares within 10 minutes |
+| Sharpness / blur                      | MediaCare app build          | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | Laplacian variance on 256 px greyscale, whole frame and sharpest of 4×4 tiles                                   |
+| Faces: capture quality, eyes          | MediaCare app build          | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | `VNDetectFaceLandmarksRequest` + `VNDetectFaceCaptureQualityRequest`; eye openness = outline height/width       |
+| Exposure                              | MediaCare app build          | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | Mean brightness, share near black / near white                                                                  |
+| Enhance, red-eye                      | MediaCare app build          | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | `CIImage.autoAdjustmentFilters`; red-eye reports when nothing was found                                         |
+| Background removal                    | MediaCare app build, iOS 17+ | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | `VNGenerateForegroundInstanceMaskRequest`, transparent PNG cropped to the subject                               |
 
 All read with `isNetworkAccessAllowed = false`: iCloud-only photos are reported, not downloaded. Thresholds are provisional (`VISUAL_THRESHOLDS`), to be tuned with Diagnostics → Vision check.
 

@@ -99,3 +99,7 @@ Build a feature-rich app before spending builds: the testers would rather have m
 Written and tested on Windows (375 tests, doctor 21/21, iOS bundle): native module (Vision analysis + Enhance/red-eye/background tools), similar shots by look with keeper reasons, blur / eyes-closed / exposure flags, pausable photo check with storage (migration 3), Edit tools in the viewer, Diagnostics → Vision check. **Not compiled yet**: the Swift compiles only in an EAS build.
 
 Next (owner): `npx eas-cli@latest device:create`, then `npx eas-cli@latest build --profile development --platform ios`; install; `npm run start:dev-client`. Then run Diagnostics → Vision check and share it so thresholds can be tuned; after that, a production build to TestFlight for the owner and his dad.
+
+## First development build, 2026-10-07
+
+EAS development build (free tier) compiled the MediaAnalysis native module on the first attempt; installed on the owner's iPhone 17 with Developer Mode; the app runs from `npm run start:dev-client`. Feature checks on device: awaiting owner test (Look at my photos, Edit tools, Diagnostics → Vision check).
