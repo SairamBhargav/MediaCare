@@ -44,6 +44,9 @@ const ICONS = {
   chevronUp: { ios: 'chevron.up', android: 'expand_less' },
   checkCircle: { ios: 'checkmark.circle.fill', android: 'check_circle' },
   circle: { ios: 'circle', android: 'radio_button_unchecked' },
+  eye: { ios: 'eye.slash', android: 'visibility_off' },
+  enhance: { ios: 'wand.and.rays', android: 'auto_fix_high' },
+  cutout: { ios: 'scissors', android: 'content_cut' },
   scan: { ios: 'sparkle.magnifyingglass', android: 'image_search' },
 } as const satisfies Record<string, { ios: SFSymbol; android: string }>;
 

@@ -15,9 +15,12 @@
  * Categories. Sample data uses similar/exact/blurry/large. Real-library
  * scans in Phase 2 only produce categories that metadata can support
  * honestly: moments (taken seconds apart), screenshots, long videos.
+ * Phase 3 adds on-device visual analysis (Apple Vision): similar shots that
+ * actually look alike, possibly blurry, eyes closed, too dark or too bright.
  */
 export type GroupCategory = 'similar' | 'exact' | 'moments';
-export type ItemCategory = 'blurry' | 'large' | 'screenshots' | 'long-videos';
+export type ItemCategory =
+  'blurry' | 'eyes-closed' | 'exposure' | 'large' | 'screenshots' | 'long-videos';
 export type FindingCategory = GroupCategory | ItemCategory;
 
 export const CATEGORY_ORDER: readonly FindingCategory[] = [
@@ -25,6 +28,8 @@ export const CATEGORY_ORDER: readonly FindingCategory[] = [
   'moments',
   'exact',
   'blurry',
+  'eyes-closed',
+  'exposure',
   'screenshots',
   'large',
   'long-videos',

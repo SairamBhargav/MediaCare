@@ -1,0 +1,206 @@
+import { toPhotoItem, type PhotoItem, type PhotoRecord } from './media';
+import {
+  VISUAL_THRESHOLDS,
+  chooseKeeper,
+  featureDistance,
+  normalize,
+  qualityFlags,
+  similarFindings,
+  similarSets,
+  type VisualFace,
+  type VisualScores,
+} from './visual-findings';
+
+function photo(id: string, at: number, overrides: Partial<PhotoRecord> = {}): PhotoItem {
+  return toPhotoItem({
+    id,
+    kind: 'photo',
+    creationTime: at,
+    modificationTime: 1,
+    width: 4032,
+    height: 3024,
+    durationMs: null,
+    isFavorite: false,
+    subtypes: [],
+    filename: `${id}.HEIC`,
+    ...overrides,
+  });
+}
+
+const face = (overrides: Partial<VisualFace> = {}): VisualFace => ({
+  quality: 0.5,
+  leftEyeOpen: 0.3,
+  rightEyeOpen: 0.3,
+  width: 0.2,
+  height: 0.2,
+  ...overrides,
+});
+
+function scores(print: number[] | null, overrides: Partial<VisualScores> = {}): VisualScores {
+  return {
+    featurePrint: print ? normalize(print) : null,
+    sharpness: 300,
+    sharpnessMaxTile: 800,
+    brightness: 0.5,
+    darkFraction: 0.01,
+    brightFraction: 0.01,
+    faces: [],
+    ...overrides,
+  };
+}
+
+const T0 = 1_750_000_000_000;
+
+describe('feature distance', () => {
+  test('identical prints are 0 apart; opposite are 2; missing is never similar', () => {
+    const a = normalize([1, 2, 3]);
+    expect(featureDistance(a, normalize([2, 4, 6]))).toBeCloseTo(0);
+    expect(featureDistance(normalize([1, 0]), normalize([-1, 0]))).toBeCloseTo(2);
+    expect(featureDistance(a, null)).toBe(Number.POSITIVE_INFINITY);
+    expect(featureDistance(a, normalize([1, 2]))).toBe(Number.POSITIVE_INFINITY);
+  });
+});
+
+describe('similar sets', () => {
+  test('photos that look alike and were taken together form one group', () => {
+    const items = [photo('a', T0), photo('b', T0 + 1000), photo('c', T0 + 2000)];
+    const map = new Map([
+      ['a', scores([1, 0, 0])],
+      ['b', scores([0.98, 0.05, 0])],
+      ['c', scores([0.97, 0.08, 0.01])],
+    ]);
+    expect(similarSets(items, map)).toEqual([['a', 'b', 'c']]);
+  });
+
+  test('two different photos taken seconds apart are NOT grouped (the timing-only bug)', () => {
+    const items = [photo('dog', T0), photo('cake', T0 + 1000)];
+    const map = new Map([
+      ['dog', scores([1, 0, 0])],
+      ['cake', scores([0, 1, 0])],
+    ]);
+    expect(similarSets(items, map)).toEqual([]);
+  });
+
+  test('look-alikes taken hours apart are not grouped; unanalyzed photos are left out', () => {
+    const items = [photo('a', T0), photo('b', T0 + 3 * 3600_000), photo('c', T0 + 1000)];
+    const map = new Map([
+      ['a', scores([1, 0, 0])],
+      ['b', scores([1, 0, 0])],
+    ]);
+    expect(similarSets(items, map)).toEqual([]);
+  });
+
+  test('screenshots and videos are never in similar groups', () => {
+    const items = [
+      photo('a', T0, { subtypes: ['screenshot'] }),
+      photo('b', T0 + 500, { subtypes: ['screenshot'] }),
+      photo('v', T0 + 600, { kind: 'video', durationMs: 1000 }),
+    ];
+    const map = new Map(items.map((item) => [item.id, scores([1, 0, 0])]));
+    expect(similarSets(items, map)).toEqual([]);
+  });
+});
+
+describe('keeper', () => {
+  test('a favorite always wins', () => {
+    const items = [photo('a', T0), photo('b', T0 + 1, { isFavorite: true })];
+    const map = new Map([
+      ['a', scores([1], { sharpnessMaxTile: 2000 })],
+      ['b', scores([1], { sharpnessMaxTile: 10 })],
+    ]);
+    expect(chooseKeeper(items, map)).toEqual({
+      keeperId: 'b',
+      reason: 'Marked as a favorite in Photos',
+    });
+  });
+
+  test('the sharpest photo wins and the reason says so', () => {
+    const items = [photo('soft', T0), photo('sharp', T0 + 1)];
+    const map = new Map([
+      ['soft', scores([1], { sharpnessMaxTile: 80 })],
+      ['sharp', scores([1], { sharpnessMaxTile: 900 })],
+    ]);
+    const keeper = chooseKeeper(items, map);
+    expect(keeper.keeperId).toBe('sharp');
+    expect(keeper.reason).toMatch(/^Sharpest/);
+  });
+
+  test('closed eyes outweigh a little extra sharpness', () => {
+    const items = [photo('blink', T0), photo('open', T0 + 1)];
+    const map = new Map([
+      [
+        'blink',
+        scores([1], {
+          sharpnessMaxTile: 1000,
+          faces: [face({ leftEyeOpen: 0.02, rightEyeOpen: 0.03 })],
+        }),
+      ],
+      ['open', scores([1], { sharpnessMaxTile: 800, faces: [face()] })],
+    ]);
+    const keeper = chooseKeeper(items, map);
+    expect(keeper.keeperId).toBe('open');
+    expect(keeper.reason).toMatch(/eyes open/i);
+  });
+
+  test('similar findings carry the keeper and its reason', () => {
+    const items = [photo('a', T0), photo('b', T0 + 1000)];
+    const map = new Map([
+      ['a', scores([1, 0], { sharpnessMaxTile: 100 })],
+      ['b', scores([1, 0.01], { sharpnessMaxTile: 700 })],
+    ]);
+    const [group] = similarFindings(items, map);
+    expect(group).toMatchObject({ category: 'similar', memberIds: ['a', 'b'], keeperId: 'b' });
+    expect(group.keeperReason).toMatch(/Sharpest/);
+  });
+});
+
+describe('quality flags', () => {
+  const T = VISUAL_THRESHOLDS;
+
+  test('blurry everywhere is flagged; a sharp subject on a soft background is not', () => {
+    const items = [photo('blurry', T0), photo('bokeh', T0 + 1)];
+    const map = new Map([
+      ['blurry', scores(null, { sharpness: 10, sharpnessMaxTile: T.blurMaxTile - 1 })],
+      ['bokeh', scores(null, { sharpness: 15, sharpnessMaxTile: 600 })],
+    ]);
+    const flags = qualityFlags(items, map);
+    expect(flags.map((flag) => [flag.assetId, flag.category])).toEqual([['blurry', 'blurry']]);
+    expect(flags[0].reason).toMatch(/sharpness \d+/);
+  });
+
+  test('closed eyes are flagged with how many people; tiny background faces are ignored', () => {
+    const items = [photo('group', T0), photo('crowd', T0 + 1)];
+    const closed = face({ leftEyeOpen: 0.05, rightEyeOpen: 0.04 });
+    const map = new Map([
+      ['group', scores(null, { faces: [closed, face(), face()] })],
+      ['crowd', scores(null, { faces: [face({ ...closed, width: 0.05, height: 0.05 })] })],
+    ]);
+    const flags = qualityFlags(items, map);
+    expect(flags).toHaveLength(1);
+    expect(flags[0]).toMatchObject({ category: 'eyes-closed', assetId: 'group' });
+    expect(flags[0].reason).toBe('Eyes may be closed (1 of 3 people)');
+  });
+
+  test('one eye winking or unknown eyes are not "closed"', () => {
+    const items = [photo('wink', T0), photo('unknown', T0 + 1)];
+    const map = new Map([
+      ['wink', scores(null, { faces: [face({ leftEyeOpen: 0.02 })] })],
+      ['unknown', scores(null, { faces: [face({ leftEyeOpen: -1, rightEyeOpen: -1 })] })],
+    ]);
+    expect(qualityFlags(items, map)).toEqual([]);
+  });
+
+  test('very dark and blown-out photos are flagged with the measurement', () => {
+    const items = [photo('dark', T0), photo('bright', T0 + 1), photo('ok', T0 + 2)];
+    const map = new Map([
+      ['dark', scores(null, { brightness: 0.05, darkFraction: 0.8 })],
+      ['bright', scores(null, { brightFraction: 0.6 })],
+      ['ok', scores(null)],
+    ]);
+    const flags = qualityFlags(items, map);
+    expect(flags.map((flag) => [flag.assetId, flag.reason])).toEqual([
+      ['dark', 'Very dark (80% near black)'],
+      ['bright', 'Mostly blown out (60% near white)'],
+    ]);
+  });
+});

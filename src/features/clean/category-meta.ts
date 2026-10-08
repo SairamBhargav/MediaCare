@@ -33,6 +33,18 @@ export const CATEGORY_META: Record<FindingCategory, CategoryMeta> = {
     description: 'Little sharp detail. Blur is sometimes on purpose, so look before you decide.',
     unit: ['photo', 'photos'],
   },
+  'eyes-closed': {
+    title: 'Eyes closed',
+    icon: 'eye',
+    description: 'Someone in the photo may have their eyes closed. Look before you decide.',
+    unit: ['photo', 'photos'],
+  },
+  exposure: {
+    title: 'Too dark or too bright',
+    icon: 'sun',
+    description: 'Mostly black or mostly blown out. Some are on purpose, like night skies.',
+    unit: ['photo', 'photos'],
+  },
   large: {
     title: 'Large files',
     icon: 'storage',
