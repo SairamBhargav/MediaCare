@@ -3,6 +3,9 @@ import { Asset } from 'expo-media-library';
 
 import { formatBytes } from '@/domain/bytes';
 import { provesCameraOriginal } from '@/domain/exact-copies';
+import { VISUAL_THRESHOLDS, featureDistance, normalize } from '@/domain/visual-findings';
+import { isAnalyzable } from '@/domain/visual-records';
+import { analyzePhotos } from '@/services/media/visual-analysis';
 import type { PhotoItem } from '@/domain/media';
 import { createEncoder, verifyOutput } from '@/services/exports/exporter';
 
@@ -140,6 +143,55 @@ export async function livePhotoCheck(items: readonly PhotoItem[]): Promise<strin
       );
     }
   }
+  return lines.join('\n');
+}
+
+/**
+ * Phase 3 tuning: raw Apple Vision scores for the newest photos, and how far
+ * apart each neighbouring pair looks. Compare with what you see to set the
+ * thresholds in VISUAL_THRESHOLDS. Photos only in iCloud are skipped.
+ */
+export async function visionCheck(items: readonly PhotoItem[]): Promise<string> {
+  const photos = items.filter(isAnalyzable).slice(0, 12);
+  if (photos.length === 0) return 'No photos in the catalog.';
+  const started = Date.now();
+  const results = await analyzePhotos(photos.map((item) => item.id));
+  const elapsed = Date.now() - started;
+  const T = VISUAL_THRESHOLDS;
+  const lines = [
+    `${photos.length} photos in ${elapsed} ms (${Math.round(elapsed / photos.length)} ms each).`,
+    `Thresholds: similar ≤ ${T.similarDistance}, blurry if sharpest tile < ${T.blurMaxTile}, eye closed < ${T.eyeClosed}.`,
+  ];
+  const prints = results.map((result) =>
+    result.featurePrint && result.featurePrint.length > 0 ? normalize(result.featurePrint) : null,
+  );
+  results.forEach((result, index) => {
+    const item = photos[index];
+    if (result.status !== 'ok') {
+      lines.push(`• ${item.filename ?? item.id}: ${result.status}`);
+      return;
+    }
+    const faces = (result.faces ?? [])
+      .map(
+        (face) =>
+          `q${face.quality.toFixed(2)} eyes ${face.leftEyeOpen.toFixed(2)}/${face.rightEyeOpen.toFixed(2)} size ${(face.width * face.height).toFixed(3)}`,
+      )
+      .join('; ');
+    const next = prints[index + 1];
+    const distance = next ? featureDistance(prints[index], next) : null;
+    lines.push(
+      [
+        `• ${item.filename ?? item.id} (${result.analyzedWidth}×${result.analyzedHeight})`,
+        `  sharpness ${Math.round(result.sharpness ?? 0)}, sharpest tile ${Math.round(result.sharpnessMaxTile ?? 0)}; brightness ${(result.brightness ?? 0).toFixed(2)}, dark ${Math.round((result.darkFraction ?? 0) * 100)}%, bright ${Math.round((result.brightFraction ?? 0) * 100)}%`,
+        `  print: ${result.featurePrint?.length ?? 0} values; faces: ${faces || 'none'}`,
+        distance !== null && Number.isFinite(distance)
+          ? `  looks-alike distance to next: ${distance.toFixed(3)}${distance <= T.similarDistance ? ' (similar)' : ''}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    );
+  });
   return lines.join('\n');
 }
 

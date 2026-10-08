@@ -10,7 +10,9 @@ import {
   exportCheck,
   fileCheck,
   livePhotoCheck,
+  visionCheck,
 } from '@/features/diagnostics/device-checks';
+import { visualAnalysisAvailable } from '@/services/media/visual-analysis';
 import { formatFacts, libraryFacts } from '@/features/diagnostics/library-facts';
 import { useCatalog } from '@/state/catalog';
 import { gutter, spacing, useTheme } from '@/theme';
@@ -29,7 +31,8 @@ export function DiagnosticsScreen() {
   const [exportReport, setExportReport] = useState<string | null>(null);
   const [editedReport, setEditedReport] = useState<string | null>(null);
   const [liveReport, setLiveReport] = useState<string | null>(null);
-  const [busy, setBusy] = useState<'file' | 'export' | 'edited' | 'live' | null>(null);
+  const [visionReport, setVisionReport] = useState<string | null>(null);
+  const [busy, setBusy] = useState<'file' | 'export' | 'edited' | 'live' | 'vision' | null>(null);
 
   const photos = items.filter((item) => item.kind === 'photo');
   const header = [
@@ -55,15 +58,24 @@ export function DiagnosticsScreen() {
     '',
     'LIVE PHOTO CHECK',
     liveReport ?? 'not run',
+    '',
+    'VISION CHECK',
+    visionReport ?? 'not run',
   ].join('\n');
 
-  const run = async (kind: 'file' | 'export' | 'edited' | 'live') => {
+  const run = async (kind: 'file' | 'export' | 'edited' | 'live' | 'vision') => {
     setBusy(kind);
     try {
       if (kind === 'file') setFileReport(await fileCheck(photos.slice(0, 3)));
       else if (kind === 'edited') setEditedReport(await editedCheck(items));
       else if (kind === 'live') setLiveReport(await livePhotoCheck(items));
-      else if (photos[0]) setExportReport(await exportCheck(photos[0]));
+      else if (kind === 'vision') {
+        setVisionReport(
+          await visionCheck(items).catch((error: unknown) =>
+            error instanceof Error ? `Failed: ${error.message}` : 'Failed',
+          ),
+        );
+      } else if (photos[0]) setExportReport(await exportCheck(photos[0]));
     } finally {
       setBusy(null);
     }
@@ -148,6 +160,23 @@ export function DiagnosticsScreen() {
           onPress={() => run('live')}
         />
         {liveReport ? <Mono text={liveReport} /> : null}
+      </Surface>
+
+      <Surface style={styles.section}>
+        <AppText variant="headline">Vision check (12 newest photos)</AppText>
+        <AppText variant="footnote" color="secondaryLabel">
+          {visualAnalysisAvailable()
+            ? 'Raw on-device scores used for similar shots, blur, eyes and exposure, and how alike each photo is to the next. Used to tune the thresholds on real photos.'
+            : 'Needs the MediaCare app build; not available in Expo Go.'}
+        </AppText>
+        <Button
+          title={busy === 'vision' ? 'Checking…' : 'Run Vision check'}
+          variant="secondary"
+          loading={busy === 'vision'}
+          disabled={!visualAnalysisAvailable() || photos.length === 0 || busy !== null}
+          onPress={() => run('vision')}
+        />
+        {visionReport ? <Mono text={visionReport} /> : null}
       </Surface>
 
       <Button
