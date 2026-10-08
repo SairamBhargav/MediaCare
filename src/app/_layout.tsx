@@ -98,6 +98,7 @@ export default function RootLayout() {
             options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }}
           />
           <Stack.Screen name="access" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="tool/[id]" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="gallery" options={{ title: 'Components & Motion' }} />
           <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
         </Stack>

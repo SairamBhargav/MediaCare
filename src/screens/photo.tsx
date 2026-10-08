@@ -40,8 +40,11 @@ import {
   type TileTransform,
 } from '@/domain/viewer-geometry';
 import { findMediaItem, isSample, type MediaItem } from '@/features/media/registry';
+import { TOOLS, type ToolKind } from '@/screens/tool';
+import { visualAnalysisAvailable } from '@/services/media/visual-analysis';
 import { useCatalog } from '@/state/catalog';
 import { useViewerOrigin } from '@/state/viewer-origin';
+import { showPhotoActions } from '@/utils/photo-actions';
 import {
   duration,
   easing,
@@ -402,6 +405,24 @@ function Toolbar({
           icon="photo"
           onPress={() => router.push(`/export/${encodeURIComponent(item.id)}`)}
           accessibilityHint="Makes a new, smaller copy. The original stays as it is."
+          style={styles.toolbarButton}
+        />
+      ) : null}
+      {!sample && item.kind === 'photo' && visualAnalysisAvailable() ? (
+        <Button
+          title="Edit"
+          icon="enhance"
+          variant="secondary"
+          onPress={() =>
+            showPhotoActions('Edit a copy', [
+              ...(Object.keys(TOOLS) as ToolKind[]).map((tool) => ({
+                label: TOOLS[tool].title,
+                onPress: () =>
+                  router.push({ pathname: '/tool/[id]', params: { id: item.id, tool } }),
+              })),
+            ])
+          }
+          accessibilityHint="Enhance, fix red-eye or remove the background. Saves a new photo."
           style={styles.toolbarButton}
         />
       ) : null}
