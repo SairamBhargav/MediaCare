@@ -90,6 +90,6 @@ Device test 1 is done: scan, Library, thumbnails and Compare work (after fixes P
 - In Expo Go, photo permission is granted to Expo Go (Settings → Expo Go → Photos), not "MediaCare".
 - Windows typed-routes quirk: if `npm run typecheck` complains about routes like `/../state/...` while `npm start` runs, restart `npm start` (see docs/SETUP_WINDOWS.md).
 
-## Owner decision, 2026-10-07
+## Owner decision, 2026-10-07 (revised)
 
-Ship the current app to TestFlight now so the owner's dad can test (internal testing; removal stays disabled). Command for the owner: `npx eas-cli@latest build --platform ios --profile production --auto-submit`. The development build waits until the Apple Vision module exists, so one build covers both. Phase 3 work (Apple Vision similarity, blur, eyes, keeper; original-file access; safe removal) starts now and ships as TestFlight updates.
+Build a feature-rich app before spending builds: the testers would rather have many features than an early thin build. Native work (Apple Vision: similarity, blur, exposure, faces/eyes, keeper; then Phase 4 native pieces) is batched so one EAS build compiles it all. Sequence: features on main, then one development build for the owner's iPhone (device:create + development profile) to compile and test, then a production build with --auto-submit to TestFlight for the owner and his dad. Removal stays disabled. No build starts without the owner's go-ahead.
