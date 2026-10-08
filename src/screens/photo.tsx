@@ -420,6 +420,10 @@ function Toolbar({
                 onPress: () =>
                   router.push({ pathname: '/tool/[id]', params: { id: item.id, tool } }),
               })),
+              {
+                label: 'Passport photo (U.S.)',
+                onPress: () => router.push({ pathname: '/passport/[id]', params: { id: item.id } }),
+              },
             ])
           }
           accessibilityHint="Enhance, fix red-eye or remove the background. Saves a new photo."

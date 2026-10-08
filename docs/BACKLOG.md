@@ -87,9 +87,9 @@ Status: `done` · `next` · `todo` · `blocked (reason)`.
 | P3-JOB-001       | Pausable "Look at my photos" job + migration 3                        | done in code                                                                        |
 | P3-DIAG-001      | Diagnostics → Vision check                                            | done in code                                                                        |
 | P4-TOOL-001..003 | Enhance, Fix red-eye, Remove background (new photos)                  | done in code                                                                        |
-| P3-DUP-002       | Exact copies for edited and Live Photos (original resources)          | todo                                                                                |
+| P3-DUP-002       | Exact copies for edited and Live Photos (original resources)          | done in code (native v2; awaiting next build)                                       |
 | P3-DEL-001       | Safe removal, proven on purpose-made test photos                      | built (off by default, Settings switch); awaiting owner test on purpose-made photos |
-| P5-PASS-001      | Passport photos                                                       | later                                                                               |
+| P5-PASS-001      | Passport photos                                                       | done in code (U.S. rules, checked 2026-10-08); awaiting owner test                  |
 
 ## Phase 3+ (outline)
 
