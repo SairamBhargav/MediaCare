@@ -22,6 +22,7 @@ import type { PhotoAccess } from '@/services/media/photo-library';
 import type { CleanHomeState } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
+import { AnalysisCard, type AnalysisSummary } from './analysis-card';
 import { CategoryCard } from './category-card';
 import { CopiesCard, type CopyCheckSummary } from './copies-card';
 import { ScanningCard, type ScanActions } from './scanning-card';
@@ -36,6 +37,8 @@ export type CleanActions = {
   onOpenPlan?: () => void;
   /** Starts "Find exact copies" (real results only). */
   onFindCopies?: () => void;
+  /** Starts the on-device photo check (real results only). */
+  onAnalyze?: () => void;
 };
 
 type CleanContentProps = {
@@ -56,6 +59,8 @@ type CleanContentProps = {
   animateReveal?: boolean;
   /** What the exact copies check covered (real results only). */
   copyCheck?: CopyCheckSummary;
+  /** What the photo check covered (real results only). */
+  analysis?: AnalysisSummary;
 };
 
 const NO_SCAN_ACTIONS: ScanActions = { onPause: () => {}, onResume: () => {}, onStop: () => {} };
@@ -75,6 +80,7 @@ export function CleanContent({
   libraryChanged = false,
   animateReveal = false,
   copyCheck,
+  analysis,
 }: CleanContentProps) {
   if (isActive(job)) {
     return (
@@ -118,6 +124,7 @@ export function CleanContent({
           libraryChanged={libraryChanged}
           animateReveal={animateReveal}
           copyCheck={copyCheck}
+          analysis={analysis}
         />
       );
   }
@@ -204,6 +211,7 @@ function Results({
   libraryChanged,
   animateReveal,
   copyCheck,
+  analysis,
 }: {
   state: Extract<CleanHomeState, { status: 'results' }>;
   access: PhotoAccess | 'unknown';
@@ -213,6 +221,7 @@ function Results({
   libraryChanged: boolean;
   animateReveal: boolean;
   copyCheck?: CopyCheckSummary;
+  analysis?: AnalysisSummary;
 }) {
   const { width } = useWindowDimensions();
   const sample = state.sample;
@@ -231,6 +240,9 @@ function Results({
     <Button title="Reset sample" variant="plain" onPress={actions.onReset} style={styles.center} />
   ) : (
     <>
+      {analysis && actions.onAnalyze ? (
+        <AnalysisCard summary={analysis} onStart={actions.onAnalyze} />
+      ) : null}
       {copyCheck && actions.onFindCopies ? (
         <CopiesCard summary={copyCheck} onStart={actions.onFindCopies} />
       ) : null}

@@ -22,6 +22,7 @@ function actions(): jest.Mocked<Required<CleanActions>> {
     onReset: jest.fn(),
     onOpenPlan: jest.fn(),
     onFindCopies: jest.fn(),
+    onAnalyze: jest.fn(),
   };
 }
 
@@ -171,6 +172,35 @@ describe('real results', () => {
     expect(screen.getByText(/didn’t finish/)).toBeOnTheScreen();
     expect(screen.getByText(/800 · Not checked yet/)).toBeOnTheScreen();
     expect(screen.getByLabelText('Continue checking')).toBeOnTheScreen();
+  });
+
+  test('photo check in Expo Go explains it needs the app and offers no button', async () => {
+    await renderState(real, 'full', {
+      analysis: { available: false, coverage: { analyzed: 0, notAnalyzed: [] }, lastStatus: null },
+    });
+    expect(screen.getByText(/needs the MediaCare app/)).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Look at my photos')).toBeNull();
+  });
+
+  test('photo check: never run offers it; a finished run reports coverage', async () => {
+    const handlers = await renderState(real, 'full', {
+      analysis: { available: true, coverage: { analyzed: 0, notAnalyzed: [] }, lastStatus: null },
+    });
+    await fireEvent.press(screen.getByLabelText('Look at my photos'));
+    expect(handlers.onAnalyze).toHaveBeenCalled();
+  });
+
+  test('photo check: finished run lists what was not looked at and why', async () => {
+    await renderState(real, 'full', {
+      analysis: {
+        available: true,
+        coverage: { analyzed: 950, notAnalyzed: [{ reason: 'in-icloud', count: 40 }] },
+        lastStatus: 'succeeded',
+      },
+    });
+    expect(screen.getByText(/950 photos looked at/)).toBeOnTheScreen();
+    expect(screen.getByText('Not looked at: 40')).toBeOnTheScreen();
+    expect(screen.getByText(/40 · Stored in iCloud only/)).toBeOnTheScreen();
   });
 
   test('sample results never offer the exact copies check', async () => {

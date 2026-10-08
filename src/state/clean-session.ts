@@ -8,7 +8,9 @@ import {
   removeUnseen,
   saveFingerprints,
   saveMatchGroups,
+  loadVisualRows,
   saveScanJob,
+  saveVisualRows,
   upsertAssets,
 } from '@/db/catalog-repo';
 import { sampleFindings, sampleLibrary } from '@/demo/sample-library';
@@ -17,7 +19,9 @@ import { exactCopyFindings } from '@/domain/exact-copies';
 import { findingsWithin, type Finding } from '@/domain/findings';
 import { isActive, reduceJob, startJob, type Job, type JobEvent } from '@/domain/jobs';
 import type { PhotoItem } from '@/domain/media';
-import { favoriteIds, findRealFindings } from '@/domain/real-findings';
+import { favoriteIds, findLongVideos, findMoments, findScreenshots } from '@/domain/real-findings';
+import { qualityFlags, similarFindings } from '@/domain/visual-findings';
+import { currentScores } from '@/domain/visual-records';
 import {
   fileMd5,
   fileSize,
@@ -26,7 +30,13 @@ import {
   sameBytes,
 } from '@/services/media/file-fingerprint';
 import { getSubtypes, listAllMetadata, toRecord } from '@/services/media/photo-library';
+import {
+  ANALYSIS_IMPLEMENTATION,
+  analyzePhotos,
+  visualAnalysisAvailable,
+} from '@/services/media/visual-analysis';
 import { runCopyCheck } from '@/services/scan/copy-check';
+import { runVisualAnalysis } from '@/services/scan/visual-analysis-job';
 import { runLibraryScan } from '@/services/scan/library-scan';
 import { haptics } from '@/utils/haptics';
 
@@ -76,6 +86,8 @@ type CleanSession = {
    * stop use the same controls as a scan.
    */
   startCopyCheck: () => void;
+  /** On-device visual analysis (Apple Vision); only in the MediaCare app build. */
+  startVisualAnalysis: () => void;
   pauseScan: () => void;
   resumeScan: () => void;
   cancelScan: () => void;
@@ -120,10 +132,23 @@ function catalogResults(
   return { status: 'results', sample: false, analyzed, total, findings: realFindings(items) };
 }
 
-/** Metadata findings plus confirmed exact copies from the last copies check. */
+/**
+ * Real findings. Once photos have been looked at (visual analysis), similar
+ * shots come from how photos look and replace the timing-only "moments";
+ * blur, closed eyes and exposure flags are added. Exact copies come from
+ * the last copies check.
+ */
 function realFindings(items: readonly PhotoItem[]): Finding[] {
-  const { copySets, byId } = useCatalog.getState();
-  return [...findRealFindings(items), ...exactCopyFindings(copySets, byId)];
+  const { copySets, byId, visualRows } = useCatalog.getState();
+  const scores = currentScores(items, visualRows, ANALYSIS_IMPLEMENTATION);
+  const visual = scores.size > 0;
+  return [
+    ...(visual ? similarFindings(items, scores) : findMoments(items)),
+    ...exactCopyFindings(copySets, byId),
+    ...(visual ? qualityFlags(items, scores) : []),
+    ...findScreenshots(items),
+    ...findLongVideos(items),
+  ];
 }
 
 function catalogProtection(items: readonly PhotoItem[]): Set<string> {
@@ -233,6 +258,31 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     }
   };
 
+  const finishAnalysis = async (job: Job) => {
+    await useCatalog.getState().load();
+    const { items } = useCatalog.getState();
+    const state = get().state;
+    if (state.status === 'results' && !state.sample) {
+      // Similar groups change when photos are looked at, so earlier review
+      // choices on groups no longer line up; protection carries over.
+      clearReview(catalogProtection(items));
+      set({ state: { ...state, findings: realFindings(items) } });
+    } else {
+      get().showCatalogResults();
+    }
+    if (job.status === 'succeeded') {
+      haptics.success();
+      AccessibilityInfo.announceForAccessibility('Photo check complete');
+    } else if (job.status === 'failed') {
+      haptics.error();
+      AccessibilityInfo.announceForAccessibility('Photo check stopped because of an error');
+    } else if (job.status === 'canceled') {
+      AccessibilityInfo.announceForAccessibility(
+        'Photo check stopped. Photos looked at so far are kept for next time.',
+      );
+    }
+  };
+
   return {
     state: { status: 'not-scanned' },
     job: null,
@@ -314,6 +364,38 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
             }),
         },
         onEvent(job.id, finishCopies),
+      );
+    },
+
+    startVisualAnalysis: () => {
+      if (isActive(get().job) || !visualAnalysisAvailable()) return;
+      const catalog = useCatalog.getState();
+      if (!hasPhotoAccess(catalog.access) || catalog.items.length === 0) return;
+      if (dismissTimer) clearTimeout(dismissTimer);
+
+      const job = startJob(`visual-analysis-${Date.now()}`, false, 'analysis');
+      const startedAt = Date.now();
+      set({ job });
+      controls = runVisualAnalysis(
+        {
+          listItems: async () => useCatalog.getState().items,
+          loadRows: loadVisualRows,
+          analyze: analyzePhotos,
+          saveRows: saveVisualRows,
+          implementation: ANALYSIS_IMPLEMENTATION,
+          checkpoint: ({ status, processed, total, error }) =>
+            saveScanJob({
+              id: job.id,
+              kind: 'visual-analysis',
+              status,
+              processed,
+              total,
+              startedAt,
+              finishedAt: status === 'running' || status === 'paused' ? null : Date.now(),
+              error: error ?? null,
+            }),
+        },
+        onEvent(job.id, finishAnalysis),
       );
     },
 

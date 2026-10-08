@@ -4,9 +4,11 @@ import { IconButton } from '@/components/icon-button';
 import { useSessionReveal } from '@/components/reveal';
 import { Screen } from '@/components/screen';
 import { copyCoverage } from '@/domain/exact-copies';
+import { visualCoverage } from '@/domain/visual-records';
 import { useActionPlan } from '@/features/clean/use-action-plan';
 import { scanLibrary } from '@/features/media/start-scan';
 import { openSettings } from '@/services/media/photo-library';
+import { ANALYSIS_IMPLEMENTATION, visualAnalysisAvailable } from '@/services/media/visual-analysis';
 import { useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
 import { useReviewAdjustments } from '@/state/review-session';
@@ -22,6 +24,13 @@ export function CleanScreen() {
   const fingerprints = useCatalog((catalog) => catalog.fingerprints);
   const copySets = useCatalog((catalog) => catalog.copySets);
   const lastCopyCheck = useCatalog((catalog) => catalog.lastCopyCheck);
+  const visualRows = useCatalog((catalog) => catalog.visualRows);
+  const lastAnalysis = useCatalog((catalog) => catalog.lastAnalysis);
+  const analysis = {
+    available: visualAnalysisAvailable(),
+    coverage: visualCoverage(items, visualRows, ANALYSIS_IMPLEMENTATION),
+    lastStatus: lastAnalysis?.status ?? null,
+  };
   const copyCheck = {
     coverage: copyCoverage(items, fingerprints, copySets),
     lastStatus: lastCopyCheck?.status ?? null,
@@ -49,6 +58,7 @@ export function CleanScreen() {
         <CleanContent
           animateReveal={reveal.animate}
           copyCheck={copyCheck}
+          analysis={analysis}
           state={state}
           access={access}
           job={job}
@@ -67,6 +77,7 @@ export function CleanScreen() {
             onReset: session.reset,
             onOpenPlan: () => router.push('/plan'),
             onFindCopies: session.startCopyCheck,
+            onAnalyze: session.startVisualAnalysis,
           }}
           scanActions={{
             onPause: session.pauseScan,
