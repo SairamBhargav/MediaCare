@@ -32,6 +32,10 @@ export type AnalysisResult = {
   /** Share of near-black / near-white pixels. */
   darkFraction?: number;
   brightFraction?: number;
+  /** People found: joint name → [x, y], normalized, origin bottom-left (confident joints only). */
+  poses?: Record<string, [number, number]>[];
+  /** 8×8 mean brightness grid (0–1), row by row: where light and dark sit. */
+  layout?: number[];
 };
 
 /** Result of a photo tool: a temporary image file to preview, then save as a new photo. */
@@ -46,5 +50,16 @@ export type ToolResult = {
   applied?: string[];
   /** Subjects lifted (background removal). */
   subjects?: number;
+  error?: string;
+};
+
+/** One file Photos keeps for a photo (PHAssetResourceType raw value, e.g. 1 photo, 9 paired video). */
+export type OriginalResource = { type: number; filename: string; bytes: number; sha256: string };
+
+export type OriginalsResult = {
+  id: string;
+  /** `unavailable`: some resource is only in iCloud (nothing downloaded) or unreadable. */
+  status: 'ok' | 'missing' | 'unsupported' | 'unavailable';
+  resources?: OriginalResource[];
   error?: string;
 };

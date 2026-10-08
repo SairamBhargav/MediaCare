@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'Photos', 'Vision', 'UIKit', 'CoreGraphics'
+  s.frameworks = 'Photos', 'Vision', 'UIKit', 'CoreGraphics', 'CoreImage', 'CryptoKit'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {

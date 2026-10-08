@@ -39,6 +39,12 @@ public class MediaAnalysisModule: Module {
         promise.resolve(MediaTools.removeBackground(id: id, maxSide: maxSide))
       }
     }
+
+    AsyncFunction("hashOriginals") { (ids: [String], promise: Promise) in
+      DispatchQueue.global(qos: .utility).async {
+        promise.resolve(ids.map { OriginalResources.hash(id: $0) })
+      }
+    }
   }
 
   // MARK: - Per asset
@@ -112,7 +118,23 @@ public class MediaAnalysisModule: Module {
     }
     result["faces"] = faces
 
-    // Sharpness and exposure on a 256 px greyscale copy.
+    // Body poses: tells different dance or sports poses apart even when the
+    // scene is the same. Joints are normalized (0–1, origin bottom-left).
+    var poses: [[String: [Double]]] = []
+    let poseRequest = VNDetectHumanBodyPoseRequest()
+    if (try? handler.perform([poseRequest])) != nil {
+      for observation in poseRequest.results ?? [] {
+        guard let points = try? observation.recognizedPoints(.all) else { continue }
+        var joints: [String: [Double]] = [:]
+        for (name, point) in points where point.confidence > 0.3 {
+          joints[name.rawValue.rawValue] = [Double(point.location.x), Double(point.location.y)]
+        }
+        if joints.count >= 4 { poses.append(joints) }
+      }
+    }
+    result["poses"] = poses
+
+    // Sharpness, exposure and a coarse layout on a 256 px greyscale copy.
     if let gray = grayscale(cgImage, maxSide: 256) {
       let sharp = sharpness(gray.pixels, width: gray.width, height: gray.height)
       result["sharpness"] = sharp.global
@@ -121,9 +143,26 @@ public class MediaAnalysisModule: Module {
       result["brightness"] = exposure.mean
       result["darkFraction"] = exposure.dark
       result["brightFraction"] = exposure.bright
+      result["layout"] = layoutGrid(gray.pixels, width: gray.width, height: gray.height, cells: 8)
     }
 
     return result
+  }
+
+  /// Mean brightness (0–1) of each cell in a cells×cells grid: where light
+  /// and dark sit in the frame.
+  static func layoutGrid(_ pixels: [UInt8], width: Int, height: Int, cells: Int) -> [Double] {
+    var sums = [Double](repeating: 0, count: cells * cells)
+    var counts = [Double](repeating: 0, count: cells * cells)
+    for y in 0..<height {
+      let cellY = min(cells - 1, y * cells / height)
+      for x in 0..<width {
+        let cell = cellY * cells + min(cells - 1, x * cells / width)
+        sums[cell] += Double(pixels[y * width + x])
+        counts[cell] += 1
+      }
+    }
+    return (0..<(cells * cells)).map { counts[$0] > 0 ? sums[$0] / counts[$0] / 255 : 0 }
   }
 
   /// A rendition of the current version that is already on the device.
