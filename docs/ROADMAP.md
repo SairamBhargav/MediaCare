@@ -50,6 +50,6 @@ As specified in the master brief: quality and editing (4), advanced Studio incl.
 
 ## Release boundaries
 
-- Nothing ships to TestFlight before Phase 3 exit.
+- TestFlight to family testers is allowed before Phase 3 exit (owner decision, 2026-10-07), with removal disabled in every build until removal is proven on purpose-made test photos. No public App Store release before Phase 3 exit.
 - No cloud processing, account system, analytics SDK or paywall before an explicit owner decision with a written product case.
 - Expo Go support for the sample experience continues through Phase 3 unless an ADR records the end of it.

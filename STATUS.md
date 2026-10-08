@@ -89,3 +89,7 @@ Device test 1 is done: scan, Library, thumbnails and Compare work (after fixes P
 
 - In Expo Go, photo permission is granted to Expo Go (Settings → Expo Go → Photos), not "MediaCare".
 - Windows typed-routes quirk: if `npm run typecheck` complains about routes like `/../state/...` while `npm start` runs, restart `npm start` (see docs/SETUP_WINDOWS.md).
+
+## Owner decision, 2026-10-07
+
+Ship the current app to TestFlight now so the owner's dad can test (internal testing; removal stays disabled). Command for the owner: `npx eas-cli@latest build --platform ios --profile production --auto-submit`. The development build waits until the Apple Vision module exists, so one build covers both. Phase 3 work (Apple Vision similarity, blur, eyes, keeper; original-file access; safe removal) starts now and ships as TestFlight updates.
