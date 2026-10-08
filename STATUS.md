@@ -107,3 +107,13 @@ EAS development build (free tier) compiled the MediaAnalysis native module on th
 ## Device evidence 2 (owner, 2026-10-08, iPhone 17, development build)
 
 Photo check: 804 photos in about 1 minute; Vision check 78 ms per photo. Similar shots good about 85% of the time; dance photos (different poses, same studio) were grouped. Distances seen: repeat shot 0.18, same scene / different moment 0.42, different scenes 0.9–1.2. Fix (JS, no build): similar cut-off 0.45 → 0.30, complete linkage (no chaining), tuning readout in Compare (development builds). Next native build adds a body-pose and layout check.
+
+## Progress 2026-10-08 (after device evidence 2)
+
+Done in code (408 tests, doctor 21/21, iOS bundle):
+
+- Safe removal (P3-DEL-001): off by default (Settings → Allow removing photos); revalidation, iOS confirmation, verified outcomes, migration 4. Works with the current build after a reload. Test only on purpose-made photos, with the owner's go-ahead.
+- Passport photo, U.S. (P5-PASS-001): works with the current build after a reload.
+- Native v2 (needs the next build): body pose + layout checks for similar shots (P3-SIM-002), exact copies for edited and Live Photos via SHA-256 of every Photos resource (P3-DUP-002). Stored analysis carries the native version, so results are redone after updating.
+
+Next: owner decides between building now (compile native v2 early) or after Studio hub (P5) and video (P6).
