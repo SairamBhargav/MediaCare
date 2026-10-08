@@ -1,7 +1,13 @@
 import { defaultPreferences, sanitizePreferences } from './preferences-schema';
 
 test('valid stored preferences are kept as-is', () => {
-  const stored = { appearance: 'dark', lessMotion: true, haptics: false, onboardingSeen: true };
+  const stored = {
+    appearance: 'dark',
+    lessMotion: true,
+    haptics: false,
+    onboardingSeen: true,
+    allowRemoval: true,
+  };
   expect(sanitizePreferences(stored)).toEqual(stored);
 });
 
@@ -18,6 +24,7 @@ test('invalid fields fall back individually; valid ones survive', () => {
     lessMotion: false,
     haptics: false,
     onboardingSeen: false,
+    allowRemoval: false,
   });
 });
 
@@ -37,4 +44,10 @@ test('returns a fresh object so callers cannot mutate the defaults', () => {
   const result = sanitizePreferences(null);
   result.haptics = false;
   expect(defaultPreferences.haptics).toBe(true);
+});
+
+test('removing photos is off unless explicitly turned on', () => {
+  expect(defaultPreferences.allowRemoval).toBe(false);
+  expect(sanitizePreferences({ allowRemoval: 'yes' }).allowRemoval).toBe(false);
+  expect(sanitizePreferences({ allowRemoval: true }).allowRemoval).toBe(true);
 });

@@ -278,7 +278,7 @@ export async function listDerivatives(limit = 20): Promise<DerivativeRow[]> {
 export async function clearCatalog() {
   const db = await getDatabase();
   await db.execAsync(
-    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints; DELETE FROM visual_scores;',
+    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints; DELETE FROM visual_scores; DELETE FROM removals;',
   );
 }
 
@@ -360,6 +360,34 @@ export async function saveMatchGroups(sets: readonly (readonly string[])[]) {
     try {
       for (const set of sets) {
         for (const id of set) await statement.executeAsync({ $group: set[0], $id: id });
+      }
+    } finally {
+      await statement.finalizeAsync();
+    }
+  });
+}
+
+/** Records what happened to each photo in one removal. */
+export async function insertRemovals(
+  batchId: string,
+  entries: readonly { assetId: string; outcome: string; reason: string | null }[],
+) {
+  if (entries.length === 0) return;
+  const db = await getDatabase();
+  const at = Date.now();
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    const statement = await txn.prepareAsync(
+      'INSERT INTO removals (batch_id, asset_id, outcome, reason, at) VALUES ($batch, $id, $outcome, $reason, $at)',
+    );
+    try {
+      for (const entry of entries) {
+        await statement.executeAsync({
+          $batch: batchId,
+          $id: entry.assetId,
+          $outcome: entry.outcome,
+          $reason: entry.reason,
+          $at: at,
+        });
       }
     } finally {
       await statement.finalizeAsync();

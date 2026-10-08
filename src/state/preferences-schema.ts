@@ -13,6 +13,8 @@ export type Preferences = {
   haptics: boolean;
   /** The first-run introduction was finished or skipped (P1-ONB-003). */
   onboardingSeen: boolean;
+  /** Removing photos is off until the user turns it on in Settings. */
+  allowRemoval: boolean;
 };
 
 export const PREFERENCES_VERSION = 1;
@@ -22,6 +24,7 @@ export const defaultPreferences: Preferences = {
   lessMotion: false,
   haptics: true,
   onboardingSeen: false,
+  allowRemoval: false,
 };
 
 const APPEARANCES: readonly AppearancePreference[] = ['system', 'light', 'dark'];
@@ -43,5 +46,9 @@ export function sanitizePreferences(input: unknown): Preferences {
       typeof record.onboardingSeen === 'boolean'
         ? record.onboardingSeen
         : defaultPreferences.onboardingSeen,
+    allowRemoval:
+      typeof record.allowRemoval === 'boolean'
+        ? record.allowRemoval
+        : defaultPreferences.allowRemoval,
   };
 }

@@ -26,8 +26,16 @@ import { gutter, spacing, useTheme } from '@/theme';
  */
 export function SettingsScreen() {
   const { colors } = useTheme();
-  const { appearance, lessMotion, haptics, setAppearance, setLessMotion, setHaptics } =
-    usePreferences();
+  const {
+    appearance,
+    lessMotion,
+    haptics,
+    allowRemoval,
+    setAppearance,
+    setLessMotion,
+    setHaptics,
+    setAllowRemoval,
+  } = usePreferences();
 
   const access = useCatalog((catalog) => catalog.access);
   const cataloged = useCatalog((catalog) => catalog.items.length);
@@ -144,9 +152,18 @@ export function SettingsScreen() {
               <Spacer />
               <Text>{cataloged.toLocaleString()}</Text>
             </Row>
+            <Switch
+              label="Allow removing photos"
+              value={allowRemoval}
+              onValueChange={setAllowRemoval}
+            />
             <NativeButton variant="text" label="Clear MediaCare data…" onPress={confirmClear} />
             <FieldGroup.SectionFooter>
-              <Text>Clearing never deletes anything from Photos.</Text>
+              <Text>
+                With removing on, the Removal plan can move the photos you marked to Recently
+                Deleted in Photos, after iOS asks you to confirm. Clearing MediaCare data never
+                deletes anything from Photos.
+              </Text>
             </FieldGroup.SectionFooter>
           </FieldGroup.Section>
 

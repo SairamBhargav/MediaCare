@@ -98,4 +98,18 @@ export const MIGRATIONS: readonly string[] = [
     analyzed_at INTEGER NOT NULL
   );
   `,
+
+  // 4: removal outcomes, per photo: removed, skipped (with reason), canceled,
+  // failed or still-there. A record of what happened, never a plan.
+  `
+  CREATE TABLE removals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id TEXT NOT NULL,
+    asset_id TEXT NOT NULL,
+    outcome TEXT NOT NULL,
+    reason TEXT,
+    at INTEGER NOT NULL
+  );
+  CREATE INDEX idx_removals_batch ON removals (batch_id);
+  `,
 ];

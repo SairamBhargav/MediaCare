@@ -17,6 +17,7 @@ type PreferencesState = Preferences & {
   setLessMotion: (lessMotion: boolean) => void;
   setHaptics: (haptics: boolean) => void;
   setOnboardingSeen: (onboardingSeen: boolean) => void;
+  setAllowRemoval: (allowRemoval: boolean) => void;
 };
 
 const STORAGE_KEY = 'mediacare.preferences';
@@ -63,17 +64,19 @@ export const usePreferences = create<PreferencesState>()(
       setLessMotion: (lessMotion) => set({ lessMotion }),
       setHaptics: (haptics) => set({ haptics }),
       setOnboardingSeen: (onboardingSeen) => set({ onboardingSeen }),
+      setAllowRemoval: (allowRemoval) => set({ allowRemoval }),
     }),
     {
       name: STORAGE_KEY,
       version: PREFERENCES_VERSION,
       storage: createJSONStorage(() => syncStorage),
       // Persist data only, never the setter functions.
-      partialize: ({ appearance, lessMotion, haptics, onboardingSeen }) => ({
+      partialize: ({ appearance, lessMotion, haptics, onboardingSeen, allowRemoval }) => ({
         appearance,
         lessMotion,
         haptics,
         onboardingSeen,
+        allowRemoval,
       }),
       // Validate whatever comes back from disk before it reaches the UI.
       merge: (persisted, current) => ({ ...current, ...sanitizePreferences(persisted) }),

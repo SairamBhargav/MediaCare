@@ -6,6 +6,7 @@
 - "Look at my photos" on Clean: a pausable check that analyzes photos and stores results (migration 3). Once photos are looked at, **Similar shots** groups only photos that actually look alike (fixing different photos grouped because they were taken seconds apart), with a suggested keeper and the reason (favorite, sharpest, eyes open, best faces). New categories: **Possibly blurry**, **Eyes closed**, **Too dark or too bright**, each with the measurement behind it. Thresholds are provisional until tuned with Diagnostics → Vision check.
 - Photo tools from the viewer's **Edit** menu: preview beside the original, save as a new photo; originals never change.
 - In Expo Go these features say they need the MediaCare app; everything else keeps working.
+- Safe removal (off by default; Settings → Allow removing photos). Remove on the Removal plan: a final confirmation, then every photo is checked again (gone, changed, protected or now a favorite: skipped with a reason; a group whose keeper changed removes nothing), then iOS asks its own confirmation. Afterwards Photos is checked again and only photos really gone are reported, as "Moved N to Recently Deleted". Every outcome is recorded (migration 4).
 
 ## Phase 1 polish and exact copies
 
