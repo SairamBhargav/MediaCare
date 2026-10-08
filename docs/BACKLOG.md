@@ -76,20 +76,20 @@ Status: `done` · `next` · `todo` · `blocked (reason)`.
 
 ## Phase 3 and 4 — in progress (2026-10-07)
 
-| ID               | Goal                                                                  | Status                                     |
-| ---------------- | --------------------------------------------------------------------- | ------------------------------------------ |
-| P3-NAT-001       | Local native module (Apple Vision, Core Image)                        | written; awaiting first development build  |
-| P3-SIM-001       | Similar shots by look (feature prints), not timing                    | done in code; thresholds to tune on device |
-| P3-KEEP-001      | Keeper suggestion with reasons (favorite, sharpest, eyes open, faces) | done in code                               |
-| P3-BLUR-001      | Possibly blurry (sharpest tile)                                       | done in code; tune on device               |
-| P3-EYES-001      | Eyes closed (ignores small faces and winks)                           | done in code; tune on device               |
-| P3-EXPO-001      | Too dark / too bright                                                 | done in code                               |
-| P3-JOB-001       | Pausable "Look at my photos" job + migration 3                        | done in code                               |
-| P3-DIAG-001      | Diagnostics → Vision check                                            | done in code                               |
-| P4-TOOL-001..003 | Enhance, Fix red-eye, Remove background (new photos)                  | done in code                               |
-| P3-DUP-002       | Exact copies for edited and Live Photos (original resources)          | todo                                       |
-| P3-DEL-001       | Safe removal, proven on purpose-made test photos                      | todo (removal stays disabled)              |
-| P5-PASS-001      | Passport photos                                                       | later                                      |
+| ID               | Goal                                                                  | Status                                                                              |
+| ---------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| P3-NAT-001       | Local native module (Apple Vision, Core Image)                        | written; awaiting first development build                                           |
+| P3-SIM-001       | Similar shots by look (feature prints), not timing                    | done in code; thresholds to tune on device                                          |
+| P3-KEEP-001      | Keeper suggestion with reasons (favorite, sharpest, eyes open, faces) | done in code                                                                        |
+| P3-BLUR-001      | Possibly blurry (sharpest tile)                                       | done in code; tune on device                                                        |
+| P3-EYES-001      | Eyes closed (ignores small faces and winks)                           | done in code; tune on device                                                        |
+| P3-EXPO-001      | Too dark / too bright                                                 | done in code                                                                        |
+| P3-JOB-001       | Pausable "Look at my photos" job + migration 3                        | done in code                                                                        |
+| P3-DIAG-001      | Diagnostics → Vision check                                            | done in code                                                                        |
+| P4-TOOL-001..003 | Enhance, Fix red-eye, Remove background (new photos)                  | done in code                                                                        |
+| P3-DUP-002       | Exact copies for edited and Live Photos (original resources)          | todo                                                                                |
+| P3-DEL-001       | Safe removal, proven on purpose-made test photos                      | built (off by default, Settings switch); awaiting owner test on purpose-made photos |
+| P5-PASS-001      | Passport photos                                                       | later                                                                               |
 
 ## Phase 3+ (outline)
 
