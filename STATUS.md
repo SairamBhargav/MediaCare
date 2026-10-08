@@ -103,3 +103,7 @@ Next (owner): `npx eas-cli@latest device:create`, then `npx eas-cli@latest build
 ## First development build, 2026-10-07
 
 EAS development build (free tier) compiled the MediaAnalysis native module on the first attempt; installed on the owner's iPhone 17 with Developer Mode; the app runs from `npm run start:dev-client`. Feature checks on device: awaiting owner test (Look at my photos, Edit tools, Diagnostics → Vision check).
+
+## Device evidence 2 (owner, 2026-10-08, iPhone 17, development build)
+
+Photo check: 804 photos in about 1 minute; Vision check 78 ms per photo. Similar shots good about 85% of the time; dance photos (different poses, same studio) were grouped. Distances seen: repeat shot 0.18, same scene / different moment 0.42, different scenes 0.9–1.2. Fix (JS, no build): similar cut-off 0.45 → 0.30, complete linkage (no chaining), tuning readout in Compare (development builds). Next native build adds a body-pose and layout check.

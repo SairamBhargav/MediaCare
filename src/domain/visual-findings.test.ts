@@ -90,6 +90,30 @@ describe('similar sets', () => {
     expect(similarSets(items, map)).toEqual([]);
   });
 
+  test('a chain of poses does not merge: each photo must look like every member (dance case)', () => {
+    // pose1~pose2 and pose2~pose3 are close, but pose1 and pose3 are clearly different.
+    const items = [photo('pose1', T0), photo('pose2', T0 + 1000), photo('pose3', T0 + 2000)];
+    const map = new Map([
+      ['pose1', scores([1, 0, 0])],
+      ['pose2', scores([1, 0.27, 0])],
+      ['pose3', scores([1, 0.56, 0])],
+    ]);
+    // Only the closest pair at most; never all three together.
+    const sets = similarSets(items, map);
+    expect(sets.some((set) => set.includes('pose1') && set.includes('pose3'))).toBe(false);
+  });
+
+  test('same scene, different moment (0.42 apart on device) is no longer similar', () => {
+    // Two unit vectors 0.42 apart.
+    const angle = 2 * Math.asin(0.42 / 2);
+    const items = [photo('a', T0), photo('b', T0 + 1000)];
+    const map = new Map([
+      ['a', scores([1, 0])],
+      ['b', scores([Math.cos(angle), Math.sin(angle)])],
+    ]);
+    expect(similarSets(items, map)).toEqual([]);
+  });
+
   test('screenshots and videos are never in similar groups', () => {
     const items = [
       photo('a', T0, { subtypes: ['screenshot'] }),

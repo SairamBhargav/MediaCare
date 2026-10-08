@@ -16,6 +16,7 @@ import { describeDifferences } from '@/domain/compare';
 import type { GroupFinding } from '@/domain/findings';
 import { toggleSelected } from '@/domain/review-selection';
 import { CATEGORY_META } from '@/features/clean/category-meta';
+import { tuningLine } from '@/features/media/visual-debug';
 import { useCleanSession } from '@/state/clean-session';
 import { selectionFor, toReviewGroup, useReviewSession } from '@/state/review-session';
 import { duration, gutter, radius, spacing, useReduceMotion, useTheme } from '@/theme';
@@ -235,6 +236,11 @@ function GroupReviewBody({
                     {line}
                   </AppText>
                 ))}
+                {__DEV__ && group.category === 'similar' ? (
+                  <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
+                    {tuningLine(photo.id, keeper.id) ?? 'Tuning: not looked at yet'}
+                  </AppText>
+                ) : null}
               </>
             )}
           </Surface>

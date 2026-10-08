@@ -37,8 +37,12 @@ export type VisualScores = {
 
 /** Provisional thresholds; tune with Diagnostics → Vision check on real photos. */
 export const VISUAL_THRESHOLDS = {
-  /** Normalized feature-print distance at or below which two photos look alike (0 identical, 2 opposite). */
-  similarDistance: 0.45,
+  /**
+   * Normalized feature-print distance at or below which two photos look alike
+   * (0 identical, 2 opposite). Device data (2026-10-08, iPhone 17): a repeat
+   * shot 0.18; same scene, different moment 0.42; different scenes 0.9+.
+   */
+  similarDistance: 0.3,
   /** Only photos taken this close in time are compared (similar shots happen together). */
   similarWindowMs: 10 * 60_000,
   /** Compare each photo with at most this many following photos. */
@@ -82,9 +86,13 @@ function capturedAt(item: PhotoItem): number | null {
 }
 
 /**
- * Groups photos that look alike and were taken close together. Each photo
- * is compared with the next few photos in time; pairs within the distance
- * threshold are joined (union-find), so a burst forms one group.
+ * Groups photos that look alike and were taken close together. Photos are
+ * taken in time order; a photo joins an open group only if it is within
+ * the distance threshold of *every* photo already in it (complete
+ * linkage). That stops chaining: in a dance sequence where each pose looks
+ * a bit like the next, A–B and B–C being close no longer pulls A and C
+ * (clearly different poses) into one group. A group stays open while its
+ * last photo is within the time window and the neighbour limit.
  */
 export function similarSets(
   items: readonly PhotoItem[],
@@ -104,36 +112,47 @@ export function similarSets(
     )
     .sort((a, b) => a.at - b.at || a.item.id.localeCompare(b.item.id));
 
-  const parent = photos.map((_, index) => index);
-  const find = (index: number): number => {
-    let root = index;
-    while (parent[root] !== root) root = parent[root];
-    while (parent[index] !== root) {
-      const next = parent[index];
-      parent[index] = root;
-      index = next;
-    }
-    return root;
-  };
+  type Group = { members: typeof photos; lastIndex: number; lastAt: number };
+  const closed: Group[] = [];
+  let open: Group[] = [];
 
-  for (let i = 0; i < photos.length; i += 1) {
-    const limit = Math.min(photos.length, i + 1 + thresholds.similarNeighbours);
-    for (let j = i + 1; j < limit; j += 1) {
-      if (photos[j].at - photos[i].at > thresholds.similarWindowMs) break;
-      if (featureDistance(photos[i].print, photos[j].print) <= thresholds.similarDistance) {
-        parent[find(j)] = find(i);
+  photos.forEach((photo, index) => {
+    // Groups whose last photo is too long ago or too many photos back can't grow.
+    const still: Group[] = [];
+    for (const group of open) {
+      const fresh =
+        photo.at - group.lastAt <= thresholds.similarWindowMs &&
+        index - group.lastIndex <= thresholds.similarNeighbours;
+      (fresh ? still : closed).push(group);
+    }
+    open = still;
+
+    let best: Group | null = null;
+    let bestWorst = Number.POSITIVE_INFINITY;
+    for (const group of open) {
+      let worst = 0;
+      for (const member of group.members) {
+        worst = Math.max(worst, featureDistance(member.print, photo.print));
+        if (worst > thresholds.similarDistance) break;
+      }
+      if (worst <= thresholds.similarDistance && worst < bestWorst) {
+        best = group;
+        bestWorst = worst;
       }
     }
-  }
-
-  const groups = new Map<number, string[]>();
-  photos.forEach((entry, index) => {
-    const root = find(index);
-    const members = groups.get(root);
-    if (members) members.push(entry.item.id);
-    else groups.set(root, [entry.item.id]);
+    if (best) {
+      best.members.push(photo);
+      best.lastIndex = index;
+      best.lastAt = photo.at;
+    } else {
+      open.push({ members: [photo], lastIndex: index, lastAt: photo.at });
+    }
   });
-  return [...groups.values()].filter((members) => members.length >= 2);
+
+  return [...closed, ...open]
+    .filter((group) => group.members.length >= 2)
+    .sort((a, b) => a.members[0].at - b.members[0].at)
+    .map((group) => group.members.map((member) => member.item.id));
 }
 
 /** Faces big enough to judge, with whether their eyes look closed. */
