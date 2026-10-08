@@ -93,3 +93,9 @@ Device test 1 is done: scan, Library, thumbnails and Compare work (after fixes P
 ## Owner decision, 2026-10-07 (revised)
 
 Build a feature-rich app before spending builds: the testers would rather have many features than an early thin build. Native work (Apple Vision: similarity, blur, exposure, faces/eyes, keeper; then Phase 4 native pieces) is batched so one EAS build compiles it all. Sequence: features on main, then one development build for the owner's iPhone (device:create + development profile) to compile and test, then a production build with --auto-submit to TestFlight for the owner and his dad. Removal stays disabled. No build starts without the owner's go-ahead.
+
+## Phase 3/4 progress, 2026-10-07
+
+Written and tested on Windows (375 tests, doctor 21/21, iOS bundle): native module (Vision analysis + Enhance/red-eye/background tools), similar shots by look with keeper reasons, blur / eyes-closed / exposure flags, pausable photo check with storage (migration 3), Edit tools in the viewer, Diagnostics → Vision check. **Not compiled yet**: the Swift compiles only in an EAS build.
+
+Next (owner): `npx eas-cli@latest device:create`, then `npx eas-cli@latest build --profile development --platform ios`; install; `npm run start:dev-client`. Then run Diagnostics → Vision check and share it so thresholds can be tuned; after that, a production build to TestFlight for the owner and his dad.

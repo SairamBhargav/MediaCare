@@ -74,6 +74,23 @@ Status: `done` · `next` · `todo` · `blocked (reason)`.
 | P2-FIX-001        | Thumbnails gray: doubled ph:// prefix                                                                        | done                                                                   | Owner report, iPhone 17                                                                                           |
 | P2-FIX-002        | Compare "page could not be found": unescaped group id in route                                               | done                                                                   | Owner report, iPhone 17                                                                                           |
 
+## Phase 3 and 4 — in progress (2026-10-07)
+
+| ID               | Goal                                                                  | Status                                     |
+| ---------------- | --------------------------------------------------------------------- | ------------------------------------------ |
+| P3-NAT-001       | Local native module (Apple Vision, Core Image)                        | written; awaiting first development build  |
+| P3-SIM-001       | Similar shots by look (feature prints), not timing                    | done in code; thresholds to tune on device |
+| P3-KEEP-001      | Keeper suggestion with reasons (favorite, sharpest, eyes open, faces) | done in code                               |
+| P3-BLUR-001      | Possibly blurry (sharpest tile)                                       | done in code; tune on device               |
+| P3-EYES-001      | Eyes closed (ignores small faces and winks)                           | done in code; tune on device               |
+| P3-EXPO-001      | Too dark / too bright                                                 | done in code                               |
+| P3-JOB-001       | Pausable "Look at my photos" job + migration 3                        | done in code                               |
+| P3-DIAG-001      | Diagnostics → Vision check                                            | done in code                               |
+| P4-TOOL-001..003 | Enhance, Fix red-eye, Remove background (new photos)                  | done in code                               |
+| P3-DUP-002       | Exact copies for edited and Live Photos (original resources)          | todo                                       |
+| P3-DEL-001       | Safe removal, proven on purpose-made test photos                      | todo (removal stays disabled)              |
+| P5-PASS-001      | Passport photos                                                       | later                                      |
+
 ## Phase 3+ (outline)
 
 P3-DEV-001 EAS project + dev build (needs owner's Apple Developer membership) · P3-NAT-001 native resource/hash module · P3-DUP-* exact duplicates · P3-REV-* real review · P3-DEL-* revalidated deletion · P3-ACT-* activity & recovery guidance · P3-ACC-* storage accounting · P3-BLUR-* basic blur flags · P3-PERF-* release-like profiling. Phases 4–8 are broken down when Phase 3 nears its exit.

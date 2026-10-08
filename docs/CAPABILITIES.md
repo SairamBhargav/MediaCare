@@ -85,6 +85,19 @@ Built from Device evidence 1 and the installed SDK 57 sources:
 - Confirmation: same size and MD5 only make a candidate; files are then compared byte by byte with `FileHandle.readBytes` in 256 KB chunks. Any doubt means "not identical". This replaces the SHA-256 option (ADR-0007).
 - Removal stays disabled. Edited and Live Photo behaviour: run Diagnostics → Edited photo check / Live Photo check.
 
+## Phase 3/4 native analysis (2026-10-07, written, not yet compiled)
+
+| Capability                            | Delivery                     | Status                               | Notes                                                                                                           |
+| ------------------------------------- | ---------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Vision feature prints (similar shots) | MediaCare app build          | `implemented` · awaiting first build | `VNGenerateImageFeaturePrintRequest` on a ≤512 px local rendition; JS normalizes and compares within 10 minutes |
+| Sharpness / blur                      | MediaCare app build          | `implemented` · awaiting first build | Laplacian variance on 256 px greyscale, whole frame and sharpest of 4×4 tiles                                   |
+| Faces: capture quality, eyes          | MediaCare app build          | `implemented` · awaiting first build | `VNDetectFaceLandmarksRequest` + `VNDetectFaceCaptureQualityRequest`; eye openness = outline height/width       |
+| Exposure                              | MediaCare app build          | `implemented` · awaiting first build | Mean brightness, share near black / near white                                                                  |
+| Enhance, red-eye                      | MediaCare app build          | `implemented` · awaiting first build | `CIImage.autoAdjustmentFilters`; red-eye reports when nothing was found                                         |
+| Background removal                    | MediaCare app build, iOS 17+ | `implemented` · awaiting first build | `VNGenerateForegroundInstanceMaskRequest`, transparent PNG cropped to the subject                               |
+
+All read with `isNetworkAccessAllowed = false`: iCloud-only photos are reported, not downloaded. Thresholds are provisional (`VISUAL_THRESHOLDS`), to be tuned with Diagnostics → Vision check.
+
 ## Feasibility spikes
 
 Each spike is time-boxed, produces a short report in `docs/spikes/`, and updates this table.

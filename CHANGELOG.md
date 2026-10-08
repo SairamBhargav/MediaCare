@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased: Phase 1 polish, then exact copies
+## Unreleased: Phase 3 and 4 (first native build pending)
+
+- Native module `modules/media-analysis` (Swift, Apple Vision and Core Image), compiled only in the MediaCare app build: per-photo feature print, sharpness (whole frame and sharpest area), exposure, faces with capture quality and eye openness; plus Enhance, Fix red-eye and Remove background tools. Only renditions already on the iPhone are used; nothing is downloaded or uploaded.
+- "Look at my photos" on Clean: a pausable check that analyzes photos and stores results (migration 3). Once photos are looked at, **Similar shots** groups only photos that actually look alike (fixing different photos grouped because they were taken seconds apart), with a suggested keeper and the reason (favorite, sharpest, eyes open, best faces). New categories: **Possibly blurry**, **Eyes closed**, **Too dark or too bright**, each with the measurement behind it. Thresholds are provisional until tuned with Diagnostics → Vision check.
+- Photo tools from the viewer's **Edit** menu: preview beside the original, save as a new photo; originals never change.
+- In Expo Go these features say they need the MediaCare app; everything else keeps working.
+
+## Phase 1 polish and exact copies
 
 - Find exact copies (P2-DUP-001): a separate check you start from Clean, with pause, resume and stop (checked photos are remembered, so running it again continues). Only unedited photos stored on this iPhone whose file is proven to be the camera original are checked; Live Photos, iCloud-only, edited and very large photos and videos are listed as not checked, with counts per reason. Matches need equal size and MD5 and then a full byte-by-byte comparison. Fingerprints are stored in a new table (migration 2) and invalidated when a photo changes. Results appear in Exact copies with the usual keeper, protection and favorites rules; removal stays disabled.
 - Diagnostics: Edited photo check and Live Photo check, to gather evidence before widening what the exact copies check covers.
