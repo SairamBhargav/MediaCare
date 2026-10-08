@@ -33,3 +33,18 @@ export type AnalysisResult = {
   darkFraction?: number;
   brightFraction?: number;
 };
+
+/** Result of a photo tool: a temporary image file to preview, then save as a new photo. */
+export type ToolResult = {
+  /** `in-icloud`: only in iCloud, nothing downloaded; `no-subject`: nothing to lift; `unsupported-os`: needs iOS 17. */
+  status:
+    'ok' | 'missing' | 'unsupported' | 'in-icloud' | 'failed' | 'no-subject' | 'unsupported-os';
+  uri?: string;
+  width?: number;
+  height?: number;
+  /** Core Image filters actually applied (enhance / red-eye). */
+  applied?: string[];
+  /** Subjects lifted (background removal). */
+  subjects?: number;
+  error?: string;
+};

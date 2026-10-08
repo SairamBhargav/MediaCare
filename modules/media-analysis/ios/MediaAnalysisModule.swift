@@ -27,6 +27,18 @@ public class MediaAnalysisModule: Module {
         promise.resolve(results)
       }
     }
+
+    AsyncFunction("enhance") { (id: String, enhance: Bool, redEye: Bool, maxSide: Int, promise: Promise) in
+      DispatchQueue.global(qos: .userInitiated).async {
+        promise.resolve(MediaTools.enhance(id: id, enhance: enhance, redEye: redEye, maxSide: maxSide))
+      }
+    }
+
+    AsyncFunction("removeBackground") { (id: String, maxSide: Int, promise: Promise) in
+      DispatchQueue.global(qos: .userInitiated).async {
+        promise.resolve(MediaTools.removeBackground(id: id, maxSide: maxSide))
+      }
+    }
   }
 
   // MARK: - Per asset
@@ -79,7 +91,8 @@ public class MediaAnalysisModule: Module {
         try? handler.perform([qualityRequest])
         let scored = qualityRequest.results ?? []
         for (index, face) in scored.enumerated() where index < qualities.count {
-          qualities[index] = face.faceCaptureQuality
+          // Read through KVC: the Swift bridging of this NSNumber property varies by SDK.
+          qualities[index] = (face.value(forKey: "faceCaptureQuality") as? NSNumber)?.floatValue
         }
       }
       for (index, face) in observations.enumerated() {
