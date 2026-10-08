@@ -5,6 +5,7 @@ import {
   type SkipReason,
 } from '@/domain/exact-copies';
 import type { PhotoRecord } from '@/domain/media';
+import type { VisualRow, VisualStatus } from '@/domain/visual-records';
 
 import { getDatabase } from './database';
 
@@ -186,7 +187,7 @@ export type ScanJobRow = {
   error: string | null;
 };
 
-export type JobKind = 'library-scan' | 'copy-check';
+export type JobKind = 'library-scan' | 'copy-check' | 'visual-analysis';
 
 export async function saveScanJob(job: {
   id: string;
@@ -277,7 +278,7 @@ export async function listDerivatives(limit = 20): Promise<DerivativeRow[]> {
 export async function clearCatalog() {
   const db = await getDatabase();
   await db.execAsync(
-    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints;',
+    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints; DELETE FROM visual_scores;',
   );
 }
 
@@ -370,4 +371,79 @@ export async function saveMatchGroups(sets: readonly (readonly string[])[]) {
 async function removeOrphanFingerprints() {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM fingerprints WHERE asset_id NOT IN (SELECT id FROM assets)');
+  await db.runAsync('DELETE FROM visual_scores WHERE asset_id NOT IN (SELECT id FROM assets)');
+}
+
+type VisualDbRow = {
+  asset_id: string;
+  asset_version: number | null;
+  implementation: string;
+  status: string;
+  feature_print: string | null;
+  sharpness: number | null;
+  sharpness_max_tile: number | null;
+  brightness: number | null;
+  dark_fraction: number | null;
+  bright_fraction: number | null;
+  faces: string;
+  analyzed_at: number;
+};
+
+function parseJson<T>(raw: string | null, fallback: T): T {
+  if (raw === null) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function loadVisualRows(): Promise<VisualRow[]> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<VisualDbRow>('SELECT * FROM visual_scores');
+  return rows.map((row) => ({
+    assetId: row.asset_id,
+    assetVersion: row.asset_version,
+    implementation: row.implementation,
+    status: row.status as VisualStatus,
+    featurePrint: parseJson<number[] | null>(row.feature_print, null),
+    sharpness: row.sharpness,
+    sharpnessMaxTile: row.sharpness_max_tile,
+    brightness: row.brightness,
+    darkFraction: row.dark_fraction,
+    brightFraction: row.bright_fraction,
+    faces: parseJson(row.faces, []),
+    analyzedAt: row.analyzed_at,
+  }));
+}
+
+export async function saveVisualRows(rows: readonly VisualRow[]) {
+  if (rows.length === 0) return;
+  const db = await getDatabase();
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    const statement = await txn.prepareAsync(
+      `INSERT OR REPLACE INTO visual_scores (asset_id, asset_version, implementation, status, feature_print, sharpness, sharpness_max_tile, brightness, dark_fraction, bright_fraction, faces, analyzed_at)
+       VALUES ($id, $version, $implementation, $status, $print, $sharpness, $maxTile, $brightness, $dark, $bright, $faces, $at)`,
+    );
+    try {
+      for (const row of rows) {
+        await statement.executeAsync({
+          $id: row.assetId,
+          $version: row.assetVersion,
+          $implementation: row.implementation,
+          $status: row.status,
+          $print: row.featurePrint ? JSON.stringify(row.featurePrint) : null,
+          $sharpness: row.sharpness,
+          $maxTile: row.sharpnessMaxTile,
+          $brightness: row.brightness,
+          $dark: row.darkFraction,
+          $bright: row.brightFraction,
+          $faces: JSON.stringify(row.faces),
+          $at: row.analyzedAt,
+        });
+      }
+    } finally {
+      await statement.finalizeAsync();
+    }
+  });
 }

@@ -3,6 +3,7 @@ import { stageLabel, type Job } from '@/domain/jobs';
 /** Title for a job anywhere it appears. Sample jobs always say so. */
 export function jobTitle(job: Job): string {
   if (job.kind === 'copies') return 'Exact copies';
+  if (job.kind === 'analysis') return 'Photo check';
   return job.sample ? 'Sample scan' : 'Scan';
 }
 

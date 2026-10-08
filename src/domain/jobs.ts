@@ -14,8 +14,8 @@ export type JobStage = 'listing' | 'checking' | 'grouping';
 
 export const JOB_STAGES: readonly JobStage[] = ['listing', 'checking', 'grouping'];
 
-/** `scan` catalogs the library; `copies` fingerprints photos to find exact copies. */
-export type JobKind = 'scan' | 'copies';
+/** `scan` catalogs the library; `copies` finds exact copies; `analysis` looks at photos (Apple Vision). */
+export type JobKind = 'scan' | 'copies' | 'analysis';
 
 export type Job = {
   readonly id: string;
@@ -106,6 +106,18 @@ const COPIES_STAGE_LABEL: Record<JobStage, string> = {
   grouping: 'Comparing matches byte by byte',
 };
 
+const ANALYSIS_STAGE_LABEL: Record<JobStage, string> = {
+  listing: 'Choosing photos',
+  checking: 'Looking at photos',
+  grouping: 'Finding similar shots',
+};
+
 export function stageLabel(job: Pick<Job, 'kind'>, stage: JobStage): string {
-  return (job.kind === 'copies' ? COPIES_STAGE_LABEL : STAGE_LABEL)[stage];
+  const labels =
+    job.kind === 'copies'
+      ? COPIES_STAGE_LABEL
+      : job.kind === 'analysis'
+        ? ANALYSIS_STAGE_LABEL
+        : STAGE_LABEL;
+  return labels[stage];
 }

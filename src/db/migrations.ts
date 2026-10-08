@@ -78,4 +78,24 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_fingerprints_digest ON fingerprints (byte_size, digest);
   `,
+
+  // 3: on-device visual analysis (Phase 3, Apple Vision). One row per photo:
+  // measurements, or why there are none. Valid only while asset_version and
+  // implementation match. feature_print and faces are JSON.
+  `
+  CREATE TABLE visual_scores (
+    asset_id TEXT PRIMARY KEY NOT NULL,
+    asset_version INTEGER,
+    implementation TEXT NOT NULL,
+    status TEXT NOT NULL,
+    feature_print TEXT,
+    sharpness REAL,
+    sharpness_max_tile REAL,
+    brightness REAL,
+    dark_fraction REAL,
+    bright_fraction REAL,
+    faces TEXT NOT NULL DEFAULT '[]',
+    analyzed_at INTEGER NOT NULL
+  );
+  `,
 ];
