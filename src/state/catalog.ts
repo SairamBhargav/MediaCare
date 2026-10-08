@@ -15,6 +15,7 @@ import {
 import { confirmedSets, type FingerprintRow } from '@/domain/exact-copies';
 import { toPhotoItem, type PhotoItem } from '@/domain/media';
 import type { VisualRow } from '@/domain/visual-records';
+import { activeCopyMethod } from '@/services/media/visual-analysis';
 import { useLibrarySession } from '@/state/library-session';
 import {
   getAccess,
@@ -99,7 +100,7 @@ export const useCatalog = create<CatalogState>()((set, get) => ({
       protectedIds,
       lastScan,
       fingerprints: new Map(fingerprintRows.map((row) => [row.assetId, row])),
-      copySets: confirmedSets(fingerprintRows, byId),
+      copySets: confirmedSets(fingerprintRows, byId, activeCopyMethod().implementation),
       lastCopyCheck,
       visualRows: new Map(visualRows.map((row) => [row.assetId, row])),
       lastAnalysis,

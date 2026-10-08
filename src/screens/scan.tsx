@@ -9,6 +9,7 @@ import { ProgressBar } from '@/components/progress-bar';
 import { StatusPill } from '@/components/status-pill';
 import { JOB_STAGES, isActive, jobFraction, stageLabel, type Job } from '@/domain/jobs';
 import { jobProgressText, jobStatusLine, jobTitle } from '@/features/clean/job-text';
+import { originalsHashingAvailable } from '@/services/media/visual-analysis';
 import { useCleanSession } from '@/state/clean-session';
 import { gutter, radius, spacing, useTheme } from '@/theme';
 
@@ -63,9 +64,9 @@ function ScanDetail({ job }: { job: Job }) {
         </AppText>
         {job.kind === 'copies' ? (
           <AppText variant="footnote" color="secondaryLabel">
-            Reads the original files of unedited photos stored on this iPhone. Photos in iCloud
-            only, Live Photos, edited photos and videos are listed as not checked. Nothing is
-            downloaded, uploaded or removed.
+            {originalsHashingAvailable()
+              ? 'Compares every file Photos keeps for each photo (original, edits, Live Photo video) on this iPhone. Photos only in iCloud and videos are listed as not checked. Nothing is downloaded, uploaded or removed.'
+              : 'Reads the original files of unedited photos stored on this iPhone. Photos in iCloud only, Live Photos, edited photos and videos are listed as not checked. Nothing is downloaded, uploaded or removed.'}
           </AppText>
         ) : null}
       </View>

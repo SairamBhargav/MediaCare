@@ -1,10 +1,12 @@
 import {
-  FINGERPRINT_IMPLEMENTATION,
+  FILE_MD5_METHOD,
   MAX_FINGERPRINT_BYTES,
+  ORIGINALS_METHOD,
+  resourceSetDigest,
+  type HashedResource,
   candidateSets,
   confirmSet,
   isReusable,
-  metadataSkipReason,
   provesCameraOriginal,
   type FingerprintRow,
   type SkipReason,
@@ -43,6 +45,14 @@ export type CopyCheckDeps = {
   fileMd5: (uri: string) => string | null;
   /** Full byte-by-byte comparison of two local files. */
   sameBytes: (uriA: string, uriB: string) => Promise<boolean>;
+  /**
+   * MediaCare app build only: SHA-256 of every Photos resource per photo
+   * (original, edits, Live Photo video), network off. When present, the
+   * check uses ORIGINALS_METHOD instead of the getUri/MD5 method.
+   */
+  hashOriginals?: (
+    ids: string[],
+  ) => Promise<{ id: string; status: string; resources?: HashedResource[] }[]>;
   saveFingerprints: (rows: readonly FingerprintRow[]) => Promise<void>;
   saveMatchGroups: (sets: readonly (readonly string[])[]) => Promise<void>;
   checkpoint: (state: {
@@ -69,6 +79,7 @@ export function runCopyCheck(
   { batchSize = 20 }: { batchSize?: number } = {},
 ): CopyCheckControls {
   const now = deps.now ?? Date.now;
+  const method = deps.hashOriginals ? ORIGINALS_METHOD : FILE_MD5_METHOD;
   let canceled = false;
   let paused = false;
   let wake: (() => void) | null = null;
@@ -95,7 +106,7 @@ export function runCopyCheck(
       assetVersion: item.version,
       status,
       skipReason,
-      implementation: FINGERPRINT_IMPLEMENTATION,
+      implementation: method.implementation,
       byteSize,
       digest,
       matchGroup: null,
@@ -117,6 +128,35 @@ export function runCopyCheck(
     }
   };
 
+  /** App build: a whole batch hashed natively in one call. */
+  const fingerprintOriginals = async (batch: readonly PhotoItem[]): Promise<FingerprintRow[]> => {
+    const results = await deps.hashOriginals!(batch.map((item) => item.id));
+    const byId = new Map(results.map((result) => [result.id, result]));
+    return batch.map((item) => {
+      const result = byId.get(item.id);
+      const base = {
+        assetId: item.id,
+        assetVersion: item.version,
+        implementation: method.implementation,
+        matchGroup: null,
+        checkedAt: now(),
+      };
+      if (!result || result.status !== 'ok' || !result.resources || result.resources.length === 0) {
+        return {
+          ...base,
+          status: 'skipped' as const,
+          skipReason: (result?.status === 'unavailable'
+            ? 'unavailable'
+            : 'unreadable') as SkipReason,
+          byteSize: null,
+          digest: null,
+        };
+      }
+      const { digest, bytes } = resourceSetDigest(result.resources);
+      return { ...base, status: 'hashed' as const, skipReason: null, byteSize: bytes, digest };
+    });
+  };
+
   const run = async (): Promise<'succeeded' | 'canceled' | 'failed'> => {
     try {
       emit({ type: 'progress', stage: 'listing', processed: 0 });
@@ -124,7 +164,7 @@ export function runCopyCheck(
       const stored = new Map((await deps.loadFingerprints()).map((row) => [row.assetId, row]));
       if (canceled) return 'canceled';
 
-      const eligible = items.filter((item) => metadataSkipReason(item) === null);
+      const eligible = items.filter((item) => method.metadataSkip(item) === null);
       total = eligible.length;
       emit({ type: 'total-known', total });
       await deps.checkpoint({ status: 'running', processed, total });
@@ -133,18 +173,39 @@ export function runCopyCheck(
       for (let start = 0; start < eligible.length; start += batchSize) {
         const batch = eligible.slice(start, start + batchSize);
         const written: FingerprintRow[] = [];
-        for (const item of batch) {
+        if (deps.hashOriginals) {
           await waitWhilePaused();
-          if (canceled) break;
-          const previous = stored.get(item.id);
-          if (previous && isReusable(previous, item)) {
-            current.set(item.id, previous);
-          } else {
-            const next = await fingerprint(item);
-            current.set(item.id, next);
-            written.push(next);
+          if (canceled) return 'canceled';
+          const todo: PhotoItem[] = [];
+          for (const item of batch) {
+            const previous = stored.get(item.id);
+            if (previous && isReusable(previous, item, method.implementation)) {
+              current.set(item.id, previous);
+            } else {
+              todo.push(item);
+            }
           }
-          processed += 1;
+          if (todo.length > 0) {
+            for (const row of await fingerprintOriginals(todo)) {
+              current.set(row.assetId, row);
+              written.push(row);
+            }
+          }
+          processed += batch.length;
+        } else {
+          for (const item of batch) {
+            await waitWhilePaused();
+            if (canceled) break;
+            const previous = stored.get(item.id);
+            if (previous && isReusable(previous, item, method.implementation)) {
+              current.set(item.id, previous);
+            } else {
+              const next = await fingerprint(item);
+              current.set(item.id, next);
+              written.push(next);
+            }
+            processed += 1;
+          }
         }
         await deps.saveFingerprints(written);
         if (canceled) return 'canceled';
@@ -167,6 +228,11 @@ export function runCopyCheck(
       for (const candidates of candidateSets([...current.values()])) {
         await waitWhilePaused();
         if (canceled) return 'canceled';
+        if (method.digestIsProof) {
+          // Equal SHA-256 for every resource: identical files, no re-read needed.
+          confirmed.push(candidates);
+          continue;
+        }
         const sets = await confirmSet(candidates, async (a, b) => {
           const [uriA, uriB] = [await uriFor(a), await uriFor(b)];
           // Re-prove right before comparing: the photo may have changed since.

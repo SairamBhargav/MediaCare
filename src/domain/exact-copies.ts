@@ -17,6 +17,12 @@ import type { PhotoItem } from './media';
  *  - Photos stored only in iCloud are skipped so nothing downloads.
  *  - Equal size and MD5 only make a *candidate*. A pair is called an exact
  *    copy only after a full byte-by-byte comparison.
+ *
+ * In the MediaCare app build a stronger method is used (ORIGINALS_METHOD):
+ * every file Photos keeps for a photo (original, edits, a Live Photo's
+ * video) is streamed through SHA-256 natively. Two photos are exact copies
+ * only if all of those files are identical, so edited and Live Photos are
+ * covered too.
  */
 
 /** Bump when anything about how fingerprints are taken changes; old ones are then ignored. */
@@ -28,6 +34,7 @@ export const FINGERPRINT_ALGORITHM = 'md5';
 export const MAX_FINGERPRINT_BYTES = 64_000_000;
 
 export type SkipReason =
+  | 'unavailable'
   | 'video'
   | 'live-photo'
   | 'no-filename'
@@ -37,6 +44,7 @@ export type SkipReason =
   | 'unreadable';
 
 export const SKIP_REASON_TEXT: Record<SkipReason | 'not-yet', string> = {
+  unavailable: 'In iCloud only or couldn’t be read (nothing downloaded)',
   video: 'Videos aren’t checked',
   'live-photo': 'Live Photos aren’t checked yet (photo and video together)',
   'no-filename': 'No file name from Photos',
@@ -53,6 +61,55 @@ export function metadataSkipReason(item: PhotoItem): SkipReason | null {
   if (item.subtypes.includes('livePhoto')) return 'live-photo';
   if (!item.filename) return 'no-filename';
   return null;
+}
+
+/** How fingerprints are taken; stored rows from another method are ignored. */
+export type FingerprintMethod = {
+  implementation: string;
+  representation: string;
+  algorithm: string;
+  /** Reasons decided from metadata alone. */
+  metadataSkip: (item: PhotoItem) => SkipReason | null;
+  /** True when equal digests prove identical files (SHA-256 of every resource). */
+  digestIsProof: boolean;
+};
+
+/** Expo Go and older builds: the camera-original file via getUri, MD5 + byte comparison. */
+export const FILE_MD5_METHOD: FingerprintMethod = {
+  implementation: FINGERPRINT_IMPLEMENTATION,
+  representation: FINGERPRINT_REPRESENTATION,
+  algorithm: FINGERPRINT_ALGORITHM,
+  metadataSkip: metadataSkipReason,
+  digestIsProof: false,
+};
+
+/** MediaCare app build: SHA-256 of every Photos resource (original, edits, Live Photo video). */
+export const ORIGINALS_METHOD: FingerprintMethod = {
+  implementation: 'photokit-resources/sha256/v1',
+  representation: 'all-original-resources',
+  algorithm: 'sha256',
+  metadataSkip: (item) => (item.kind !== 'photo' ? 'video' : null),
+  digestIsProof: true,
+};
+
+/** One resource as hashed natively (PHAssetResourceType raw value). */
+export type HashedResource = { type: number; bytes: number; sha256: string };
+
+/**
+ * A single comparable key for a photo's whole resource set, and its total
+ * bytes. Order-independent: resources are sorted by type, then digest.
+ */
+export function resourceSetDigest(resources: readonly HashedResource[]): {
+  digest: string;
+  bytes: number;
+} {
+  const parts = resources
+    .map((resource) => `${resource.type}:${resource.bytes}:${resource.sha256}`)
+    .sort();
+  return {
+    digest: parts.join('|'),
+    bytes: resources.reduce((sum, resource) => sum + resource.bytes, 0),
+  };
 }
 
 /** Camera roll folder: …/DCIM/100APPLE/<name>, …/DCIM/101APPLE/<name>, … */
@@ -92,16 +149,24 @@ export type FingerprintRow = {
 };
 
 /** Whether a stored row still describes the photo as it is now. */
-export function isCurrent(row: FingerprintRow, item: PhotoItem): boolean {
-  return row.implementation === FINGERPRINT_IMPLEMENTATION && row.assetVersion === item.version;
+export function isCurrent(
+  row: FingerprintRow,
+  item: PhotoItem,
+  implementation: string = FINGERPRINT_IMPLEMENTATION,
+): boolean {
+  return row.implementation === implementation && row.assetVersion === item.version;
 }
 
 /**
  * Rows worth reusing without reading the file again. Skips that can change
  * on their own (iCloud download state, read errors) are always rechecked.
  */
-export function isReusable(row: FingerprintRow, item: PhotoItem): boolean {
-  if (!isCurrent(row, item)) return false;
+export function isReusable(
+  row: FingerprintRow,
+  item: PhotoItem,
+  implementation: string = FINGERPRINT_IMPLEMENTATION,
+): boolean {
+  if (!isCurrent(row, item, implementation)) return false;
   return (
     row.status === 'hashed' ||
     row.skipReason === 'not-original-file' ||
@@ -160,11 +225,17 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 export function confirmedSets(
   rows: readonly FingerprintRow[],
   byId: ReadonlyMap<string, PhotoItem>,
+  implementation: string = FINGERPRINT_IMPLEMENTATION,
 ): string[][] {
   const groups = new Map<string, string[]>();
   for (const row of rows) {
     const item = byId.get(row.assetId);
-    if (!item || row.matchGroup === null || row.status !== 'hashed' || !isCurrent(row, item)) {
+    if (
+      !item ||
+      row.matchGroup === null ||
+      row.status !== 'hashed' ||
+      !isCurrent(row, item, implementation)
+    ) {
       continue;
     }
     const members = groups.get(row.matchGroup);
@@ -234,6 +305,7 @@ export function copyCoverage(
   items: readonly PhotoItem[],
   rows: ReadonlyMap<string, FingerprintRow>,
   sets: readonly (readonly string[])[],
+  method: FingerprintMethod = FILE_MD5_METHOD,
 ): CopyCoverage {
   let checked = 0;
   const counts = new Map<SkipReason | 'not-yet', number>();
@@ -241,13 +313,13 @@ export function copyCoverage(
     counts.set(reason, (counts.get(reason) ?? 0) + 1);
 
   for (const item of items) {
-    const early = metadataSkipReason(item);
+    const early = method.metadataSkip(item);
     if (early) {
       bump(early);
       continue;
     }
     const row = rows.get(item.id);
-    if (!row || !isCurrent(row, item)) bump('not-yet');
+    if (!row || !isCurrent(row, item, method.implementation)) bump('not-yet');
     else if (row.status === 'hashed') checked += 1;
     else bump(row.skipReason ?? 'unreadable');
   }

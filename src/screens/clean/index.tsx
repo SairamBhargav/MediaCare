@@ -8,7 +8,11 @@ import { visualCoverage } from '@/domain/visual-records';
 import { useActionPlan } from '@/features/clean/use-action-plan';
 import { scanLibrary } from '@/features/media/start-scan';
 import { openSettings } from '@/services/media/photo-library';
-import { ANALYSIS_IMPLEMENTATION, visualAnalysisAvailable } from '@/services/media/visual-analysis';
+import {
+  ANALYSIS_IMPLEMENTATION,
+  activeCopyMethod,
+  visualAnalysisAvailable,
+} from '@/services/media/visual-analysis';
 import { useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
 import { useReviewAdjustments } from '@/state/review-session';
@@ -32,7 +36,7 @@ export function CleanScreen() {
     lastStatus: lastAnalysis?.status ?? null,
   };
   const copyCheck = {
-    coverage: copyCoverage(items, fingerprints, copySets),
+    coverage: copyCoverage(items, fingerprints, copySets, activeCopyMethod()),
     lastStatus: lastCopyCheck?.status ?? null,
     sets: copySets.length,
   };

@@ -226,3 +226,53 @@ test('a photo that changed into a rendition before confirmation is not matched',
   await runCopyCheck(deps, t.emit).done;
   expect(t.groups()).toEqual([]);
 });
+
+describe('app build: every Photos resource hashed (edited and Live Photos covered)', () => {
+  const res = (type: number, sha256: string, bytes = 100) => ({ type, bytes, sha256 });
+
+  test('Live Photos are exact copies only if photo AND video match; edited photos are checked', async () => {
+    const items = [
+      photo('liveA', { subtypes: ['livePhoto'] }),
+      photo('liveB', { subtypes: ['livePhoto'] }),
+      photo('liveC', { subtypes: ['livePhoto'] }),
+      photo('edited1'),
+      photo('edited2'),
+      photo('cloud'),
+      photo('video', { kind: 'video', durationMs: 1000 }),
+    ];
+    const resources: Record<string, { type: number; bytes: number; sha256: string }[]> = {
+      liveA: [res(1, 'still'), res(9, 'motion')],
+      liveB: [res(9, 'motion'), res(1, 'still')], // same set, different order
+      liveC: [res(1, 'still'), res(9, 'other-motion')], // same still, different video
+      edited1: [res(1, 'orig'), res(7, 'adjust'), res(5, 'render')],
+      edited2: [res(1, 'orig'), res(7, 'adjust'), res(5, 'render')],
+    };
+    const t = setup({}, items);
+    const asked: string[][] = [];
+    const deps: CopyCheckDeps = {
+      ...t.deps,
+      hashOriginals: async (ids) => {
+        asked.push(ids);
+        return ids.map((id) =>
+          id === 'cloud'
+            ? { id, status: 'unavailable' }
+            : { id, status: 'ok', resources: resources[id] },
+        );
+      },
+    };
+    expect(await runCopyCheck(deps, t.emit).done).toBe('succeeded');
+    const sets = t.groups().map((set) => [...set]);
+    expect(sets.sort((a, b) => a[0].localeCompare(b[0]))).toEqual([
+      ['edited1', 'edited2'],
+      ['liveA', 'liveB'],
+    ]);
+    // Videos are never sent; no file-by-file comparison is needed.
+    expect(asked.flat()).not.toContain('video');
+    expect(t.calls.compare).toEqual([]);
+    const cloud = t.saved.find((row) => row.assetId === 'cloud');
+    expect(cloud).toMatchObject({ status: 'skipped', skipReason: 'unavailable' });
+    expect(t.saved.every((row) => row.implementation === 'photokit-resources/sha256/v1')).toBe(
+      true,
+    );
+  });
+});

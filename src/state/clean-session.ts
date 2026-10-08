@@ -33,6 +33,8 @@ import { getSubtypes, listAllMetadata, toRecord } from '@/services/media/photo-l
 import {
   ANALYSIS_IMPLEMENTATION,
   analyzePhotos,
+  hashOriginals,
+  originalsHashingAvailable,
   visualAnalysisAvailable,
 } from '@/services/media/visual-analysis';
 import { runCopyCheck } from '@/services/scan/copy-check';
@@ -349,6 +351,7 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
           fileSize,
           fileMd5,
           sameBytes,
+          hashOriginals: originalsHashingAvailable() ? hashOriginals : undefined,
           saveFingerprints,
           saveMatchGroups,
           checkpoint: ({ status, processed, total, error }) =>
