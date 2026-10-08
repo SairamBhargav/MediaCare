@@ -112,4 +112,10 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX idx_removals_batch ON removals (batch_id);
   `,
+
+  // 5: body poses and layout grid for similar shots (JSON).
+  `
+  ALTER TABLE visual_scores ADD COLUMN poses TEXT NOT NULL DEFAULT '[]';
+  ALTER TABLE visual_scores ADD COLUMN layout TEXT;
+  `,
 ];

@@ -1,5 +1,5 @@
 import type { PhotoItem } from './media';
-import { normalize, type VisualFace, type VisualScores } from './visual-findings';
+import { normalize, type Pose, type VisualFace, type VisualScores } from './visual-findings';
 
 /**
  * Stored visual analysis per photo (migration 3), and how native results
@@ -20,6 +20,8 @@ export type VisualRow = {
   darkFraction: number | null;
   brightFraction: number | null;
   faces: VisualFace[];
+  poses: Pose[];
+  layout: number[] | null;
   analyzedAt: number;
 };
 
@@ -40,6 +42,8 @@ export type NativeAnalysis = {
   brightness?: number;
   darkFraction?: number;
   brightFraction?: number;
+  poses?: Record<string, [number, number]>[];
+  layout?: number[];
 };
 
 const STATUSES: readonly VisualStatus[] = ['ok', 'in-icloud', 'missing', 'unsupported', 'failed'];
@@ -82,6 +86,13 @@ export function rowFromNative(
           height: num(face.height) ?? 0,
         }))
       : [],
+    poses: usable
+      ? (result.poses ?? []).filter((pose) => typeof pose === 'object' && pose !== null)
+      : [],
+    layout:
+      usable && Array.isArray(result.layout) && result.layout.length > 0
+        ? result.layout.map((value) => Math.round(value * 1e4) / 1e4)
+        : null,
     analyzedAt: now,
   };
 }
@@ -106,6 +117,8 @@ export function toScores(row: VisualRow): VisualScores | null {
     darkFraction: row.darkFraction ?? 0,
     brightFraction: row.brightFraction ?? 0,
     faces: row.faces,
+    poses: row.poses,
+    layout: row.layout,
   };
 }
 

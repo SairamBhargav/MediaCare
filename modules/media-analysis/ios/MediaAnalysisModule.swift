@@ -18,7 +18,8 @@ public class MediaAnalysisModule: Module {
   public func definition() -> ModuleDefinition {
     Name("MediaAnalysis")
 
-    Constant("version") { 1 }
+    // Bump when what analyze() returns changes; stored results from older versions are redone.
+    Constant("version") { 2 }
 
     AsyncFunction("analyze") { (ids: [String], maxSide: Int, promise: Promise) in
       DispatchQueue.global(qos: .userInitiated).async {

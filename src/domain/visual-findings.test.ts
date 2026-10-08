@@ -3,10 +3,13 @@ import {
   VISUAL_THRESHOLDS,
   chooseKeeper,
   featureDistance,
+  layoutDistance,
   normalize,
+  poseDistance,
   qualityFlags,
   similarFindings,
   similarSets,
+  type Pose,
   type VisualFace,
   type VisualScores,
 } from './visual-findings';
@@ -45,6 +48,8 @@ function scores(print: number[] | null, overrides: Partial<VisualScores> = {}): 
     darkFraction: 0.01,
     brightFraction: 0.01,
     faces: [],
+    poses: [],
+    layout: null,
     ...overrides,
   };
 }
@@ -226,5 +231,69 @@ describe('quality flags', () => {
       ['dark', 'Very dark (80% near black)'],
       ['bright', 'Mostly blown out (60% near white)'],
     ]);
+  });
+});
+
+describe('pose and layout checks', () => {
+  // A standing dancer and the same dancer in an arabesque (leg raised, arm out).
+  const standing: Pose = {
+    head: [0.5, 0.9],
+    neck: [0.5, 0.8],
+    left_hand: [0.4, 0.5],
+    right_hand: [0.6, 0.5],
+    left_foot: [0.45, 0.1],
+    right_foot: [0.55, 0.1],
+    root: [0.5, 0.5],
+  };
+  const arabesque: Pose = {
+    head: [0.45, 0.85],
+    neck: [0.47, 0.75],
+    left_hand: [0.1, 0.8],
+    right_hand: [0.9, 0.7],
+    left_foot: [0.5, 0.1],
+    right_foot: [0.95, 0.55],
+    root: [0.5, 0.5],
+  };
+  const standingAgain: Pose = Object.fromEntries(
+    Object.entries(standing).map(([name, [x, y]]) => [name, [x + 0.01, y - 0.01]]),
+  );
+
+  test('the same pose (slightly shifted) is close; a different pose is far', () => {
+    expect(poseDistance([standing], [standingAgain])!).toBeLessThan(
+      VISUAL_THRESHOLDS.poseDifferent,
+    );
+    expect(poseDistance([standing], [arabesque])!).toBeGreaterThan(VISUAL_THRESHOLDS.poseDifferent);
+  });
+
+  test('no person, or too few shared joints: pose does not decide', () => {
+    expect(poseDistance([], [standing])).toBeNull();
+    expect(poseDistance([{ head: [0.5, 0.9] }], [{ head: [0.5, 0.9] }])).toBeNull();
+  });
+
+  test('the dance case: same studio and look, different pose → not similar', () => {
+    const items = [photo('p1', T0), photo('p2', T0 + 1500)];
+    const map = new Map([
+      ['p1', scores([1, 0, 0], { poses: [standing] })],
+      ['p2', scores([1, 0.1, 0], { poses: [arabesque] })],
+    ]);
+    expect(similarSets(items, map)).toEqual([]);
+  });
+
+  test('a real repeat shot (same pose) is still similar', () => {
+    const items = [photo('r1', T0), photo('r2', T0 + 500)];
+    const map = new Map([
+      ['r1', scores([1, 0, 0], { poses: [standing] })],
+      ['r2', scores([1, 0.1, 0], { poses: [standingAgain] })],
+    ]);
+    expect(similarSets(items, map)).toEqual([['r1', 'r2']]);
+  });
+
+  test('layout: same framing is close; subject moved across the frame is far', () => {
+    const left = Array.from({ length: 64 }, (_, index) => (index % 8 < 4 ? 0.8 : 0.2));
+    const right = Array.from({ length: 64 }, (_, index) => (index % 8 < 4 ? 0.2 : 0.8));
+    const brighter = left.map((value) => value + 0.1);
+    expect(layoutDistance(left, brighter)!).toBeCloseTo(0);
+    expect(layoutDistance(left, right)!).toBeGreaterThan(VISUAL_THRESHOLDS.layoutDifferent);
+    expect(layoutDistance(null, left)).toBeNull();
   });
 });

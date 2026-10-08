@@ -17,8 +17,12 @@ export function visualAnalysisAvailable(): boolean {
 
 /** Size of the rendition analyzed (longest side, px). */
 export const ANALYSIS_MAX_SIDE = 512;
-/** Bump when the native measurements or their interpretation change; old scores are redone. */
-export const ANALYSIS_IMPLEMENTATION = 'vision-fp+lap256+faces/v1';
+/**
+ * Identifies how scores were made. It includes the native module's own
+ * version, so results from an older app build (without poses, say) are
+ * redone after updating. Bump the JS part when interpretation changes.
+ */
+export const ANALYSIS_IMPLEMENTATION = `vision-analysis/js2/native${MediaAnalysis?.version ?? 0}`;
 
 export async function analyzePhotos(ids: string[]): Promise<AnalysisResult[]> {
   if (!MediaAnalysis) throw new Error('Visual analysis needs the MediaCare app build');

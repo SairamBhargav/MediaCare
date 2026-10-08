@@ -414,6 +414,8 @@ type VisualDbRow = {
   dark_fraction: number | null;
   bright_fraction: number | null;
   faces: string;
+  poses: string;
+  layout: string | null;
   analyzed_at: number;
 };
 
@@ -441,6 +443,8 @@ export async function loadVisualRows(): Promise<VisualRow[]> {
     darkFraction: row.dark_fraction,
     brightFraction: row.bright_fraction,
     faces: parseJson(row.faces, []),
+    poses: parseJson(row.poses, []),
+    layout: parseJson<number[] | null>(row.layout, null),
     analyzedAt: row.analyzed_at,
   }));
 }
@@ -450,8 +454,8 @@ export async function saveVisualRows(rows: readonly VisualRow[]) {
   const db = await getDatabase();
   await db.withExclusiveTransactionAsync(async (txn) => {
     const statement = await txn.prepareAsync(
-      `INSERT OR REPLACE INTO visual_scores (asset_id, asset_version, implementation, status, feature_print, sharpness, sharpness_max_tile, brightness, dark_fraction, bright_fraction, faces, analyzed_at)
-       VALUES ($id, $version, $implementation, $status, $print, $sharpness, $maxTile, $brightness, $dark, $bright, $faces, $at)`,
+      `INSERT OR REPLACE INTO visual_scores (asset_id, asset_version, implementation, status, feature_print, sharpness, sharpness_max_tile, brightness, dark_fraction, bright_fraction, faces, poses, layout, analyzed_at)
+       VALUES ($id, $version, $implementation, $status, $print, $sharpness, $maxTile, $brightness, $dark, $bright, $faces, $poses, $layout, $at)`,
     );
     try {
       for (const row of rows) {
@@ -467,6 +471,8 @@ export async function saveVisualRows(rows: readonly VisualRow[]) {
           $dark: row.darkFraction,
           $bright: row.brightFraction,
           $faces: JSON.stringify(row.faces),
+          $poses: JSON.stringify(row.poses),
+          $layout: row.layout ? JSON.stringify(row.layout) : null,
           $at: row.analyzedAt,
         });
       }

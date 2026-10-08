@@ -23,6 +23,9 @@ export type VisualFace = {
   height: number;
 };
 
+/** One person's confident body joints: name → [x, y], normalized, origin bottom-left. */
+export type Pose = Readonly<Record<string, readonly [number, number]>>;
+
 /** Stored analysis for one photo. */
 export type VisualScores = {
   /** L2-normalized Vision feature print. */
@@ -33,6 +36,10 @@ export type VisualScores = {
   darkFraction: number;
   brightFraction: number;
   faces: readonly VisualFace[];
+  /** People's body poses; empty if none found or not analyzed. */
+  poses: readonly Pose[];
+  /** 8×8 brightness grid (0–1), or null if not analyzed. */
+  layout: readonly number[] | null;
 };
 
 /** Provisional thresholds; tune with Diagnostics → Vision check on real photos. */
@@ -43,6 +50,13 @@ export const VISUAL_THRESHOLDS = {
    * shot 0.18; same scene, different moment 0.42; different scenes 0.9+.
    */
   similarDistance: 0.3,
+  /**
+   * Mean joint distance (pose scaled to its own size) above which the same
+   * person is in a different pose: not similar, however alike the scene is.
+   */
+  poseDifferent: 0.18,
+  /** Mean layout-grid difference above which the framing differs: not similar. */
+  layoutDifferent: 0.09,
   /** Only photos taken this close in time are compared (similar shots happen together). */
   similarWindowMs: 10 * 60_000,
   /** Compare each photo with at most this many following photos. */
@@ -81,6 +95,82 @@ export function featureDistance(a: Float32Array | null, b: Float32Array | null):
   return Math.sqrt(sum);
 }
 
+/** The person with the most confident joints, or null. */
+function mainPose(poses: readonly Pose[]): Pose | null {
+  let best: Pose | null = null;
+  for (const pose of poses) {
+    if (!best || Object.keys(pose).length > Object.keys(best).length) best = pose;
+  }
+  return best;
+}
+
+/**
+ * How different two body poses are: the main person's shared joints, each
+ * pose centred and scaled to its own size, mean distance between matching
+ * joints. Null when there's no person or fewer than 5 shared joints (then
+ * pose doesn't decide).
+ */
+export function poseDistance(a: readonly Pose[], b: readonly Pose[]): number | null {
+  const left = mainPose(a);
+  const right = mainPose(b);
+  if (!left || !right) return null;
+  const joints = Object.keys(left).filter((name) => name in right);
+  if (joints.length < 5) return null;
+
+  const normalized = (pose: Pose) => {
+    const points = joints.map((name) => pose[name]);
+    const cx = points.reduce((sum, [x]) => sum + x, 0) / points.length;
+    const cy = points.reduce((sum, [, y]) => sum + y, 0) / points.length;
+    const xs = points.map(([x]) => x);
+    const ys = points.map(([, y]) => y);
+    const scale =
+      Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 1;
+    return points.map(([x, y]) => [(x - cx) / scale, (y - cy) / scale] as const);
+  };
+  const p = normalized(left);
+  const q = normalized(right);
+  let total = 0;
+  for (let index = 0; index < p.length; index += 1) {
+    total += Math.hypot(p[index][0] - q[index][0], p[index][1] - q[index][1]);
+  }
+  return total / p.length;
+}
+
+/** How differently light and dark sit in the frame (each grid centred on its own mean). Null if unknown. */
+export function layoutDistance(
+  a: readonly number[] | null,
+  b: readonly number[] | null,
+): number | null {
+  if (!a || !b || a.length !== b.length || a.length === 0) return null;
+  const mean = (grid: readonly number[]) =>
+    grid.reduce((sum, value) => sum + value, 0) / grid.length;
+  const ma = mean(a);
+  const mb = mean(b);
+  let total = 0;
+  for (let index = 0; index < a.length; index += 1)
+    total += Math.abs(a[index] - ma - (b[index] - mb));
+  return total / a.length;
+}
+
+/**
+ * Whether two photos count as similar shots: they look alike (feature
+ * print), and neither the person's pose nor the framing clearly differs.
+ * Returns the feature distance when similar, otherwise Infinity.
+ */
+export function similarity(
+  a: VisualScores,
+  b: VisualScores,
+  thresholds = VISUAL_THRESHOLDS,
+): number {
+  const distance = featureDistance(a.featurePrint, b.featurePrint);
+  if (distance > thresholds.similarDistance) return Number.POSITIVE_INFINITY;
+  const pose = poseDistance(a.poses, b.poses);
+  if (pose !== null && pose > thresholds.poseDifferent) return Number.POSITIVE_INFINITY;
+  const layout = layoutDistance(a.layout, b.layout);
+  if (layout !== null && layout > thresholds.layoutDifferent) return Number.POSITIVE_INFINITY;
+  return distance;
+}
+
 function capturedAt(item: PhotoItem): number | null {
   return item.capturedMs !== null && Number.isFinite(item.capturedMs) ? item.capturedMs : null;
 }
@@ -104,11 +194,11 @@ export function similarSets(
     .map((item) => ({
       item,
       at: capturedAt(item),
-      print: scores.get(item.id)?.featurePrint ?? null,
+      scores: scores.get(item.id) ?? null,
     }))
     .filter(
-      (entry): entry is { item: PhotoItem; at: number; print: Float32Array } =>
-        entry.at !== null && entry.print !== null,
+      (entry): entry is { item: PhotoItem; at: number; scores: VisualScores } =>
+        entry.at !== null && !!entry.scores?.featurePrint,
     )
     .sort((a, b) => a.at - b.at || a.item.id.localeCompare(b.item.id));
 
@@ -132,7 +222,7 @@ export function similarSets(
     for (const group of open) {
       let worst = 0;
       for (const member of group.members) {
-        worst = Math.max(worst, featureDistance(member.print, photo.print));
+        worst = Math.max(worst, similarity(member.scores, photo.scores, thresholds));
         if (worst > thresholds.similarDistance) break;
       }
       if (worst <= thresholds.similarDistance && worst < bestWorst) {
