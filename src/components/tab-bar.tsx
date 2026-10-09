@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCleanSession } from '@/state/clean-session';
+import { noteTabMove } from '@/state/tab-motion';
 import { spacing, useTheme } from '@/theme';
 import { haptics } from '@/utils/haptics';
 
@@ -75,6 +76,7 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
                   });
                   if (!focused && !event.defaultPrevented) {
                     haptics.light();
+                    noteTabMove(state.routes[state.index].name, route.name);
                     navigation.navigate(route.name, route.params);
                   }
                 }}
