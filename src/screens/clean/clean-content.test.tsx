@@ -23,6 +23,7 @@ function actions(): jest.Mocked<Required<CleanActions>> {
     onOpenPlan: jest.fn(),
     onFindCopies: jest.fn(),
     onAnalyze: jest.fn(),
+    onFullCheck: jest.fn(),
   };
 }
 
@@ -112,11 +113,13 @@ describe('real results', () => {
     findings,
   };
 
-  test('lead with a count of items to review, never a size', async () => {
+  test('lead with a count of items to review; sizes only as measured', async () => {
     await renderState(real, 'full');
     expect(screen.getByText(/^\d+ items to review$/)).toBeOnTheScreen();
     expect(screen.queryByText(/Could free up to/)).toBeNull();
-    expect(screen.getByText(/sizes aren’t measured yet/)).toBeOnTheScreen();
+    // The stand-in items carry sizes, as measured videos would.
+    expect(screen.getByText(/^Measured videos: up to/)).toBeOnTheScreen();
+    expect(screen.getByText(/only video sizes are measured/)).toBeOnTheScreen();
     expect(screen.getByText('All 1,200 photos and videos checked')).toBeOnTheScreen();
     expect(screen.queryByLabelText(/, sample\./)).toBeNull();
   });
@@ -171,7 +174,7 @@ describe('real results', () => {
     });
     expect(screen.getByText(/didn’t finish/)).toBeOnTheScreen();
     expect(screen.getByText(/800 · Not checked yet/)).toBeOnTheScreen();
-    expect(screen.getByLabelText('Continue checking')).toBeOnTheScreen();
+    expect(screen.getAllByLabelText('Continue checking').length).toBeGreaterThan(0);
   });
 
   test('photo check in Expo Go explains it needs the app and offers no button', async () => {
@@ -208,6 +211,33 @@ describe('real results', () => {
       copyCheck: { coverage: { checked: 0, inSets: 0, notChecked: [] }, lastStatus: null, sets: 0 },
     });
     expect(screen.queryByLabelText('Find exact copies')).toBeNull();
+  });
+
+  test('one button checks everything until both checks have finished', async () => {
+    const never = {
+      analysis: { available: true, coverage: { analyzed: 0, notAnalyzed: [] }, lastStatus: null },
+      copyCheck: { coverage: { checked: 0, inSets: 0, notChecked: [] }, lastStatus: null, sets: 0 },
+    };
+    const handlers = await renderState(real, 'full', never);
+    await fireEvent.press(screen.getByLabelText('Check my photos'));
+    expect(handlers.onFullCheck).toHaveBeenCalled();
+
+    await renderState(real, 'full', {
+      analysis: { ...never.analysis, lastStatus: 'succeeded' },
+      copyCheck: { ...never.copyCheck, lastStatus: 'succeeded' },
+    });
+    expect(screen.queryByLabelText('Check my photos')).toBeNull();
+    expect(screen.queryByLabelText('Continue checking')).toBeNull();
+  });
+
+  test('findings are listed with what matters most first', async () => {
+    await renderState(sampleResultsState);
+    const labels = screen
+      .getAllByRole('button')
+      .map((button) => button.props.accessibilityLabel as string | undefined)
+      .filter((label): label is string => !!label && label.includes(', sample.'));
+    expect(labels[0]).toMatch(/^Exact copies/);
+    expect(labels[1]).toMatch(/^Similar shots/);
   });
 
   test('a changed library prompts a new scan', async () => {

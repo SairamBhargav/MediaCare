@@ -54,6 +54,9 @@ export const typography = {
 
 export type TypographyVariant = keyof typeof typography;
 
+/** How much "Bigger text" in Settings enlarges the type ramp. */
+export const LARGER_TEXT_SCALE = 1.18;
+
 /**
  * Layered elevation as CSS box-shadow strings (supported by the New
  * Architecture). Shadows are only visible in light mode; dark mode separates

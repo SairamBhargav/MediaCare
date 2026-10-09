@@ -25,6 +25,7 @@ test('changes are written to device storage as data only', () => {
     haptics: false,
     onboardingSeen: false,
     allowRemoval: false,
+    largerText: false,
   });
 });
 
@@ -44,9 +45,9 @@ test('corrupted stored values fall back to defaults without throwing', async () 
     JSON.stringify({ state: { appearance: 'neon', lessMotion: 'maybe' }, version: 1 }),
   );
   await usePreferences.persist.rehydrate();
-  const { appearance, lessMotion, haptics, onboardingSeen, allowRemoval } =
+  const { appearance, lessMotion, haptics, onboardingSeen, allowRemoval, largerText } =
     usePreferences.getState();
-  expect({ appearance, lessMotion, haptics, onboardingSeen, allowRemoval }).toEqual(
+  expect({ appearance, lessMotion, haptics, onboardingSeen, allowRemoval, largerText }).toEqual(
     defaultPreferences,
   );
 });

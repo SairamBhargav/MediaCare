@@ -7,6 +7,7 @@ test('valid stored preferences are kept as-is', () => {
     haptics: false,
     onboardingSeen: true,
     allowRemoval: true,
+    largerText: true,
   };
   expect(sanitizePreferences(stored)).toEqual(stored);
 });
@@ -25,6 +26,7 @@ test('invalid fields fall back individually; valid ones survive', () => {
     haptics: false,
     onboardingSeen: false,
     allowRemoval: false,
+    largerText: false,
   });
 });
 
@@ -50,4 +52,10 @@ test('removing photos is off unless explicitly turned on', () => {
   expect(defaultPreferences.allowRemoval).toBe(false);
   expect(sanitizePreferences({ allowRemoval: 'yes' }).allowRemoval).toBe(false);
   expect(sanitizePreferences({ allowRemoval: true }).allowRemoval).toBe(true);
+});
+
+test('bigger text is off by default and only a boolean turns it on', () => {
+  expect(defaultPreferences.largerText).toBe(false);
+  expect(sanitizePreferences({ largerText: 1 }).largerText).toBe(false);
+  expect(sanitizePreferences({ largerText: true }).largerText).toBe(true);
 });

@@ -14,6 +14,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
+import { REMOVAL_IN_THIS_BUILD } from '@/features/clean/removal-gate';
 import { openSettings } from '@/services/media/photo-library';
 import { useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
@@ -31,10 +32,12 @@ export function SettingsScreen() {
     lessMotion,
     haptics,
     allowRemoval,
+    largerText,
     setAppearance,
     setLessMotion,
     setHaptics,
     setAllowRemoval,
+    setLargerText,
   } = usePreferences();
 
   const access = useCatalog((catalog) => catalog.access);
@@ -97,6 +100,16 @@ export function SettingsScreen() {
             </Row>
           </FieldGroup.Section>
 
+          <FieldGroup.Section title="Reading">
+            <Switch label="Bigger text" value={largerText} onValueChange={setLargerText} />
+            <FieldGroup.SectionFooter>
+              <Text>
+                Makes MediaCare’s text bigger. For even bigger text everywhere, use iOS Settings,
+                Display & Brightness, Text Size.
+              </Text>
+            </FieldGroup.SectionFooter>
+          </FieldGroup.Section>
+
           <FieldGroup.Section title="Motion & Feedback">
             <Switch label="Less motion" value={lessMotion} onValueChange={setLessMotion} />
             <Switch label="Haptics" value={haptics} onValueChange={setHaptics} />
@@ -152,17 +165,29 @@ export function SettingsScreen() {
               <Spacer />
               <Text>{cataloged.toLocaleString()}</Text>
             </Row>
-            <Switch
-              label="Allow removing photos"
-              value={allowRemoval}
-              onValueChange={setAllowRemoval}
+            {REMOVAL_IN_THIS_BUILD ? (
+              <Switch
+                label="Allow removing photos"
+                value={allowRemoval}
+                onValueChange={setAllowRemoval}
+              />
+            ) : null}
+            <NativeButton
+              variant="text"
+              label="Activity"
+              onPress={() => {
+                router.back();
+                router.push('/activity');
+              }}
             />
             <NativeButton variant="text" label="Clear MediaCare data…" onPress={confirmClear} />
             <FieldGroup.SectionFooter>
               <Text>
-                With removing on, the Removal plan can move the photos you marked to Recently
-                Deleted in Photos, after iOS asks you to confirm. Clearing MediaCare data never
-                deletes anything from Photos.
+                {`${
+                  REMOVAL_IN_THIS_BUILD
+                    ? 'With removing on, the Removal plan can move the photos you marked to Recently Deleted in Photos, after iOS asks you to confirm.'
+                    : 'This test version never removes photos.'
+                } Clearing MediaCare data never deletes anything from Photos.`}
               </Text>
             </FieldGroup.SectionFooter>
           </FieldGroup.Section>
@@ -213,11 +238,13 @@ export function SettingsScreen() {
               <Spacer />
               <Text>{version}</Text>
             </Row>
-            <Row>
-              <Text>Expo SDK</Text>
-              <Spacer />
-              <Text>{sdk}</Text>
-            </Row>
+            {__DEV__ ? (
+              <Row>
+                <Text>Expo SDK</Text>
+                <Spacer />
+                <Text>{sdk}</Text>
+              </Row>
+            ) : null}
           </FieldGroup.Section>
         </FieldGroup>
       </Host>

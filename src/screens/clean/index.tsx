@@ -82,6 +82,7 @@ export function CleanScreen() {
             onOpenPlan: () => router.push('/plan'),
             onFindCopies: session.startCopyCheck,
             onAnalyze: session.startVisualAnalysis,
+            onFullCheck: session.startFullCheck,
           }}
           scanActions={{
             onPause: session.pauseScan,

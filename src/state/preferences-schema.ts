@@ -15,6 +15,8 @@ export type Preferences = {
   onboardingSeen: boolean;
   /** Removing photos is off until the user turns it on in Settings. */
   allowRemoval: boolean;
+  /** Makes all app text a step bigger, on top of iOS Text Size. */
+  largerText: boolean;
 };
 
 export const PREFERENCES_VERSION = 1;
@@ -25,6 +27,7 @@ export const defaultPreferences: Preferences = {
   haptics: true,
   onboardingSeen: false,
   allowRemoval: false,
+  largerText: false,
 };
 
 const APPEARANCES: readonly AppearancePreference[] = ['system', 'light', 'dark'];
@@ -50,5 +53,7 @@ export function sanitizePreferences(input: unknown): Preferences {
       typeof record.allowRemoval === 'boolean'
         ? record.allowRemoval
         : defaultPreferences.allowRemoval,
+    largerText:
+      typeof record.largerText === 'boolean' ? record.largerText : defaultPreferences.largerText,
   };
 }

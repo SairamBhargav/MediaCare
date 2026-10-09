@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
@@ -20,10 +20,10 @@ import { isActive, type Job } from '@/domain/jobs';
 import { knownBytes } from '@/features/media/registry';
 import type { PhotoAccess } from '@/services/media/photo-library';
 import type { CleanHomeState } from '@/state/clean-session';
-import { gutter, radius, spacing, useTheme } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 
 import { AnalysisCard, type AnalysisSummary } from './analysis-card';
-import { CategoryCard } from './category-card';
+import { CategoryRow, byPriority } from './category-row';
 import { CopiesCard, type CopyCheckSummary } from './copies-card';
 import { ScanningCard, type ScanActions } from './scanning-card';
 
@@ -39,6 +39,8 @@ export type CleanActions = {
   onFindCopies?: () => void;
   /** Starts the on-device photo check (real results only). */
   onAnalyze?: () => void;
+  /** One button: the photo check, then exact copies (real results only). */
+  onFullCheck?: () => void;
 };
 
 type CleanContentProps = {
@@ -154,8 +156,8 @@ function NotScanned({
       <StatusPill label="Not scanned" icon="info" />
       <AppText variant="title1">Keep the memories that matter.</AppText>
       <AppText variant="body" color="secondaryLabel">
-        MediaCare finds bursts, screenshots and long videos, then lets you decide what stays.
-        Nothing is removed without your review.
+        MediaCare finds repeated shots, screenshots, copies and large videos, then lets you decide
+        what stays. Nothing is removed without your review.
       </AppText>
 
       {access === 'denied' ? (
@@ -223,23 +225,27 @@ function Results({
   copyCheck?: CopyCheckSummary;
   analysis?: AnalysisSummary;
 }) {
-  const { width } = useWindowDimensions();
   const sample = state.sample;
   const summaries = summarizeCategories(state.findings, knownBytes, adjustments);
   const totalBytes = totalReclaimableBytes(state.findings, knownBytes, adjustments);
   const candidates = candidateCount(state.findings, adjustments);
   const setAside = (adjustments.protectedIds?.size ?? 0) + (adjustments.skippedIds?.size ?? 0) > 0;
   const partial = state.analyzed < state.total;
-  const cardWidth = Math.min(300, Math.round(width * 0.72));
   const noun = sample ? 'sample photos' : 'photos and videos';
   const coverage = partial
     ? `${state.analyzed.toLocaleString()} of ${state.total.toLocaleString()} ${noun} checked so far`
     : `All ${state.total.toLocaleString()} ${noun} checked`;
 
+  const checkCard =
+    !sample && actions.onFullCheck ? (
+      <CheckCard analysis={analysis} copyCheck={copyCheck} onStart={actions.onFullCheck} />
+    ) : null;
+
   const footer = sample ? (
     <Button title="Reset sample" variant="plain" onPress={actions.onReset} style={styles.center} />
   ) : (
     <>
+      <SectionHeader title="What was checked" />
       {analysis && actions.onAnalyze ? (
         <AnalysisCard summary={analysis} onStart={actions.onAnalyze} />
       ) : null}
@@ -284,6 +290,7 @@ function Results({
               }
             />
           </Surface>
+          {checkCard}
         </RevealGroup>
         <RevealGroup index={1} animate={animateReveal}>
           {footer}
@@ -310,11 +317,18 @@ function Results({
               ? `Could free up to ${formatBytes(totalBytes)}`
               : `${candidates.toLocaleString()} ${candidates === 1 ? 'item' : 'items'} to review`}
           </AppText>
+          {!sample && totalBytes > 0 ? (
+            <AppText variant="headline" color="accentText" style={styles.numbers}>
+              Measured videos: up to {formatBytes(totalBytes)}
+            </AppText>
+          ) : null}
           <AppText variant="body" color="secondaryLabel">
             {partial ? 'Results so far. Items not checked yet aren’t included. ' : ''}
             {sample
               ? 'Each photo is counted once'
-              : 'Favorites aren’t suggested, sizes aren’t measured yet'}
+              : totalBytes > 0
+                ? 'Favorites aren’t suggested, only video sizes are measured'
+                : 'Favorites aren’t suggested, sizes aren’t measured yet'}
             {setAside ? ', protected photos and skipped groups aren’t counted' : ''}, and nothing is
             removed until you review it.
           </AppText>
@@ -330,31 +344,22 @@ function Results({
             </View>
           ) : null}
         </Surface>
+        {checkCard}
       </RevealGroup>
 
       <RevealGroup index={1} animate={animateReveal}>
         <View style={styles.section}>
           <SectionHeader eyebrow={sample ? 'Sample' : 'Your library'} title="Findings" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            snapToInterval={cardWidth + spacing.sm}
-            snapToAlignment="start"
-            style={styles.shelf}
-            contentContainerStyle={styles.shelfContent}
-            accessibilityLabel="Finding categories"
-          >
-            {summaries.map((summary) => (
-              <CategoryCard
+          <View style={styles.list}>
+            {[...summaries].sort(byPriority).map((summary) => (
+              <CategoryRow
                 key={summary.category}
                 summary={summary}
                 sample={sample}
-                width={cardWidth}
                 onPress={() => router.push(`/category/${summary.category}`)}
               />
             ))}
-          </ScrollView>
+          </View>
         </View>
       </RevealGroup>
 
@@ -381,8 +386,52 @@ function Results({
   );
 }
 
+/**
+ * The one next step after a scan: look at the photos on this iPhone and find
+ * exact copies, in one go. Shown until both checks have finished.
+ */
+function CheckCard({
+  analysis,
+  copyCheck,
+  onStart,
+}: {
+  analysis?: AnalysisSummary;
+  copyCheck?: CopyCheckSummary;
+  onStart: () => void;
+}) {
+  const { colors } = useTheme();
+  const looked = !analysis?.available || analysis.lastStatus === 'succeeded';
+  const copied = copyCheck?.lastStatus === 'succeeded';
+  if (looked && copied) return null;
+  const started = analysis?.lastStatus != null || copyCheck?.lastStatus != null;
+  return (
+    <Surface style={styles.check}>
+      <View style={styles.row}>
+        <Icon name="scan" size={22} color={colors.accent} />
+        <AppText variant="headline" style={styles.flex}>
+          {started ? 'Finish checking your photos' : 'Find more to clean up'}
+        </AppText>
+      </View>
+      <AppText variant="subhead" color="secondaryLabel">
+        {analysis?.available
+          ? 'MediaCare can look at your photos on this iPhone to find similar shots, blurry photos, closed eyes, large videos and exact copies. It can take a few minutes; you can pause or stop it.'
+          : 'MediaCare can compare your photo files to find exact copies. It can take a few minutes; you can pause or stop it.'}
+      </AppText>
+      <Button
+        title={started ? 'Continue checking' : 'Check my photos'}
+        icon="scan"
+        onPress={onStart}
+        accessibilityHint="Checks photos on this iPhone. Nothing is uploaded or removed."
+        block
+      />
+    </Surface>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  list: { gap: spacing.sm },
+  check: { gap: spacing.sm, marginTop: spacing.md },
   intro: { gap: spacing.sm, padding: spacing.lg },
   pills: { flexDirection: 'row', gap: spacing.xs },
   notice: {
@@ -395,13 +444,6 @@ const styles = StyleSheet.create({
   },
   numbers: { fontVariant: ['tabular-nums'] },
   section: { gap: spacing.md },
-  // The shelf bleeds to the screen edges while cards still align with the gutter.
-  shelf: { marginHorizontal: -gutter },
-  shelfContent: {
-    paddingHorizontal: gutter,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
   center: { alignSelf: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

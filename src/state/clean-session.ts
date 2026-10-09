@@ -99,6 +99,11 @@ type CleanSession = {
   startCopyCheck: () => void;
   /** On-device visual analysis (Apple Vision); only in the MediaCare app build. */
   startVisualAnalysis: () => void;
+  /**
+   * One button for everything: the photo check (when this build has it),
+   * then exact copies once it succeeds. Stopping either stops the chain.
+   */
+  startFullCheck: () => void;
   pauseScan: () => void;
   resumeScan: () => void;
   cancelScan: () => void;
@@ -168,6 +173,8 @@ function catalogProtection(items: readonly PhotoItem[]): Set<string> {
 }
 
 let controls: ScanHandle | null = null;
+/** Set by startFullCheck: run exact copies after the photo check succeeds. */
+let chainCopies = false;
 let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
@@ -282,6 +289,12 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     } else {
       get().showCatalogResults();
     }
+    if (job.status === 'succeeded' && chainCopies) {
+      chainCopies = false;
+      get().startCopyCheck();
+      return;
+    }
+    chainCopies = false;
     if (job.status === 'succeeded') {
       haptics.success();
       AccessibilityInfo.announceForAccessibility('Photo check complete');
@@ -415,6 +428,17 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
       );
     },
 
+    startFullCheck: () => {
+      if (isActive(get().job)) return;
+      if (visualAnalysisAvailable()) {
+        chainCopies = true;
+        get().startVisualAnalysis();
+        if (!isActive(get().job)) chainCopies = false;
+      } else {
+        get().startCopyCheck();
+      }
+    },
+
     pauseScan: () => controls?.pause(),
     resumeScan: () => controls?.resume(),
     cancelScan: () => controls?.cancel(),
@@ -435,6 +459,7 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
       set({ state: catalogResults(items, Math.min(analyzed, total), total) });
     },
     reset: () => {
+      chainCopies = false;
       controls?.cancel();
       controls = null;
       if (dismissTimer) clearTimeout(dismissTimer);

@@ -18,6 +18,7 @@ import { runRemoval } from '@/features/clean/run-removal';
 import { useActionPlan } from '@/features/clean/use-action-plan';
 import { SKIP_TEXT, type SkipReason } from '@/domain/removal';
 import type { RemovalResult } from '@/services/media/removal';
+import { REMOVAL_IN_THIS_BUILD } from '@/features/clean/removal-gate';
 import { useCleanSession } from '@/state/clean-session';
 import { usePreferences } from '@/state/preferences';
 import { useReviewAdjustments } from '@/state/review-session';
@@ -40,7 +41,8 @@ export function PlanScreen() {
   const count = plan.assetIds.length;
   const state = useCleanSession((session) => session.state);
   const sample = state.status !== 'results' || state.sample;
-  const allowRemoval = usePreferences((preferences) => preferences.allowRemoval);
+  const allowRemoval =
+    usePreferences((preferences) => preferences.allowRemoval) && REMOVAL_IN_THIS_BUILD;
   const adjustments = useReviewAdjustments();
   const [working, setWorking] = useState(false);
   const [result, setResult] = useState<RemovalResult | null>(null);
@@ -212,7 +214,9 @@ export function PlanScreen() {
               ? 'Not available for sample photos'
               : allowRemoval
                 ? 'Checks each photo again, then iOS asks you to confirm'
-                : 'Turn on Allow removing photos in Settings first'
+                : REMOVAL_IN_THIS_BUILD
+                  ? 'Turn on Allow removing photos in Settings first'
+                  : 'Not available in this test version'
           }
         />
         <AppText variant="footnote" color="secondaryLabel" style={styles.center}>
@@ -220,7 +224,9 @@ export function PlanScreen() {
             ? 'Sample results can’t be removed.'
             : allowRemoval
               ? 'iOS always asks you to confirm. Removed photos go to Recently Deleted.'
-              : 'Removing is off. Turn on “Allow removing photos” in Settings to use it.'}
+              : REMOVAL_IN_THIS_BUILD
+                ? 'Removing is off. Turn on “Allow removing photos” in Settings to use it.'
+                : 'Removing photos isn’t available in this test version. Use this plan as a list, and remove photos in the Photos app if you want to.'}
         </AppText>
       </View>
     </View>
