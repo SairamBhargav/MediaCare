@@ -19,6 +19,7 @@ type PreferencesState = Preferences & {
   setOnboardingSeen: (onboardingSeen: boolean) => void;
   setAllowRemoval: (allowRemoval: boolean) => void;
   setLargerText: (largerText: boolean) => void;
+  setTourSeen: (tourSeen: boolean) => void;
 };
 
 const STORAGE_KEY = 'mediacare.preferences';
@@ -67,6 +68,7 @@ export const usePreferences = create<PreferencesState>()(
       setOnboardingSeen: (onboardingSeen) => set({ onboardingSeen }),
       setAllowRemoval: (allowRemoval) => set({ allowRemoval }),
       setLargerText: (largerText) => set({ largerText }),
+      setTourSeen: (tourSeen) => set({ tourSeen }),
     }),
     {
       name: STORAGE_KEY,
@@ -80,6 +82,7 @@ export const usePreferences = create<PreferencesState>()(
         onboardingSeen,
         allowRemoval,
         largerText,
+        tourSeen,
       }) => ({
         appearance,
         lessMotion,
@@ -87,6 +90,7 @@ export const usePreferences = create<PreferencesState>()(
         onboardingSeen,
         allowRemoval,
         largerText,
+        tourSeen,
       }),
       // Validate whatever comes back from disk before it reaches the UI.
       merge: (persisted, current) => ({ ...current, ...sanitizePreferences(persisted) }),

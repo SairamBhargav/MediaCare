@@ -19,6 +19,7 @@ import { openSettings } from '@/services/media/photo-library';
 import { useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
 import { usePreferences, type AppearancePreference } from '@/state/preferences';
+import { useTour } from '@/state/tour';
 import { gutter, spacing, useTheme } from '@/theme';
 
 /**
@@ -193,6 +194,15 @@ export function SettingsScreen() {
           </FieldGroup.Section>
 
           <FieldGroup.Section title="Help">
+            <NativeButton
+              variant="text"
+              label="Take the guided tour"
+              onPress={() => {
+                router.back();
+                // Starts once the Settings sheet has closed.
+                setTimeout(() => useTour.getState().start(), 500);
+              }}
+            />
             <NativeButton
               variant="text"
               label="Show introduction again"

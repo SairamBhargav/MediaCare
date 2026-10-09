@@ -10,6 +10,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { Screen } from '@/components/screen';
 import { SectionHeader } from '@/components/section-header';
 import { Surface } from '@/components/surface';
+import { TourAnchor } from '@/components/tour-anchor';
 import { listDerivatives, type DerivativeRow } from '@/db/catalog-repo';
 import { creationLabel } from '@/domain/activity';
 import { scanLibrary } from '@/features/media/start-scan';
@@ -60,11 +61,11 @@ export function StudioScreen() {
         </Surface>
       ) : null}
 
-      <View style={styles.grid}>
+      <TourAnchor id="studio.tools" style={styles.grid}>
         {STUDIO_ORDER.map((id) => (
           <ToolCard key={id} id={id} width={cardWidth} disabled={!scanned} />
         ))}
-      </View>
+      </TourAnchor>
 
       {made.length > 0 ? (
         <View style={styles.section}>

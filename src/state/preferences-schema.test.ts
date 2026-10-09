@@ -8,6 +8,7 @@ test('valid stored preferences are kept as-is', () => {
     onboardingSeen: true,
     allowRemoval: true,
     largerText: true,
+    tourSeen: true,
   };
   expect(sanitizePreferences(stored)).toEqual(stored);
 });
@@ -27,6 +28,7 @@ test('invalid fields fall back individually; valid ones survive', () => {
     onboardingSeen: false,
     allowRemoval: false,
     largerText: false,
+    tourSeen: false,
   });
 });
 

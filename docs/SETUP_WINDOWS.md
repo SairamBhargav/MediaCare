@@ -136,6 +136,7 @@ The first time, EAS asks for your Apple ID (with two-factor code) to create the 
 
 > MediaCare tidies up and improves your photos on your iPhone. Nothing is uploaded and this version never deletes anything.
 >
+> 0. The first time you open it, a short guided tour shows you around (Settings → Help starts it again).
 > 1. Clean: tap Scan my library, then Check my photos. Look at Similar shots, Exact copies, Large videos and Possibly blurry. Do the suggested "keep" photos make sense?
 > 2. Studio: try Adjust, Collage, Slideshow, Trim or shrink a video, Smaller copy and Passport photo. Each saves a new item to Photos; your originals stay.
 > 3. Settings → Bigger text if the text is small.

@@ -17,6 +17,8 @@ export type Preferences = {
   allowRemoval: boolean;
   /** Makes all app text a step bigger, on top of iOS Text Size. */
   largerText: boolean;
+  /** The guided tour was finished or skipped. */
+  tourSeen: boolean;
 };
 
 export const PREFERENCES_VERSION = 1;
@@ -28,6 +30,7 @@ export const defaultPreferences: Preferences = {
   onboardingSeen: false,
   allowRemoval: false,
   largerText: false,
+  tourSeen: false,
 };
 
 const APPEARANCES: readonly AppearancePreference[] = ['system', 'light', 'dark'];
@@ -55,5 +58,6 @@ export function sanitizePreferences(input: unknown): Preferences {
         : defaultPreferences.allowRemoval,
     largerText:
       typeof record.largerText === 'boolean' ? record.largerText : defaultPreferences.largerText,
+    tourSeen: typeof record.tourSeen === 'boolean' ? record.tourSeen : defaultPreferences.tourSeen,
   };
 }

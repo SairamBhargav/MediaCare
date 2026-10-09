@@ -10,6 +10,7 @@ import { MediaTile } from '@/components/media-tile';
 import { ProgressBar } from '@/components/progress-bar';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
+import { TourAnchor } from '@/components/tour-anchor';
 import { useBottomChromeHeight } from '@/components/tab-bar';
 import { sampleLibrary } from '@/demo/sample-library';
 import { isActive, jobFraction } from '@/domain/jobs';
@@ -241,14 +242,16 @@ export function LibraryScreen() {
                 Library
               </AppText>
               {sections.length > 1 ? (
-                <Button
-                  title="Jump to"
-                  icon="calendar"
-                  variant="secondary"
-                  onPress={jump}
-                  accessibilityHint="Choose a year and month to go to"
-                  style={styles.selectButton}
-                />
+                <TourAnchor id="library.jump">
+                  <Button
+                    title="Jump to"
+                    icon="calendar"
+                    variant="secondary"
+                    onPress={jump}
+                    accessibilityHint="Choose a year and month to go to"
+                    style={styles.selectButton}
+                  />
+                </TourAnchor>
               ) : null}
               <Button
                 title={selecting ? 'Done' : 'Select'}

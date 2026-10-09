@@ -161,3 +161,6 @@ export const onMedia = {
   /** Bottom fade so overlaid captions stay legible on bright photos. */
   captionFade: ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.55)'] as const,
 } as const;
+
+/** The guided tour dims the whole app around the control it explains, in both schemes. */
+export const tourScrim = 'rgba(0, 0, 0, 0.62)';

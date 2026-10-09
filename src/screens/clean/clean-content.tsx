@@ -9,6 +9,7 @@ import { RevealGroup } from '@/components/reveal';
 import { SectionHeader } from '@/components/section-header';
 import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
+import { TourAnchor } from '@/components/tour-anchor';
 import { formatBytes } from '@/domain/bytes';
 import {
   candidateCount,
@@ -174,17 +175,19 @@ function NotScanned({
             Your photos are checked on this iPhone. Nothing is uploaded, and scanning reads only
             dates, sizes and types, not the pictures themselves.
           </Notice>
-          <Button
-            title={access === 'limited' ? 'Scan selected photos' : 'Scan my library'}
-            icon="scan"
-            onPress={actions.onScanLibrary}
-            block
-            accessibilityHint={
-              access === 'full' || access === 'limited'
-                ? undefined
-                : 'Explains photo access, then iOS asks'
-            }
-          />
+          <TourAnchor id="clean.action">
+            <Button
+              title={access === 'limited' ? 'Scan selected photos' : 'Scan my library'}
+              icon="scan"
+              onPress={actions.onScanLibrary}
+              block
+              accessibilityHint={
+                access === 'full' || access === 'limited'
+                  ? undefined
+                  : 'Explains photo access, then iOS asks'
+              }
+            />
+          </TourAnchor>
           {access === 'limited' ? (
             <Button
               title="Manage selected photos"
@@ -348,7 +351,7 @@ function Results({
       </RevealGroup>
 
       <RevealGroup index={1} animate={animateReveal}>
-        <View style={styles.section}>
+        <TourAnchor id="clean.findings" style={styles.section}>
           <SectionHeader eyebrow={sample ? 'Sample' : 'Your library'} title="Findings" />
           <View style={styles.list}>
             {[...summaries].sort(byPriority).map((summary) => (
@@ -360,7 +363,7 @@ function Results({
               />
             ))}
           </View>
-        </View>
+        </TourAnchor>
       </RevealGroup>
 
       {plannedCount > 0 && actions.onOpenPlan ? (
@@ -417,13 +420,15 @@ function CheckCard({
           ? 'MediaCare can look at your photos on this iPhone to find similar shots, blurry photos, closed eyes, large videos and exact copies. It can take a few minutes; you can pause or stop it.'
           : 'MediaCare can compare your photo files to find exact copies. It can take a few minutes; you can pause or stop it.'}
       </AppText>
-      <Button
-        title={started ? 'Continue checking' : 'Check my photos'}
-        icon="scan"
-        onPress={onStart}
-        accessibilityHint="Checks photos on this iPhone. Nothing is uploaded or removed."
-        block
-      />
+      <TourAnchor id="clean.action">
+        <Button
+          title={started ? 'Continue checking' : 'Check my photos'}
+          icon="scan"
+          onPress={onStart}
+          accessibilityHint="Checks photos on this iPhone. Nothing is uploaded or removed."
+          block
+        />
+      </TourAnchor>
     </Surface>
   );
 }

@@ -5,6 +5,10 @@
  * moving. Pure and worklet-safe, so it runs on the UI thread.
  */
 
+/** The main tabs in the order they appear, left to right. */
+export const TAB_ORDER = ['index', 'library', 'studio'] as const;
+export type TabName = (typeof TAB_ORDER)[number];
+
 /** Share of the flick velocity (pt/s) added to the position to decide the page. */
 const MOMENTUM_SECONDS = 0.18;
 /** Past the first or last page the strip moves this fraction of the finger. */

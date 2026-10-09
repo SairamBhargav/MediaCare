@@ -3,6 +3,7 @@
 ## 0.2.0: Studio, video and the first TestFlight build (2026-10-09)
 
 - **Haptics on buttons**: a firm tap for buttons, icon buttons and tab switches (tap or swipe), a lighter tick for choice chips, photo selection and Mark/Unmark; never two for one tap; off with Settings → Haptics.
+- **Guided tour** for new users: after the introduction, the app dims everything except one real control at a time and explains it in large, plain words (Check my photos, findings, Library and Jump to, swiping between pages, Studio tools, Settings and Bigger text). Back, Next and Skip on every step; on "Tap Library" style steps you tap the real button and the tour follows. Shown once; Settings → Help → Take the guided tour starts it again. Respects Bigger text, VoiceOver and Reduce Motion.
 - **Faster findings screens** (Similar shots and every other category): only the groups or photos near the screen are drawn, and a tap redraws just that photo and the summary bar instead of every group.
 - **Swipe between tabs like Instagram**: Clean, Library and Studio are side-by-side pages; the page follows your finger 1:1 with the next one sliding in, and a flick settles on the next page with a haptic. Tapping a tab jumps there instantly. (Replaces the earlier swipe, which only switched after you let go and made switching slow.)
 - "Taken moments apart" is now **Possible repeats**, and says that Check my photos compares how they look and turns them into Similar shots with the best one picked.

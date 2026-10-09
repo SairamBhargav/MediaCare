@@ -1,8 +1,10 @@
 import { router, useIsFocused } from 'expo-router';
+import { useEffect } from 'react';
 
 import { IconButton } from '@/components/icon-button';
 import { useSessionReveal } from '@/components/reveal';
 import { Screen } from '@/components/screen';
+import { TourAnchor } from '@/components/tour-anchor';
 import { copyCoverage } from '@/domain/exact-copies';
 import { visualCoverage } from '@/domain/visual-records';
 import { useActionPlan } from '@/features/clean/use-action-plan';
@@ -15,9 +17,26 @@ import {
 } from '@/services/media/visual-analysis';
 import { useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
+import { usePreferences } from '@/state/preferences';
 import { useReviewAdjustments } from '@/state/review-session';
+import { useTour } from '@/state/tour';
 
 import { CleanContent } from './clean-content';
+
+/**
+ * Starts the guided tour once for a new user: after the introduction and
+ * the photo-access explanation have closed and Clean is actually on screen
+ * (nothing presented over it).
+ */
+function useFirstRunTour(focused: boolean) {
+  const onboardingSeen = usePreferences((preferences) => preferences.onboardingSeen);
+  const tourSeen = usePreferences((preferences) => preferences.tourSeen);
+  useEffect(() => {
+    if (!focused || !onboardingSeen || tourSeen || useTour.getState().active) return;
+    const timer = setTimeout(() => useTour.getState().start(), 900);
+    return () => clearTimeout(timer);
+  }, [focused, onboardingSeen, tourSeen]);
+}
 
 export function CleanScreen() {
   const state = useCleanSession((session) => session.state);
@@ -45,17 +64,21 @@ export function CleanScreen() {
   const session = useCleanSession.getState();
   // Content waits until Clean is first actually on screen (not under the
   // first-run introduction), then reveals once per session.
-  const reveal = useSessionReveal(useIsFocused());
+  const focused = useIsFocused();
+  const reveal = useSessionReveal(focused);
+  useFirstRunTour(focused);
 
   return (
     <Screen
       title="Clean"
       headerAccessory={
-        <IconButton
-          icon="settings"
-          accessibilityLabel="Settings"
-          onPress={() => router.push('/settings')}
-        />
+        <TourAnchor id="clean.settings">
+          <IconButton
+            icon="settings"
+            accessibilityLabel="Settings"
+            onPress={() => router.push('/settings')}
+          />
+        </TourAnchor>
       }
     >
       {reveal.ready ? (

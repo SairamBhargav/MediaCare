@@ -10,6 +10,7 @@ import { ActiveJobBar, JOB_BAR_GAP, JOB_BAR_HEIGHT } from './active-job-bar';
 import { AppText } from './app-text';
 import { ChromeBackground } from './chrome-background';
 import { Icon, type IconName } from './icon';
+import { TourAnchor } from './tour-anchor';
 
 type TabBarProps = PagerTabBarProps;
 
@@ -60,39 +61,40 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
             const color = focused ? colors.accent : colors.secondaryLabel;
 
             return (
-              <Pressable
-                key={route.key}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: focused }}
-                accessibilityLabel={label}
-                style={styles.item}
-                onPress={() => {
-                  const event = navigation.emit({
-                    type: 'tabPress',
-                    target: route.key,
-                    canPreventDefault: true,
-                  });
-                  if (!focused && !event.defaultPrevented) {
-                    haptics.light();
-                    navigation.navigate(route.name, route.params);
-                  }
-                }}
-                onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
-              >
-                <Icon
-                  name={TAB_ICONS[route.name] ?? 'photo'}
-                  size={24}
-                  color={color}
-                  weight={focused ? 'semibold' : 'regular'}
-                />
-                <AppText
-                  variant="caption"
-                  style={{ color, fontWeight: focused ? '600' : '500' }}
-                  maxFontSizeMultiplier={1.4}
+              <TourAnchor key={route.key} id={`tab.${route.name}`} style={styles.item}>
+                <Pressable
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: focused }}
+                  accessibilityLabel={label}
+                  style={styles.itemFill}
+                  onPress={() => {
+                    const event = navigation.emit({
+                      type: 'tabPress',
+                      target: route.key,
+                      canPreventDefault: true,
+                    });
+                    if (!focused && !event.defaultPrevented) {
+                      haptics.light();
+                      navigation.navigate(route.name, route.params);
+                    }
+                  }}
+                  onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
                 >
-                  {label}
-                </AppText>
-              </Pressable>
+                  <Icon
+                    name={TAB_ICONS[route.name] ?? 'photo'}
+                    size={24}
+                    color={color}
+                    weight={focused ? 'semibold' : 'regular'}
+                  />
+                  <AppText
+                    variant="caption"
+                    style={{ color, fontWeight: focused ? '600' : '500' }}
+                    maxFontSizeMultiplier={1.4}
+                  >
+                    {label}
+                  </AppText>
+                </Pressable>
+              </TourAnchor>
             );
           })}
         </View>
@@ -117,7 +119,8 @@ const styles = StyleSheet.create({
     height: TAB_ROW_HEIGHT,
     paddingTop: spacing.xs - 2,
   },
-  item: {
+  item: { flex: 1 },
+  itemFill: {
     flex: 1,
     alignItems: 'center',
     gap: 2,

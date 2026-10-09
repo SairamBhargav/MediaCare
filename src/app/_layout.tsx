@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { TourOverlay } from '@/components/tour-overlay';
 import { useBootstrap } from '@/features/media/use-bootstrap';
 import { usePreferences, type AppearancePreference } from '@/state/preferences';
 import { radius, useTheme } from '@/theme';
@@ -115,6 +116,8 @@ export default function RootLayout() {
           <Stack.Screen name="gallery" options={{ title: 'Components & Motion' }} />
           <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
         </Stack>
+        {/* Above every tab screen; tab-only by design (modals present above it). */}
+        <TourOverlay />
       </ThemeProvider>
     </GestureHandlerRootView>
   );
