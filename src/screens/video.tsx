@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { VideoPlayer } from 'expo-video';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/chip';
 import { EmptyState } from '@/components/empty-state';
-import { MoviePreview } from '@/components/movie-preview';
+import { MoviePreview, type MoviePlayer } from '@/components/movie-preview';
 import { MovieSteps } from '@/components/movie-steps';
 import { ChoiceRow, ToolShell } from '@/components/tool-shell';
 import { ValueSlider } from '@/components/value-slider';
@@ -37,7 +36,7 @@ const ORIGINAL = 'original';
 export function VideoScreen({ id }: { id: string }) {
   const item = findMediaItem(id);
   const movie = useMovieTask();
-  const player = useRef<VideoPlayer | null>(null);
+  const player = useRef<MoviePlayer | null>(null);
   const duration = item && !isSample(item) ? (item.durationMs ?? 0) / 1000 : 0;
   const [range, setRange] = useState({ start: 0, end: duration });
   const [quality, setQuality] = useState<string>(VIDEO_PRESETS[1].id);
