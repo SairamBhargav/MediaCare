@@ -20,7 +20,6 @@ import { tuningLine } from '@/features/media/visual-debug';
 import { useCleanSession } from '@/state/clean-session';
 import { selectionFor, toReviewGroup, useReviewSession } from '@/state/review-session';
 import { duration, gutter, radius, spacing, useReduceMotion, useTheme } from '@/theme';
-import { haptics } from '@/utils/haptics';
 
 import { PhotoPager, type PhotoPagerHandle } from './photo-pager';
 import { ThumbStrip } from './thumb-strip';
@@ -251,8 +250,8 @@ function GroupReviewBody({
                 title={isSelected ? 'Unmark' : 'Mark for review'}
                 icon={isSelected ? 'close' : 'check'}
                 variant={isSelected ? 'secondary' : 'primary'}
+                haptic="selection"
                 onPress={() => {
-                  haptics.selection();
                   review.setGroupSelection(
                     group.id,
                     toggleSelected(reviewGroup, selection, photo.id),

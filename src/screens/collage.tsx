@@ -197,7 +197,6 @@ export function CollageScreen() {
         icon="shuffle"
         variant="secondary"
         onPress={() => {
-          haptics.selection();
           setIds((current) => [...current.slice(1), current[0]]);
         }}
         accessibilityHint="Moves every photo one place along"

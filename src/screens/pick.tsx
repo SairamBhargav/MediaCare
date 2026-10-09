@@ -14,7 +14,6 @@ import { STUDIO_TOOLS, type StudioToolId } from '@/features/studio/tools';
 import { useCatalog } from '@/state/catalog';
 import { useCreationDraft } from '@/state/creation-draft';
 import { gutter, spacing, useTheme } from '@/theme';
-import { haptics } from '@/utils/haptics';
 
 const GAP = 2;
 
@@ -40,7 +39,6 @@ export function PickScreen({ tool }: { tool: StudioToolId }) {
   const multi = meta.max > 1;
 
   const toggle = (id: string) => {
-    haptics.selection();
     setOrder((current) =>
       current.includes(id)
         ? current.filter((value) => value !== id)

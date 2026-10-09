@@ -137,7 +137,6 @@ export function PassportScreen({ id }: { id: string }) {
     if (phase.step !== 'preview' || !item) return;
     const next = clampTweak(tweak);
     const current = phase;
-    haptics.selection();
     const frame = passportFrame(item.width, item.height, [current.face], rules, next);
     if (!isFrame(frame) || frame.problems.length > 0) {
       setPhase({ ...current, tweak: next, problems: frame.problems });

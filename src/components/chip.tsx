@@ -2,6 +2,8 @@ import { StyleSheet } from 'react-native';
 
 import { minTouchTarget, radius, spacing, useTheme } from '@/theme';
 
+import { haptics } from '@/utils/haptics';
+
 import { AppText } from './app-text';
 import { PressableScale } from './pressable-scale';
 
@@ -17,7 +19,10 @@ export function Chip({ label, selected, onPress, disabled }: ChipProps) {
   const { colors } = useTheme();
   return (
     <PressableScale
-      onPress={onPress}
+      onPress={() => {
+        if (!selected) haptics.selection();
+        onPress();
+      }}
       disabled={disabled}
       accessibilityRole="radio"
       accessibilityLabel={label}

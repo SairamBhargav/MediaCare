@@ -7,6 +7,7 @@ import {
   normalize,
   poseDistance,
   qualityFlags,
+  secondKeeper,
   similarFindings,
   similarSets,
   type Pose,
@@ -295,5 +296,59 @@ describe('pose and layout checks', () => {
     expect(layoutDistance(left, brighter)!).toBeCloseTo(0);
     expect(layoutDistance(left, right)!).toBeGreaterThan(VISUAL_THRESHOLDS.layoutDifferent);
     expect(layoutDistance(null, left)).toBeNull();
+  });
+});
+
+describe('time and look together', () => {
+  // Two prints about 0.33 apart: too far for photos minutes apart, close enough for a burst.
+  const near = [1, 0, 0];
+  const bitOff = [0.946, 0.33, 0];
+
+  test('shots seconds apart may look a little less alike and still group', () => {
+    const items = [photo('a', T0), photo('b', T0 + 2000)];
+    const map = new Map([
+      ['a', scores(near)],
+      ['b', scores(bitOff)],
+    ]);
+    expect(similarSets(items, map)).toEqual([['a', 'b']]);
+  });
+
+  test('the same two looks minutes apart are different moments', () => {
+    const items = [photo('a', T0), photo('b', T0 + 3 * 60_000)];
+    const map = new Map([
+      ['a', scores(near)],
+      ['b', scores(bitOff)],
+    ]);
+    expect(similarSets(items, map)).toEqual([]);
+  });
+});
+
+describe('keep the best two of a bigger group', () => {
+  const four = ['w', 'x', 'y', 'z'].map((id, index) => photo(id, T0 + index * 1000));
+  const sharpness: Record<string, number> = { w: 100, x: 900, y: 600, z: 50 };
+  const map = new Map(
+    four.map((item) => [item.id, scores([1, 0], { sharpnessMaxTile: sharpness[item.id] })]),
+  );
+
+  test('four or more similar shots suggest the next best as also worth keeping', () => {
+    const [group] = similarFindings(four, map);
+    expect(group.keeperId).toBe('x');
+    expect(group.alsoKeepIds).toEqual(['y']);
+    expect(group.alsoKeepReason).toBe('Next best shot');
+  });
+
+  test('smaller groups keep just one', () => {
+    const [group] = similarFindings(four.slice(0, 3), map);
+    expect(group.alsoKeepIds).toBeUndefined();
+  });
+
+  test('the suggestion goes by quality; favorites are protected anyway', () => {
+    const withFavorite = four.map((item) =>
+      item.id === 'z' ? photo('z', T0 + 3000, { isFavorite: true }) : item,
+    );
+    expect(secondKeeper(withFavorite, map, 'x')).toEqual({
+      id: 'y',
+      reason: 'Next best shot',
+    });
   });
 });

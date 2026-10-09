@@ -3,6 +3,7 @@ import {
   clearSelection,
   createReviewSelection,
   selectAllExceptKeeper,
+  selectRest,
   setKeeper,
   toggleSelected,
   type ReviewGroup,
@@ -66,4 +67,29 @@ test('clear removes all selections without changing the keeper', () => {
   const cleared = clearSelection(all);
   expect(cleared.selectedIds.size).toBe(0);
   expect(cleared.keeperId).toBe('a');
+});
+
+describe('selectRest', () => {
+  const bigGroup: ReviewGroup = {
+    memberIds: ['k', 'a', 'b', 'c', 'p'],
+    keeperId: 'k',
+    protectedIds: new Set(['p']),
+  };
+
+  test('marks everything but the keeper, protected photos and the also-keep suggestion', () => {
+    const rest = selectRest(bigGroup, createReviewSelection(bigGroup), ['b']);
+    expect([...rest.selectedIds].sort()).toEqual(['a', 'c']);
+  });
+
+  test('without suggestions it is the same as selecting all but the keeper', () => {
+    const selection = createReviewSelection(bigGroup);
+    expect(selectRest(bigGroup, selection).selectedIds).toEqual(
+      selectAllExceptKeeper(bigGroup, selection).selectedIds,
+    );
+  });
+
+  test('an also-keep photo can still be marked by hand', () => {
+    const rest = selectRest(bigGroup, createReviewSelection(bigGroup), ['b']);
+    expect(toggleSelected(bigGroup, rest, 'b').selectedIds.has('b')).toBe(true);
+  });
 });

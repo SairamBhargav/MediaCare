@@ -101,7 +101,7 @@ Open the MediaCare dev app on the phone; it finds the server (same Wi-Fi rules a
 
 ## Setting up a second PC
 
-Same as Stage 1: install Node (22 or newer), Git, then `git clone`, `npm ci`, `npm run check`. EAS needs a one-time `npx eas-cli@latest login` on each PC; the EAS project, Apple credentials and registered iPhone live on Expo's servers, so nothing else carries over by hand. If Jest fails with `EPERM … jest-transform-cache` on the first run, run `npx jest --clearCache` and run the tests again (a Windows file-lock race in Jest's cache, not a test failure).
+Same as Stage 1: install Node (22 or newer), Git, then `git clone`, `npm ci`, `npm run check`. EAS needs a one-time `npx eas-cli@latest login` on each PC; the EAS project, Apple credentials and registered iPhone live on Expo's servers, so nothing else carries over by hand. If PowerShell says **running scripts is disabled on this system** when you run `npx` or `npm`, run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once (or use `npx.cmd`). If Jest fails with `EPERM … jest-transform-cache` on the first run, run `npx jest --clearCache` and run the tests again (a Windows file-lock race in Jest's cache, not a test failure).
 
 ## Stage 3: TestFlight (owner and family testers)
 

@@ -142,7 +142,6 @@ export function AdjustScreen({ id }: { id: string }) {
   }
 
   const set = (patch: Partial<Adjustments>) => {
-    haptics.selection();
     setValues((current) => ({ ...current, ...patch }));
   };
   const setSlider = (key: SliderKey, value: number) =>

@@ -21,6 +21,8 @@ type MediaTileProps = {
   selected?: boolean;
   /** Marks the keeper in a review group. Keepers are never selectable. */
   keeper?: boolean;
+  /** Also suggested to keep (next best in a bigger group). Still selectable. */
+  alsoGood?: boolean;
   /** Protected by the user: never selectable for removal. */
   isProtected?: boolean;
   onPress?: () => void;
@@ -51,6 +53,7 @@ export function MediaTile({
   selectable = false,
   selected = false,
   keeper = false,
+  alsoGood = false,
   isProtected = false,
   onPress,
   onOpen,
@@ -80,6 +83,7 @@ export function MediaTile({
     asset.description,
     asset.isFavorite && 'Favorite',
     keeper && 'Keeper',
+    alsoGood && !keeper && 'Also worth keeping',
     isProtected && 'Protected',
   ]
     .filter(Boolean)
@@ -133,13 +137,20 @@ export function MediaTile({
         ]}
       />
 
-      {keeper || isProtected || asset.isFavorite ? (
+      {keeper || alsoGood || isProtected || asset.isFavorite ? (
         <View style={styles.pills} accessibilityElementsHidden>
           {keeper ? (
             <View style={styles.pill}>
               <Icon name="star" size={11} color={onMedia.foreground} weight="bold" />
               <AppText variant="caption" style={styles.onMediaText}>
                 Keep
+              </AppText>
+            </View>
+          ) : alsoGood ? (
+            <View style={styles.pill}>
+              <Icon name="star" size={11} color={onMedia.foreground} />
+              <AppText variant="caption" style={styles.onMediaText}>
+                Also good
               </AppText>
             </View>
           ) : null}

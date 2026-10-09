@@ -2,6 +2,11 @@
 
 ## 0.2.0: Studio, video and the first TestFlight build (2026-10-09)
 
+- **Swipe between tabs**: swipe sideways on Clean, Library or Studio to move to the next or previous tab; tabs shift a little in that direction (instant under Reduce Motion). Studio's Recently made is now a grid so it doesn't fight the swipe.
+- **Haptics on buttons**: a light tap for buttons and icon buttons, a selection tick for choice chips and Mark/Unmark; never two for one tap; off with Settings → Haptics.
+- **Similar shots use time and look together**: shots taken within 5 seconds may look a little less alike and still group (bursts); in groups of 4 or more the next best shot is suggested as **Also good**, and **Mark the rest** marks everything except the keeper and that one, so you keep the best two. Group headers no longer say "Sample" for your own photos.
+- Older app builds without the video player now start normally; video screens say playback needs the latest app.
+
 - **Studio** is now a hub with every tool; each opens a picker for what it needs. Recently made items show with thumbnails.
 - **Adjust** (new): turn, flip, straighten, crop to a shape (square, 4:5, 3:2, 16:9, 9:16), and brightness, contrast, color and warmth, with a live preview. Saves a new full-size photo.
 - **Collage** (new): 2 to 6 photos, several layouts per count, four shapes, borders in white, black or cream. The preview is live; saving makes a new photo.

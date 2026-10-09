@@ -43,6 +43,13 @@ export type GroupFinding = {
   readonly memberIds: readonly string[];
   readonly keeperId: string;
   readonly keeperReason: string;
+  /**
+   * Bigger groups: other photos also suggested to keep (the next best), so
+   * "Mark the rest" leaves them alone. A suggestion only: the person can
+   * still mark them.
+   */
+  readonly alsoKeepIds?: readonly string[];
+  readonly alsoKeepReason?: string;
 };
 
 export type ItemFinding = {

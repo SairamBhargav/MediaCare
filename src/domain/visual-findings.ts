@@ -51,6 +51,15 @@ export const VISUAL_THRESHOLDS = {
    */
   similarDistance: 0.3,
   /**
+   * Photos taken within 5 seconds of each other are almost always repeats
+   * of one moment, so they may look a little less alike and still group
+   * (still well below "same scene, different moment", 0.42).
+   */
+  burstWindowMs: 5_000,
+  burstDistance: 0.36,
+  /** Groups at least this big suggest keeping the best two, not just one. */
+  keepTwoFrom: 4,
+  /**
    * Mean joint distance (pose scaled to its own size) above which the same
    * person is in a different pose: not similar, however alike the scene is.
    */
@@ -154,16 +163,22 @@ export function layoutDistance(
 
 /**
  * Whether two photos count as similar shots: they look alike (feature
- * print), and neither the person's pose nor the framing clearly differs.
+ * print; a little more leeway when taken seconds apart), and neither the
+ * person's pose nor the framing clearly differs.
  * Returns the feature distance when similar, otherwise Infinity.
  */
 export function similarity(
   a: VisualScores,
   b: VisualScores,
   thresholds = VISUAL_THRESHOLDS,
+  gapMs = Number.POSITIVE_INFINITY,
 ): number {
   const distance = featureDistance(a.featurePrint, b.featurePrint);
-  if (distance > thresholds.similarDistance) return Number.POSITIVE_INFINITY;
+  const limit =
+    Math.abs(gapMs) <= thresholds.burstWindowMs
+      ? thresholds.burstDistance
+      : thresholds.similarDistance;
+  if (distance > limit) return Number.POSITIVE_INFINITY;
   const pose = poseDistance(a.poses, b.poses);
   if (pose !== null && pose > thresholds.poseDifferent) return Number.POSITIVE_INFINITY;
   const layout = layoutDistance(a.layout, b.layout);
@@ -222,10 +237,13 @@ export function similarSets(
     for (const group of open) {
       let worst = 0;
       for (const member of group.members) {
-        worst = Math.max(worst, similarity(member.scores, photo.scores, thresholds));
-        if (worst > thresholds.similarDistance) break;
+        worst = Math.max(
+          worst,
+          similarity(member.scores, photo.scores, thresholds, photo.at - member.at),
+        );
+        if (!Number.isFinite(worst)) break;
       }
-      if (worst <= thresholds.similarDistance && worst < bestWorst) {
+      if (Number.isFinite(worst) && worst < bestWorst) {
         best = group;
         bestWorst = worst;
       }
@@ -334,6 +352,38 @@ export function chooseKeeper(
   return { keeperId: best.member.id, reason };
 }
 
+/**
+ * In a bigger group (four or more shots of one moment) one photo is often
+ * not enough: suggest the next best as also worth keeping, with its reason.
+ * It is a suggestion only; nothing is marked by it. Null for small groups
+ * or when there's no quality to compare.
+ */
+export function secondKeeper(
+  members: readonly PhotoItem[],
+  scores: ReadonlyMap<string, VisualScores>,
+  keeperId: string,
+  thresholds = VISUAL_THRESHOLDS,
+): { id: string; reason: string } | null {
+  if (members.length < thresholds.keepTwoFrom) return null;
+  const rated = members
+    .filter((member) => member.id !== keeperId)
+    .map((member) => ({ member, scores: scores.get(member.id) }))
+    .filter((entry): entry is { member: PhotoItem; scores: VisualScores } => !!entry.scores)
+    .map((entry) => ({ ...entry, quality: qualityOf(entry.scores, thresholds) }))
+    .sort((a, b) => b.quality.score - a.quality.score || a.member.id.localeCompare(b.member.id));
+  const [next] = rated;
+  if (!next) return null;
+  const favorite = next.member.isFavorite;
+  return {
+    id: next.member.id,
+    reason: favorite
+      ? 'Also a favorite in Photos'
+      : next.quality.facesJudged > 0 && next.quality.eyesClosed === 0
+        ? 'Next best shot, eyes open'
+        : 'Next best shot',
+  };
+}
+
 const groupTitle = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
@@ -352,6 +402,7 @@ export function similarFindings(
     .map((ids) => ids.map((id) => byId.get(id)!).filter(Boolean))
     .map((members) => {
       const { keeperId, reason } = chooseKeeper(members, scores);
+      const second = secondKeeper(members, scores, keeperId, thresholds);
       const first = members[0];
       return {
         kind: 'group' as const,
@@ -364,6 +415,7 @@ export function similarFindings(
         memberIds: members.map((member) => member.id),
         keeperId,
         keeperReason: reason,
+        ...(second ? { alsoKeepIds: [second.id], alsoKeepReason: second.reason } : {}),
       };
     })
     .reverse();

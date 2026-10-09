@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
@@ -38,6 +38,7 @@ export function StudioScreen() {
   );
 
   const cardWidth = (width - gutter * 2 - spacing.sm) / 2;
+  const madeWidth = (width - gutter * 2 - spacing.sm * 2) / 3;
   const scanned = items.length > 0;
 
   return (
@@ -73,16 +74,12 @@ export function StudioScreen() {
               <Button title="Activity" variant="plain" onPress={() => router.push('/activity')} />
             }
           />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.shelf}
-            contentContainerStyle={styles.shelfContent}
-          >
-            {made.map((row) => (
-              <MadeTile key={row.id} row={row} />
+          {/* A grid, not a sideways shelf: sideways swipes switch tabs. */}
+          <View style={styles.madeGrid}>
+            {made.slice(0, 6).map((row) => (
+              <MadeTile key={row.id} row={row} width={madeWidth} />
             ))}
-          </ScrollView>
+          </View>
         </View>
       ) : null}
     </Screen>
@@ -117,11 +114,11 @@ function ToolCard({ id, width, disabled }: { id: StudioToolId; width: number; di
   );
 }
 
-function MadeTile({ row }: { row: DerivativeRow }) {
+function MadeTile({ row, width }: { row: DerivativeRow; width: number }) {
   const { colors } = useTheme();
   const label = creationLabel(row.recipe, row.format);
   return (
-    <View style={styles.made} accessible accessibilityLabel={label}>
+    <View style={[styles.made, { width }]} accessible accessibilityLabel={label}>
       {row.output_asset_id ? (
         <Image
           source={{ uri: photoUri(row.output_asset_id) }}
@@ -157,8 +154,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxs,
   },
   section: { gap: spacing.sm },
-  shelf: { marginHorizontal: -gutter },
-  shelfContent: { paddingHorizontal: gutter, gap: spacing.sm },
-  made: { width: 96, gap: spacing.xxs },
-  madeImage: { width: 96, height: 96, borderRadius: radius.control },
+  madeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  made: { gap: spacing.xxs },
+  madeImage: { width: '100%', aspectRatio: 1, borderRadius: radius.control },
 });

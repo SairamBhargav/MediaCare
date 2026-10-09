@@ -65,3 +65,20 @@ export function selectAllExceptKeeper(
 export function clearSelection(selection: ReviewSelection): ReviewSelection {
   return { ...selection, selectedIds: new Set() };
 }
+
+/**
+ * "Mark the rest": every member that may be selected, except the photos
+ * also suggested to keep in a bigger group. Those can still be marked one
+ * by one.
+ */
+export function selectRest(
+  group: ReviewGroup,
+  selection: ReviewSelection,
+  alsoKeepIds: readonly string[] = [],
+): ReviewSelection {
+  const keep = new Set(alsoKeepIds);
+  const selectedIds = new Set(
+    group.memberIds.filter((id) => !keep.has(id) && canSelect(group, selection, id)),
+  );
+  return { ...selection, selectedIds };
+}

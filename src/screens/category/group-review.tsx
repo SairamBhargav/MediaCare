@@ -7,14 +7,9 @@ import { Icon } from '@/components/icon';
 import { MediaTile } from '@/components/media-tile';
 import { SectionHeader } from '@/components/section-header';
 import { Surface } from '@/components/surface';
-import { getMediaItem } from '@/features/media/registry';
+import { getMediaItem, isSample } from '@/features/media/registry';
 import type { GroupFinding } from '@/domain/findings';
-import {
-  canSelect,
-  clearSelection,
-  selectAllExceptKeeper,
-  toggleSelected,
-} from '@/domain/review-selection';
+import { canSelect, clearSelection, selectRest, toggleSelected } from '@/domain/review-selection';
 import { CATEGORY_META } from '@/features/clean/category-meta';
 import { selectionFor, toReviewGroup, useReviewSession } from '@/state/review-session';
 import { spacing, useTheme } from '@/theme';
@@ -35,10 +30,13 @@ export function GroupReview({ group }: { group: GroupFinding }) {
   const skipped = review.skippedIds.has(group.id);
   const members = group.memberIds.map(getMediaItem);
   const selectableIds = group.memberIds.filter((id) => canSelect(reviewGroup, selection, id));
-  const allSelected =
-    selectableIds.length > 0 && selectableIds.every((id) => selection.selectedIds.has(id));
+  // Only while the suggested keeper stands: a keeper the person chose resets the suggestion.
+  const alsoKeepIds = selection.keeperId === group.keeperId ? (group.alsoKeepIds ?? []) : [];
+  const restIds = selectableIds.filter((id) => !alsoKeepIds.includes(id));
+  const allSelected = restIds.length > 0 && restIds.every((id) => selection.selectedIds.has(id));
+  const bulkLabel = alsoKeepIds.length > 0 ? 'Mark the rest' : 'Select all';
   const userKeeper = selection.keeperId !== group.keeperId;
-  const eyebrow = `Sample · ${CATEGORY_META[group.category].title} · ${members.length} photos`;
+  const eyebrow = `${members.some(isSample) ? 'Sample · ' : ''}${CATEGORY_META[group.category].title} · ${members.length} photos`;
 
   if (skipped) {
     return (
@@ -97,9 +95,9 @@ export function GroupReview({ group }: { group: GroupFinding }) {
                 AccessibilityInfo.announceForAccessibility(`${group.title} skipped`);
               }}
             />
-            {selectableIds.length > 0 ? (
+            {restIds.length > 0 ? (
               <Button
-                title={allSelected ? 'Clear' : 'Select all'}
+                title={allSelected ? 'Clear' : bulkLabel}
                 variant="plain"
                 accessibilityHint={`For ${group.title}`}
                 onPress={() => {
@@ -107,10 +105,10 @@ export function GroupReview({ group }: { group: GroupFinding }) {
                     group.id,
                     allSelected
                       ? clearSelection(selection)
-                      : selectAllExceptKeeper(reviewGroup, selection),
+                      : selectRest(reviewGroup, selection, alsoKeepIds),
                   );
                   AccessibilityInfo.announceForAccessibility(
-                    allSelected ? 'Selection cleared' : `${selectableIds.length} photos selected`,
+                    allSelected ? 'Selection cleared' : `${restIds.length} photos marked`,
                   );
                 }}
               />
@@ -125,6 +123,9 @@ export function GroupReview({ group }: { group: GroupFinding }) {
           {userKeeper
             ? 'You chose the keeper for this group.'
             : `Suggested keeper: ${group.keeperReason.toLowerCase()}.`}
+          {alsoKeepIds.length > 0 && group.alsoKeepReason
+            ? ` Also good: ${group.alsoKeepReason.toLowerCase()}, so you keep the best two.`
+            : ''}
         </AppText>
       </View>
 
@@ -138,6 +139,7 @@ export function GroupReview({ group }: { group: GroupFinding }) {
                 asset={asset}
                 appearance="card"
                 keeper={isKeeper}
+                alsoGood={alsoKeepIds.includes(asset.id)}
                 isProtected={isProtected}
                 selectable
                 selected={selection.selectedIds.has(asset.id)}

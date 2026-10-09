@@ -1,6 +1,7 @@
 import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { minTouchTarget, radius, spacing, useTheme, type ColorToken } from '@/theme';
+import { haptics } from '@/utils/haptics';
 
 import { AppText } from './app-text';
 import { Icon, type IconName } from './icon';
@@ -18,6 +19,8 @@ type ButtonProps = {
   /** Stretch to the container width. */
   block?: boolean;
   accessibilityHint?: string;
+  /** Feedback on press: a light tap by default; `selection` for mark/unmark toggles; `none` when the action fires its own. */
+  haptic?: 'light' | 'selection' | 'none';
   style?: StyleProp<ViewStyle>;
 };
 
@@ -37,6 +40,7 @@ export function Button({
   loading,
   block,
   accessibilityHint,
+  haptic = 'light',
   style,
 }: ButtonProps) {
   const { colors } = useTheme();
@@ -45,7 +49,14 @@ export function Button({
 
   return (
     <PressableScale
-      onPress={onPress}
+      onPress={
+        onPress
+          ? () => {
+              if (haptic !== 'none') haptics[haptic]();
+              onPress();
+            }
+          : undefined
+      }
       disabled={disabled || loading}
       accessibilityRole="button"
       accessibilityLabel={title}

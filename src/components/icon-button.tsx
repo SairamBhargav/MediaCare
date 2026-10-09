@@ -2,6 +2,8 @@ import { StyleSheet } from 'react-native';
 
 import { minTouchTarget, radius, useTheme } from '@/theme';
 
+import { haptics } from '@/utils/haptics';
+
 import { Icon, type IconName } from './icon';
 import { PressableScale } from './pressable-scale';
 
@@ -23,7 +25,14 @@ export function IconButton({
   const { colors } = useTheme();
   return (
     <PressableScale
-      onPress={onPress}
+      onPress={
+        onPress
+          ? () => {
+              haptics.light();
+              onPress();
+            }
+          : undefined
+      }
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       style={[styles.base, variant === 'filled' && { backgroundColor: colors.surfaceRaised }]}
