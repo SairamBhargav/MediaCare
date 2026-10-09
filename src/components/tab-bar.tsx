@@ -1,19 +1,17 @@
-import type { Tabs } from 'expo-router';
-import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCleanSession } from '@/state/clean-session';
-import { noteTabMove } from '@/state/tab-motion';
 import { spacing, useTheme } from '@/theme';
 import { haptics } from '@/utils/haptics';
 
+import type { PagerTabBarProps } from './pager-tabs';
 import { ActiveJobBar, JOB_BAR_GAP, JOB_BAR_HEIGHT } from './active-job-bar';
 import { AppText } from './app-text';
 import { ChromeBackground } from './chrome-background';
 import { Icon, type IconName } from './icon';
 
-type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
+type TabBarProps = PagerTabBarProps;
 
 /** Height of the tab row above the home-indicator inset. */
 export const TAB_ROW_HEIGHT = 52;
@@ -76,7 +74,6 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
                   });
                   if (!focused && !event.defaultPrevented) {
                     haptics.light();
-                    noteTabMove(state.routes[state.index].name, route.name);
                     navigation.navigate(route.name, route.params);
                   }
                 }}

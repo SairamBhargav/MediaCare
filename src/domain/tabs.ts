@@ -1,25 +1,47 @@
-/** The main tabs in the order they appear, left to right. */
-export const TAB_ORDER = ['index', 'library', 'studio'] as const;
-export type TabName = (typeof TAB_ORDER)[number];
+/**
+ * Paging between the main tabs (Clean, Library, Studio), like swiping
+ * between pages in Instagram: the strip follows the finger 1:1, and on
+ * release it settles on a page chosen from where it is and how fast it was
+ * moving. Pure and worklet-safe, so it runs on the UI thread.
+ */
 
-/** A swipe switches tabs past this distance (pt) or speed (pt/s). */
-export const TAB_SWIPE = { distance: 70, velocity: 600 } as const;
+/** Share of the flick velocity (pt/s) added to the position to decide the page. */
+const MOMENTUM_SECONDS = 0.18;
+/** Past the first or last page the strip moves this fraction of the finger. */
+export const EDGE_RESISTANCE = 0.25;
+
+/** Strip offset (negative translateX) for a page. */
+export function pageOffset(index: number, width: number): number {
+  'worklet';
+  return -index * width;
+}
+
+/** Where the strip sits while dragging: 1:1 inside, resisted past either end. */
+export function dragOffset(start: number, translationX: number, width: number, count: number) {
+  'worklet';
+  const next = start + translationX;
+  const max = 0;
+  const min = -(count - 1) * width;
+  if (next > max) return max + (next - max) * EDGE_RESISTANCE;
+  if (next < min) return min + (next - min) * EDGE_RESISTANCE;
+  return next;
+}
 
 /**
- * Which tab a horizontal swipe leads to: right-to-left goes to the next tab,
- * left-to-right to the previous one. Null at either end or for a short, slow
- * drag.
+ * The page to settle on: the nearest one to where the strip would coast,
+ * never more than one page away from where the drag started.
  */
-export function swipeTarget(
-  current: string,
-  translationX: number,
+export function settlePage(
+  offset: number,
   velocityX: number,
-): TabName | null {
+  width: number,
+  current: number,
+  count: number,
+): number {
   'worklet';
-  const index = TAB_ORDER.indexOf(current as TabName);
-  if (index < 0) return null;
-  const forward = translationX <= -TAB_SWIPE.distance || velocityX <= -TAB_SWIPE.velocity;
-  const back = translationX >= TAB_SWIPE.distance || velocityX >= TAB_SWIPE.velocity;
-  if (forward === back) return null;
-  return TAB_ORDER[index + (forward ? 1 : -1)] ?? null;
+  if (width <= 0 || count <= 0) return current;
+  const projected = -(offset + velocityX * MOMENTUM_SECONDS) / width;
+  const nearest = Math.round(projected);
+  const oneStep = Math.min(current + 1, Math.max(current - 1, nearest));
+  return Math.min(count - 1, Math.max(0, oneStep));
 }

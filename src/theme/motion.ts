@@ -27,6 +27,8 @@ export const springs = {
   sheet: { duration: 300, dampingRatio: 0.8 },
   /** A selection badge landing after a direct tap. */
   badge: { duration: 300, dampingRatio: 0.8 },
+  /** Tab pages settling after a swipe; carries the flick velocity, no overshoot. */
+  page: { duration: 350, dampingRatio: 1 },
 } as const;
 
 /** For `withTiming` / `.easing(...)`. */

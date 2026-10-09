@@ -1,8 +1,8 @@
-import { Tabs, router, useRootNavigationState } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 import { useEffect } from 'react';
 
+import { PagerTabs } from '@/components/pager-tabs';
 import { TabBar } from '@/components/tab-bar';
-import { TabSwipe } from '@/components/tab-swipe';
 import { usePreferences } from '@/state/preferences';
 
 export default function TabsLayout() {
@@ -16,17 +16,10 @@ export default function TabsLayout() {
   }, [navigationReady, onboardingSeen]);
 
   return (
-    <Tabs
-      tabBar={(props) => <TabBar {...props} />}
-      // The navigator switches instantly (its own animations keep every tab
-      // alive and re-rendering); TabSwipe draws the slide on the UI thread.
-      // All tabs are built up front, then frozen while hidden.
-      screenOptions={{ headerShown: false, lazy: false, freezeOnBlur: true }}
-      screenLayout={({ route, children }) => <TabSwipe routeName={route.name}>{children}</TabSwipe>}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Clean' }} />
-      <Tabs.Screen name="library" options={{ title: 'Library' }} />
-      <Tabs.Screen name="studio" options={{ title: 'Studio' }} />
-    </Tabs>
+    <PagerTabs tabBar={(props) => <TabBar {...props} />}>
+      <PagerTabs.Screen name="index" options={{ title: 'Clean' }} />
+      <PagerTabs.Screen name="library" options={{ title: 'Library' }} />
+      <PagerTabs.Screen name="studio" options={{ title: 'Studio' }} />
+    </PagerTabs>
   );
 }

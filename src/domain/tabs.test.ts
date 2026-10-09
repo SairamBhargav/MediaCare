@@ -1,24 +1,32 @@
-import { swipeTarget } from './tabs';
+import { EDGE_RESISTANCE, dragOffset, pageOffset, settlePage } from './tabs';
 
-describe('swipeTarget', () => {
-  it('goes to the next tab on a right-to-left swipe', () => {
-    expect(swipeTarget('index', -120, 0)).toBe('library');
-    expect(swipeTarget('library', -20, -900)).toBe('studio');
+const W = 400;
+
+describe('tab paging', () => {
+  it('places pages side by side', () => {
+    expect(pageOffset(0, W)).toBe(-0);
+    expect(pageOffset(2, W)).toBe(-800);
   });
 
-  it('goes back on a left-to-right swipe', () => {
-    expect(swipeTarget('studio', 120, 0)).toBe('library');
-    expect(swipeTarget('library', 10, 800)).toBe('index');
+  it('follows the finger 1:1 between pages and resists past the ends', () => {
+    expect(dragOffset(-400, -150, W, 3)).toBe(-550);
+    expect(dragOffset(0, 100, W, 3)).toBe(100 * EDGE_RESISTANCE);
+    expect(dragOffset(-800, -100, W, 3)).toBe(-800 - 100 * EDGE_RESISTANCE);
   });
 
-  it('stays put at the ends, for short slow drags, and for unknown tabs', () => {
-    expect(swipeTarget('index', 200, 0)).toBeNull();
-    expect(swipeTarget('studio', -200, 0)).toBeNull();
-    expect(swipeTarget('library', -30, -100)).toBeNull();
-    expect(swipeTarget('settings', -200, 0)).toBeNull();
+  it('settles on the nearest page when released slowly', () => {
+    expect(settlePage(-150, 0, W, 0, 3)).toBe(0);
+    expect(settlePage(-250, 0, W, 0, 3)).toBe(1);
   });
 
-  it('ignores a flick that reverses a long drag', () => {
-    expect(swipeTarget('library', -120, 900)).toBeNull();
+  it('a flick goes to the next page even after a short drag', () => {
+    expect(settlePage(-60, -1200, W, 0, 3)).toBe(1);
+    expect(settlePage(-340, 1200, W, 1, 3)).toBe(0);
+  });
+
+  it('moves at most one page per swipe and never past the ends', () => {
+    expect(settlePage(-700, -5000, W, 0, 3)).toBe(1);
+    expect(settlePage(-800, -3000, W, 2, 3)).toBe(2);
+    expect(settlePage(50, 3000, W, 0, 3)).toBe(0);
   });
 });

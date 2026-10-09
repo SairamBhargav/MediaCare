@@ -2,9 +2,8 @@
 
 ## 0.2.0: Studio, video and the first TestFlight build (2026-10-09)
 
-- **Swipe between tabs**: swipe sideways on Clean, Library or Studio to move to the next or previous tab; tabs shift a little in that direction (instant under Reduce Motion). Studio's Recently made is now a grid so it doesn't fight the swipe.
 - **Haptics on buttons**: a firm tap for buttons, icon buttons and tab switches (tap or swipe), a lighter tick for choice chips, photo selection and Mark/Unmark; never two for one tap; off with Settings → Haptics.
-- **Smoother tab swipe**: the page follows your finger while you drag (on the UI thread) and springs back on a short drag; the new tab slides in from that side. Fixed: slow switching and a blank Studio, caused by the navigator's own tab animation keeping all tabs alive and re-rendering; it's off, hidden tabs are frozen, and all three are built at launch.
+- **Swipe between tabs like Instagram**: Clean, Library and Studio are side-by-side pages; the page follows your finger 1:1 with the next one sliding in, and a flick settles on the next page with a haptic. Tapping a tab jumps there instantly. (Replaces the earlier swipe, which only switched after you let go and made switching slow.)
 - "Taken moments apart" is now **Possible repeats**, and says that Check my photos compares how they look and turns them into Similar shots with the best one picked.
 - `npm run start:fast` runs the app in production mode through the development build, to judge speed (development mode is several times slower).
 - **Similar shots use time and look together**: shots taken within 5 seconds may look a little less alike and still group (bursts); in groups of 4 or more the next best shot is suggested as **Also good**, and **Mark the rest** marks everything except the keeper and that one, so you keep the best two. Group headers no longer say "Sample" for your own photos.
