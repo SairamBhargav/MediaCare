@@ -57,7 +57,7 @@ export function findMoments(items: readonly PhotoItem[], maxGapMs = 2000): Group
         keeperId: keeper.id,
         keeperReason: favorite
           ? 'Marked as a favorite in Photos'
-          : 'First shot. MediaCare can’t judge sharpness yet, so compare and choose',
+          : 'First shot. Check my photos compares how they look and picks the best',
       });
     }
     run = [];

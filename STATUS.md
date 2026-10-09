@@ -73,7 +73,7 @@ Real photo access prompts and limited selection; scan speed and smoothness on yo
 
 1. `npm start`, open in Expo Go on the iPhone.
 2. Clean → **Scan my library**. Choose **Allow Full Access** (or try **Limit Access** to test limited mode). Watch the job bar; try Pause/Resume, switch tabs while it runs.
-3. Look at the findings: **Taken moments apart**, **Screenshots**, **Long videos**. Open one, Compare, mark a few, open **Review plan** (Remove stays disabled).
+3. Look at the findings: **Possible repeats**, **Screenshots**, **Long videos**. Open one, Compare, mark a few, open **Review plan** (Remove stays disabled).
 4. Library → tap a photo → **Make a smaller copy** → Target size 1 MB → Make copy → **Save to Photos**. Check the new photo in the Photos app and that the original is unchanged.
 5. Settings → Developer → **Diagnostics** → Run file check and Run copy check → **Share report** and send it to me.
 6. Report: iPhone model, iOS version, library size roughly, scan time, anything wrong.

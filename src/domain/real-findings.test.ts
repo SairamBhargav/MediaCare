@@ -56,7 +56,7 @@ describe('findMoments', () => {
   test('without quality analysis the keeper is the first shot, and the reason says so', () => {
     const [group] = findMoments([photo('a', 0), photo('b', 1000)]);
     expect(group.keeperId).toBe('a');
-    expect(group.keeperReason).toMatch(/can’t judge sharpness/);
+    expect(group.keeperReason).toMatch(/^First shot. Check my photos/);
   });
 
   test('a favorite becomes the keeper', () => {

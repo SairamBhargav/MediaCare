@@ -18,7 +18,8 @@ export const CATEGORY_META: Record<FindingCategory, CategoryMeta> = {
   similar: {
     title: 'Similar shots',
     icon: 'stack',
-    description: 'Bursts and near-repeats. Keep the best, review the rest.',
+    description:
+      'Taken around the same time and they look alike, like bursts. MediaCare suggests the best to keep.',
     unit: ['group', 'groups'],
   },
   exact: {
@@ -52,10 +53,10 @@ export const CATEGORY_META: Record<FindingCategory, CategoryMeta> = {
     unit: ['file', 'files'],
   },
   moments: {
-    title: 'Taken moments apart',
+    title: 'Possible repeats',
     icon: 'stack',
     description:
-      'Photos taken within two seconds of each other with the same size, like bursts. Grouped by timing, not by how they look.',
+      'Taken within two seconds of each other, like bursts. Check my photos also compares how they look, then these become Similar shots with the best one picked.',
     unit: ['moment', 'moments'],
   },
   screenshots: {

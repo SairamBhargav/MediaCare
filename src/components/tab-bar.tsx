@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCleanSession } from '@/state/clean-session';
 import { spacing, useTheme } from '@/theme';
+import { haptics } from '@/utils/haptics';
 
 import { ActiveJobBar, JOB_BAR_GAP, JOB_BAR_HEIGHT } from './active-job-bar';
 import { AppText } from './app-text';
@@ -73,6 +74,7 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
                     canPreventDefault: true,
                   });
                   if (!focused && !event.defaultPrevented) {
+                    haptics.light();
                     navigation.navigate(route.name, route.params);
                   }
                 }}

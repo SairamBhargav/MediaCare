@@ -21,7 +21,12 @@ export default function TabsLayout() {
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
       // A short sideways shift tells you which way you moved; none under Reduce Motion.
-      screenOptions={{ headerShown: false, animation: reduceMotion ? 'none' : 'shift' }}
+      // All three tabs are built up front so a swipe never waits for a screen to mount.
+      screenOptions={{
+        headerShown: false,
+        animation: reduceMotion ? 'none' : 'shift',
+        lazy: false,
+      }}
       screenLayout={({ route, children }) => <TabSwipe routeName={route.name}>{children}</TabSwipe>}
     >
       <Tabs.Screen name="index" options={{ title: 'Clean' }} />

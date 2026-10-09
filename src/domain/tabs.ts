@@ -15,6 +15,7 @@ export function swipeTarget(
   translationX: number,
   velocityX: number,
 ): TabName | null {
+  'worklet';
   const index = TAB_ORDER.indexOf(current as TabName);
   if (index < 0) return null;
   const forward = translationX <= -TAB_SWIPE.distance || velocityX <= -TAB_SWIPE.velocity;
