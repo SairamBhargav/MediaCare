@@ -11,7 +11,18 @@ import { StatusPill } from '@/components/status-pill';
 import { Surface } from '@/components/surface';
 import { insertDerivative } from '@/db/catalog-repo';
 import { formatBytes } from '@/domain/bytes';
-import { US_PASSPORT, isFrame, passportFrame, type PassportFrame } from '@/domain/passport';
+import {
+  NO_TWEAK,
+  TWEAK_LIMITS,
+  US_PASSPORT,
+  clampTweak,
+  isFrame,
+  passportFrame,
+  type FaceBox,
+  type FrameTweak,
+  type PassportFrame,
+} from '@/domain/passport';
+import { IconButton } from '@/components/icon-button';
 import { VISUAL_THRESHOLDS } from '@/domain/visual-findings';
 import { findMediaItem, isSample } from '@/features/media/registry';
 import { discardFile, saveToPhotos } from '@/services/exports/exporter';
@@ -21,12 +32,22 @@ import { gutter, radius, spacing, useTheme } from '@/theme';
 import { haptics } from '@/utils/haptics';
 
 type Preview = { uri: string; width: number; height: number; bytes: number; frame: PassportFrame };
+type Face = FaceBox & { eyesOpen: number };
 
 type Phase =
   | { step: 'idle' }
   | { step: 'working' }
   | { step: 'refused'; problems: string[] }
-  | { step: 'preview'; preview: Preview; warnings: string[] }
+  | {
+      step: 'preview';
+      preview: Preview;
+      warnings: string[];
+      face: Face;
+      tweak: FrameTweak;
+      /** Problems with the current fine-tuning; saving waits until there are none. */
+      problems: string[];
+      updating: boolean;
+    }
   | { step: 'saved' }
   | { step: 'failed'; message: string };
 
@@ -94,7 +115,15 @@ export function PassportScreen({ id }: { id: string }) {
       }
       const rendered = await renderPassport(item.id, frame);
       pending.current = rendered.uri;
-      setPhase({ step: 'preview', preview: { ...rendered, frame }, warnings });
+      setPhase({
+        step: 'preview',
+        preview: { ...rendered, frame },
+        warnings,
+        face: found.faces[0],
+        tweak: NO_TWEAK,
+        problems: [],
+        updating: false,
+      });
     } catch (error) {
       setPhase({
         step: 'failed',
@@ -103,8 +132,36 @@ export function PassportScreen({ id }: { id: string }) {
     }
   };
 
-  const save = async () => {
+  /** Re-frames with the person's fine-tuning; keeps the last good preview if it can't. */
+  const retune = async (tweak: FrameTweak) => {
     if (phase.step !== 'preview' || !item) return;
+    const next = clampTweak(tweak);
+    const current = phase;
+    haptics.selection();
+    const frame = passportFrame(item.width, item.height, [current.face], rules, next);
+    if (!isFrame(frame) || frame.problems.length > 0) {
+      setPhase({ ...current, tweak: next, problems: frame.problems });
+      return;
+    }
+    setPhase({ ...current, tweak: next, problems: [], updating: true });
+    try {
+      const rendered = await renderPassport(item.id, frame);
+      if (pending.current) discardFile(pending.current);
+      pending.current = rendered.uri;
+      setPhase({
+        ...current,
+        preview: { ...rendered, frame },
+        tweak: next,
+        problems: [],
+        updating: false,
+      });
+    } catch {
+      setPhase({ ...current, tweak: next, problems: [], updating: false });
+    }
+  };
+
+  const save = async () => {
+    if (phase.step !== 'preview' || !item || phase.problems.length > 0) return;
     try {
       const outputId = await saveToPhotos(phase.preview.uri);
       await recordPassport(item.id, outputId, phase.preview);
@@ -204,6 +261,80 @@ export function PassportScreen({ id }: { id: string }) {
               {Math.round(rules.headMax * 100)}% is allowed). Check they match the real head top and
               chin.
             </AppText>
+            <View style={styles.list}>
+              <AppText variant="headline">Fine-tune</AppText>
+              <AppText variant="footnote" color="secondaryLabel">
+                Move or resize the head if the lines don’t sit on the real top of the head and chin.
+              </AppText>
+              <View style={styles.tune}>
+                <IconButton
+                  icon="arrowUp"
+                  accessibilityLabel="Move head up"
+                  onPress={() =>
+                    retune({
+                      ...phase.tweak,
+                      offsetY: phase.tweak.offsetY + TWEAK_LIMITS.offsetStep,
+                    })
+                  }
+                />
+                <IconButton
+                  icon="arrowDown"
+                  accessibilityLabel="Move head down"
+                  onPress={() =>
+                    retune({
+                      ...phase.tweak,
+                      offsetY: phase.tweak.offsetY - TWEAK_LIMITS.offsetStep,
+                    })
+                  }
+                />
+                <IconButton
+                  icon="arrowLeft"
+                  accessibilityLabel="Move head left"
+                  onPress={() =>
+                    retune({
+                      ...phase.tweak,
+                      offsetX: phase.tweak.offsetX + TWEAK_LIMITS.offsetStep,
+                    })
+                  }
+                />
+                <IconButton
+                  icon="arrowRight"
+                  accessibilityLabel="Move head right"
+                  onPress={() =>
+                    retune({
+                      ...phase.tweak,
+                      offsetX: phase.tweak.offsetX - TWEAK_LIMITS.offsetStep,
+                    })
+                  }
+                />
+                <IconButton
+                  icon="minus"
+                  accessibilityLabel="Make head smaller"
+                  onPress={() =>
+                    retune({ ...phase.tweak, zoom: phase.tweak.zoom - TWEAK_LIMITS.zoomStep })
+                  }
+                />
+                <IconButton
+                  icon="plus"
+                  accessibilityLabel="Make head bigger"
+                  onPress={() =>
+                    retune({ ...phase.tweak, zoom: phase.tweak.zoom + TWEAK_LIMITS.zoomStep })
+                  }
+                />
+              </View>
+              {phase.problems.map((problem) => (
+                <AppText key={problem} variant="subhead" color="warning">
+                  {problem}
+                </AppText>
+              ))}
+              {phase.tweak !== NO_TWEAK ? (
+                <Button
+                  title="Back to automatic"
+                  variant="plain"
+                  onPress={() => retune(NO_TWEAK)}
+                />
+              ) : null}
+            </View>
             {warnings.map((warning) => (
               <View key={warning} style={styles.row}>
                 <Icon name="warning" size={16} color={colors.warning} />
@@ -228,8 +359,9 @@ export function PassportScreen({ id }: { id: string }) {
               guarantee the photo will be accepted.
             </AppText>
             <Button
-              title="Save to Photos"
+              title={phase.updating ? 'Updating…' : 'Save to Photos'}
               icon="photo"
+              disabled={phase.updating || phase.problems.length > 0}
               onPress={() => save().catch(() => {})}
               block
             />
@@ -318,6 +450,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   list: { gap: spacing.xs },
+  tune: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   row: { flexDirection: 'row', gap: spacing.xs, alignItems: 'flex-start' },
   numbers: { fontVariant: ['tabular-nums'] },
 });

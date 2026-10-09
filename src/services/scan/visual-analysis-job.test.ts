@@ -121,3 +121,38 @@ test('pause waits between batches; stop keeps what was saved', async () => {
   expect(await controls.done).toBe('canceled');
   expect(t.saved).toHaveLength(1);
 });
+
+test('measures sizes of videos without a current size, after the photos', async () => {
+  const items = [
+    photo('p'),
+    photo('v1', { kind: 'video', durationMs: 5000 }),
+    photo('v2', { kind: 'video', durationMs: 5000 }),
+    photo('v3', { kind: 'video', durationMs: 5000, modificationTime: 200 }),
+  ];
+  const t = setup(items);
+  const measured: string[][] = [];
+  const savedSizes: { assetId: string; status: string; bytes: number | null }[] = [];
+  t.deps.videoSizes = {
+    // v2 is already measured at its current version; v3 changed since.
+    load: async () => [
+      { assetId: 'v2', assetVersion: 100, status: 'ok', bytes: 9, measuredAt: 1 },
+      { assetId: 'v3', assetVersion: 100, status: 'ok', bytes: 9, measuredAt: 1 },
+    ],
+    measure: async (ids) => {
+      measured.push(ids);
+      return ids.map((id) =>
+        id === 'v3' ? { id, status: 'in-icloud' } : { id, status: 'ok', bytes: 1234 },
+      );
+    },
+    save: async (rows) => {
+      savedSizes.push(...rows);
+    },
+  };
+  expect(await runVisualAnalysis(t.deps, t.emit).done).toBe('succeeded');
+  expect(measured).toEqual([['v1', 'v3']]);
+  expect(savedSizes).toEqual([
+    { assetId: 'v1', assetVersion: 100, status: 'ok', bytes: 1234, measuredAt: 5 },
+    { assetId: 'v3', assetVersion: 200, status: 'in-icloud', bytes: null, measuredAt: 5 },
+  ]);
+  expect(t.job()).toMatchObject({ status: 'succeeded', processed: 3, total: 3 });
+});

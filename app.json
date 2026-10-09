@@ -51,7 +51,8 @@
           "savePhotosPermission": "MediaCare saves the smaller copies you choose to make as new photos.",
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

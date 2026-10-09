@@ -8,18 +8,27 @@ import {
   removeUnseen,
   saveFingerprints,
   saveMatchGroups,
+  loadSizes,
   loadVisualRows,
   saveScanJob,
+  saveSizes,
   saveVisualRows,
   upsertAssets,
 } from '@/db/catalog-repo';
+import { creationToolsAvailable, measureVideoSizes } from '@/services/media/creations';
 import { sampleFindings, sampleLibrary } from '@/demo/sample-library';
 import { runSampleScan } from '@/demo/sample-scan';
 import { exactCopyFindings } from '@/domain/exact-copies';
 import { findingsWithin, type Finding } from '@/domain/findings';
 import { isActive, reduceJob, startJob, type Job, type JobEvent } from '@/domain/jobs';
 import type { PhotoItem } from '@/domain/media';
-import { favoriteIds, findLongVideos, findMoments, findScreenshots } from '@/domain/real-findings';
+import {
+  favoriteIds,
+  findLargeVideos,
+  findLongUnmeasuredVideos,
+  findMoments,
+  findScreenshots,
+} from '@/domain/real-findings';
 import { qualityFlags, similarFindings } from '@/domain/visual-findings';
 import { currentScores } from '@/domain/visual-records';
 import {
@@ -148,8 +157,9 @@ function realFindings(items: readonly PhotoItem[]): Finding[] {
     ...(visual ? similarFindings(items, scores) : findMoments(items)),
     ...exactCopyFindings(copySets, byId),
     ...(visual ? qualityFlags(items, scores) : []),
+    ...findLargeVideos(items),
     ...findScreenshots(items),
-    ...findLongVideos(items),
+    ...findLongUnmeasuredVideos(items),
   ];
 }
 
@@ -386,6 +396,9 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
           analyze: analyzePhotos,
           saveRows: saveVisualRows,
           implementation: ANALYSIS_IMPLEMENTATION,
+          videoSizes: creationToolsAvailable()
+            ? { load: loadSizes, measure: measureVideoSizes, save: saveSizes }
+            : undefined,
           checkpoint: ({ status, processed, total, error }) =>
             saveScanJob({
               id: job.id,

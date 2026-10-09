@@ -103,6 +103,15 @@ export default function RootLayout() {
             name="passport/[id]"
             options={{ presentation: 'modal', headerShown: false }}
           />
+          <Stack.Screen
+            name="adjust/[id]"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen name="video/[id]" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="pick" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="collage" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="slideshow" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="activity" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="gallery" options={{ title: 'Components & Motion' }} />
           <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
         </Stack>

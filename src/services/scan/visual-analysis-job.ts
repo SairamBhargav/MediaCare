@@ -1,3 +1,4 @@
+import type { SizeRow } from '@/db/catalog-repo';
 import type { JobEvent } from '@/domain/jobs';
 import type { PhotoItem } from '@/domain/media';
 import {
@@ -34,6 +35,15 @@ export type VisualJobDeps = {
   }) => Promise<void>;
   implementation: string;
   now?: () => number;
+  /**
+   * Optional last step: measure video file sizes (app builds with the
+   * creation tools). Only videos without a size for their current version.
+   */
+  videoSizes?: {
+    load: () => Promise<readonly SizeRow[]>;
+    measure: (ids: string[]) => Promise<{ id: string; status: string; bytes?: number }[]>;
+    save: (rows: readonly SizeRow[]) => Promise<void>;
+  };
 };
 
 export type VisualJobControls = {
@@ -68,11 +78,21 @@ export function runVisualAnalysis(
   const run = async (): Promise<'succeeded' | 'canceled' | 'failed'> => {
     try {
       emit({ type: 'progress', stage: 'listing', processed: 0 });
-      const items = (await deps.listItems()).filter(isAnalyzable);
+      const listed = await deps.listItems();
+      const items = listed.filter(isAnalyzable);
       const stored = new Map((await deps.loadRows()).map((row) => [row.assetId, row]));
+      let videos: PhotoItem[] = [];
+      if (deps.videoSizes) {
+        const sizes = new Map((await deps.videoSizes.load()).map((row) => [row.assetId, row]));
+        videos = listed.filter((item) => {
+          if (item.kind !== 'video') return false;
+          const row = sizes.get(item.id);
+          return !row || row.assetVersion !== item.version;
+        });
+      }
       if (canceled) return 'canceled';
 
-      total = items.length;
+      total = items.length + videos.length;
       emit({ type: 'total-known', total });
       await deps.checkpoint({ status: 'running', processed, total });
 
@@ -99,6 +119,32 @@ export function runVisualAnalysis(
           ),
         );
         await deps.saveRows(rows);
+        processed += batch.length;
+        emit({ type: 'progress', stage: 'checking', processed });
+        await deps.checkpoint({ status: 'running', processed, total });
+        await yieldToUi();
+      }
+
+      const sizer = deps.videoSizes;
+      for (let start = 0; sizer && start < videos.length; start += batchSize) {
+        await waitWhilePaused();
+        if (canceled) return 'canceled';
+        const batch = videos.slice(start, start + batchSize);
+        const results = new Map(
+          (await sizer.measure(batch.map((item) => item.id))).map((result) => [result.id, result]),
+        );
+        await sizer.save(
+          batch.map((item) => {
+            const result = results.get(item.id);
+            return {
+              assetId: item.id,
+              assetVersion: item.version,
+              status: result?.status ?? 'failed',
+              bytes: result?.status === 'ok' ? (result.bytes ?? null) : null,
+              measuredAt: now(),
+            };
+          }),
+        );
         processed += batch.length;
         emit({ type: 'progress', stage: 'checking', processed });
         await deps.checkpoint({ status: 'running', processed, total });

@@ -58,6 +58,24 @@ enum MediaTools {
     CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
   }
 
+  /// Writes a temporary JPEG and reports it as a tool result.
+  static func writeJPEG(_ image: CIImage, quality: Double = 0.92) -> [String: Any] {
+    do {
+      let url = try outputURL(ext: "jpg")
+      let key = kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption
+      try context.writeJPEGRepresentation(
+        of: image, to: url, colorSpace: sRGB, options: [key: quality])
+      return [
+        "status": "ok",
+        "uri": url.absoluteString,
+        "width": Int(image.extent.width.rounded()),
+        "height": Int(image.extent.height.rounded()),
+      ]
+    } catch {
+      return ["status": "failed", "error": error.localizedDescription]
+    }
+  }
+
   /// Apple's automatic adjustments (exposure, color, contrast) and/or red-eye
   /// correction, as Photos' own auto-enhance uses. Writes a JPEG.
   static func enhance(id: String, enhance: Bool, redEye: Bool, maxSide: Int) -> [String: Any] {

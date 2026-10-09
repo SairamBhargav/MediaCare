@@ -118,4 +118,16 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE visual_scores ADD COLUMN poses TEXT NOT NULL DEFAULT '[]';
   ALTER TABLE visual_scores ADD COLUMN layout TEXT;
   `,
+
+  // 6: measured file sizes (videos), valid only while asset_version matches.
+  // status says why there is no size (in iCloud, slo-mo composition, …).
+  `
+  CREATE TABLE media_sizes (
+    asset_id TEXT PRIMARY KEY NOT NULL,
+    asset_version INTEGER,
+    status TEXT NOT NULL,
+    bytes INTEGER,
+    measured_at INTEGER NOT NULL
+  );
+  `,
 ];

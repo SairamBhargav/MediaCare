@@ -53,6 +53,80 @@ export type ToolResult = {
   error?: string;
 };
 
+/** Manual adjustments (geometry, then light and color). Crop is normalized, top-left origin, after rotation. */
+export type AdjustOptions = {
+  quarterTurns: number;
+  flip: boolean;
+  /** Degrees, clockwise positive. */
+  straighten: number;
+  cropX: number;
+  cropY: number;
+  cropWidth: number;
+  cropHeight: number;
+  /** Exposure in EV stops. */
+  exposure: number;
+  /** 1 = unchanged. */
+  contrast: number;
+  /** 1 = unchanged, 0 = black and white. */
+  saturation: number;
+  /** -1 cooler … 1 warmer. */
+  warmth: number;
+  maxSide: number;
+};
+
+/** One collage cell in output pixels, top-left origin. */
+export type CollageCell = { id: string; x: number; y: number; width: number; height: number };
+
+export type CollageOptions = {
+  width: number;
+  height: number;
+  cells: CollageCell[];
+  /** Background color, 0–1 per channel. */
+  red: number;
+  green: number;
+  blue: number;
+};
+
+export type VideoSizeResult = {
+  id: string;
+  status: 'ok' | 'missing' | 'in-icloud' | 'unsupported' | 'failed';
+  bytes?: number;
+};
+
+export type VideoExportOptions = {
+  preset: string;
+  start: number;
+  end: number;
+  task: string;
+};
+
+export type SlideshowOptions = {
+  ids: string[];
+  width: number;
+  height: number;
+  secondsPerPhoto: number;
+  transitionSeconds: number;
+  gentleZoom: boolean;
+  task: string;
+};
+
+/** A new movie file (video copy, trim or slideshow) to preview, then save. */
+export type MovieResult = {
+  status: 'ok' | 'missing' | 'in-icloud' | 'failed' | 'cancelled';
+  uri?: string;
+  bytes?: number;
+  width?: number;
+  height?: number;
+  /** Seconds. */
+  duration?: number;
+  preset?: string;
+  /** Slideshow photos that couldn't be read (shown as black). */
+  missing?: string[];
+  error?: string;
+};
+
+export type ProgressEvent = { task: string; fraction: number };
+
 /** One file Photos keeps for a photo (PHAssetResourceType raw value, e.g. 1 photo, 9 paired video). */
 export type OriginalResource = { type: number; filename: string; bytes: number; sha256: string };
 

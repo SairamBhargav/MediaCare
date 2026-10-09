@@ -48,7 +48,7 @@ export const CATEGORY_META: Record<FindingCategory, CategoryMeta> = {
   large: {
     title: 'Large files',
     icon: 'storage',
-    description: 'The biggest items, like panoramas.',
+    description: 'The biggest files, like long videos. Sizes are measured on this iPhone.',
     unit: ['file', 'files'],
   },
   moments: {

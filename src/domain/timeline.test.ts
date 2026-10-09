@@ -1,4 +1,11 @@
-import { captureLocalDate, chunkRows, formatMonth, gridColumns, groupByMonth } from './timeline';
+import {
+  captureLocalDate,
+  chunkRows,
+  formatMonth,
+  gridColumns,
+  groupByMonth,
+  jumpTargets,
+} from './timeline';
 
 describe('captureLocalDate', () => {
   test('uses the wall-clock date where the photo was taken, not the device zone', () => {
@@ -79,4 +86,26 @@ test('gridColumns adapts to width and very large text', () => {
   expect(gridColumns(393, 2)).toBe(2);
   expect(gridColumns(744, 1)).toBe(5);
   expect(gridColumns(1024, 1)).toBe(6);
+});
+
+describe('jumpTargets', () => {
+  it('groups month sections by year, keeping their list positions', () => {
+    const targets = jumpTargets([
+      { key: '2026-09', title: 'September 2026' },
+      { key: '2026-01', title: 'January 2026' },
+      { key: '2025-12', title: 'December 2025' },
+      { key: 'undated', title: 'Undated' },
+    ]);
+    expect(targets).toEqual([
+      {
+        year: '2026',
+        months: [
+          { index: 0, title: 'September 2026' },
+          { index: 1, title: 'January 2026' },
+        ],
+      },
+      { year: '2025', months: [{ index: 2, title: 'December 2025' }] },
+      { year: 'Undated', months: [{ index: 3, title: 'Undated' }] },
+    ]);
+  });
 });

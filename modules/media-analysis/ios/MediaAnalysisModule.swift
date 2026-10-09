@@ -21,6 +21,53 @@ public class MediaAnalysisModule: Module {
     // Bump when what analyze() returns changes; stored results from older versions are redone.
     Constant("version") { 2 }
 
+    // Bump when tools are added, so the app can tell what this build offers.
+    Constant("toolsVersion") { 3 }
+
+    Events("onProgress")
+
+    AsyncFunction("adjust") { (id: String, options: AdjustOptions, promise: Promise) in
+      DispatchQueue.global(qos: .userInitiated).async {
+        promise.resolve(Creations.adjust(id: id, options: options))
+      }
+    }
+
+    AsyncFunction("collage") { (options: CollageOptions, promise: Promise) in
+      DispatchQueue.global(qos: .userInitiated).async {
+        promise.resolve(Creations.collage(options: options))
+      }
+    }
+
+    AsyncFunction("videoSizes") { (ids: [String], promise: Promise) in
+      DispatchQueue.global(qos: .utility).async {
+        promise.resolve(VideoTools.sizes(ids: ids))
+      }
+    }
+
+    AsyncFunction("exportVideo") { (id: String, options: VideoExportOptions, promise: Promise) in
+      let task = options.task
+      DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        let result = VideoTools.export(id: id, options: options) { fraction in
+          self?.sendEvent("onProgress", ["task": task, "fraction": fraction])
+        }
+        promise.resolve(result)
+      }
+    }
+
+    AsyncFunction("slideshow") { (options: SlideshowOptions, promise: Promise) in
+      let task = options.task
+      DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        let result = VideoTools.slideshow(options: options) { fraction in
+          self?.sendEvent("onProgress", ["task": task, "fraction": fraction])
+        }
+        promise.resolve(result)
+      }
+    }
+
+    Function("cancelTask") { (task: String) in
+      VideoTools.cancel(task)
+    }
+
     AsyncFunction("analyze") { (ids: [String], maxSide: Int, promise: Promise) in
       DispatchQueue.global(qos: .userInitiated).async {
         let side = max(64, min(maxSide, 1024))

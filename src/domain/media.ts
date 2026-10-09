@@ -3,9 +3,9 @@
  * library or from the iPhone's Photos library. Pure types and helpers.
  *
  * Honest-data rules:
- *  - `bytes` is null when the size has not been measured. Real photos are
- *    cataloged without reading their files, so their size is unknown until
- *    something (an export) measures it.
+ *  - `bytes` is null when the size has not been measured. Real items are
+ *    cataloged without reading their files; video sizes are measured later
+ *    by the app build and applied only while the video is unchanged.
  *  - Photos reports a capture *instant* without the original time zone, so
  *    real capture dates are expressed in this iPhone's current zone and
  *    labelled as such (`dateSource`).
@@ -23,7 +23,8 @@ export type PhotoItem = {
   readonly dateSource: 'photos-creation-time' | 'unknown';
   readonly width: number;
   readonly height: number;
-  readonly bytes: null;
+  /** Measured file size (videos, by the app build), or null when unmeasured. */
+  readonly bytes: number | null;
   readonly durationMs: number | null;
   readonly isFavorite: boolean;
   readonly subtypes: readonly string[];
@@ -97,7 +98,7 @@ export function describeRecord(record: PhotoRecord): string {
   return `${what}, ${when}`;
 }
 
-export function toPhotoItem(record: PhotoRecord): PhotoItem {
+export function toPhotoItem(record: PhotoRecord, bytes: number | null = null): PhotoItem {
   return {
     id: record.id,
     source: 'photos',
@@ -107,7 +108,7 @@ export function toPhotoItem(record: PhotoRecord): PhotoItem {
     dateSource: record.creationTime === null ? 'unknown' : 'photos-creation-time',
     width: record.width ?? 0,
     height: record.height ?? 0,
-    bytes: null,
+    bytes,
     durationMs: record.durationMs,
     isFavorite: record.isFavorite,
     subtypes: record.subtypes,

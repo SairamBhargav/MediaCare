@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SectionList, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,7 +13,7 @@ import { Surface } from '@/components/surface';
 import { useBottomChromeHeight } from '@/components/tab-bar';
 import { sampleLibrary } from '@/demo/sample-library';
 import { isActive, jobFraction } from '@/domain/jobs';
-import { chunkRows, gridColumns, groupByMonth } from '@/domain/timeline';
+import { chunkRows, gridColumns, groupByMonth, jumpTargets } from '@/domain/timeline';
 import { jobProgressText } from '@/features/clean/job-text';
 import type { MediaItem } from '@/features/media/registry';
 import { scanLibrary } from '@/features/media/start-scan';
@@ -21,7 +21,8 @@ import { hasPhotoAccess, useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
 import { useLibrarySession } from '@/state/library-session';
 import { useViewerOrigin } from '@/state/viewer-origin';
-import { gutter, radius, spacing, useTheme } from '@/theme';
+import { gutter, radius, spacing, useReduceMotion, useTheme } from '@/theme';
+import { showPhotoActions } from '@/utils/photo-actions';
 
 const GAP = 2;
 const MONTH_HEADER_HEIGHT = 44;
@@ -44,6 +45,7 @@ export function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const bottomChrome = useBottomChromeHeight();
   const { width, fontScale } = useWindowDimensions();
+  const reduceMotion = useReduceMotion();
   const selecting = useLibrarySession((session) => session.selecting);
   const selected = useLibrarySession((session) => session.selected);
   const { setSelecting, toggle, retain, rememberOffset } = useLibrarySession.getState();
@@ -74,6 +76,48 @@ export function LibraryScreen() {
       })),
     [source, columns],
   );
+
+  const listRef = useRef<SectionList<Row>>(null);
+  const listHeaderHeight = useRef(0);
+  const monthHeaderHeight = useRef(MONTH_HEADER_HEIGHT);
+
+  /** Scrolls so a month's header sits at the top. Rows have a fixed height. */
+  const scrollToSection = (sectionIndex: number) => {
+    let offset = listHeaderHeight.current;
+    for (let index = 0; index < sectionIndex; index += 1) {
+      offset += monthHeaderHeight.current + sections[index].data.length * (tileSize + GAP);
+    }
+    listRef.current?.getScrollResponder()?.scrollTo({ y: offset, animated: !reduceMotion });
+    rememberOffset(offset);
+  };
+
+  const jump = () => {
+    const years = jumpTargets(sections);
+    showPhotoActions(
+      'Jump to',
+      years.map((year) => ({
+        label: year.year,
+        onPress: () => {
+          if (year.months.length === 1) {
+            scrollToSection(year.months[0].index);
+            return;
+          }
+          // The action sheet needs a moment to close before another opens.
+          setTimeout(
+            () =>
+              showPhotoActions(
+                year.year,
+                year.months.map((month) => ({
+                  label: month.title,
+                  onPress: () => scrollToSection(month.index),
+                })),
+              ),
+            350,
+          );
+        },
+      })),
+    );
+  };
 
   // Photos removed from the library (or no longer shared) leave the selection.
   useEffect(() => {
@@ -134,6 +178,7 @@ export function LibraryScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <SectionList
+        ref={listRef}
         sections={sections}
         keyExtractor={(row) => row.key}
         extraData={{ selected, selecting, hiddenId }}
@@ -147,7 +192,13 @@ export function LibraryScreen() {
         contentContainerStyle={{ paddingBottom: bottomChrome + spacing.xl }}
         scrollIndicatorInsets={{ bottom: bottomChrome }}
         renderSectionHeader={({ section }) => (
-          <View style={styles.monthHeader} accessibilityRole="header">
+          <View
+            style={styles.monthHeader}
+            accessibilityRole="header"
+            onLayout={(event) => {
+              monthHeaderHeight.current = event.nativeEvent.layout.height;
+            }}
+          >
             <ChromeBackground />
             <AppText variant="headline">{section.title}</AppText>
             <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
@@ -179,9 +230,26 @@ export function LibraryScreen() {
           </View>
         )}
         ListHeaderComponent={
-          <View style={styles.header}>
+          <View
+            style={styles.header}
+            onLayout={(event) => {
+              listHeaderHeight.current = event.nativeEvent.layout.height;
+            }}
+          >
             <View style={styles.titleRow}>
-              <AppText variant="largeTitle">Library</AppText>
+              <AppText variant="largeTitle" style={styles.flex}>
+                Library
+              </AppText>
+              {sections.length > 1 ? (
+                <Button
+                  title="Jump to"
+                  icon="calendar"
+                  variant="secondary"
+                  onPress={jump}
+                  accessibilityHint="Choose a year and month to go to"
+                  style={styles.selectButton}
+                />
+              ) : null}
               <Button
                 title={selecting ? 'Done' : 'Select'}
                 variant="secondary"

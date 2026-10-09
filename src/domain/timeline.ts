@@ -103,3 +103,17 @@ export function gridColumns(width: number, fontScale: number): number {
   if (fontScale >= 1.6) return Math.max(2, base - 1);
   return base;
 }
+
+/** Year → month sections for "Jump to": newest year first, months as listed. */
+export function jumpTargets(
+  sections: readonly { key: string; title: string }[],
+): { year: string; months: { index: number; title: string }[] }[] {
+  const years = new Map<string, { index: number; title: string }[]>();
+  sections.forEach((section, index) => {
+    const year = section.key === 'undated' ? 'Undated' : section.key.slice(0, 4);
+    const months = years.get(year) ?? [];
+    months.push({ index, title: section.title });
+    years.set(year, months);
+  });
+  return [...years.entries()].map(([year, months]) => ({ year, months }));
+}

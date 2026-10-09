@@ -1,6 +1,13 @@
 import { candidateIds } from './findings';
 import { toPhotoItem, type PhotoRecord } from './media';
-import { favoriteIds, findLongVideos, findMoments, findScreenshots } from './real-findings';
+import {
+  favoriteIds,
+  findLargeVideos,
+  findLongUnmeasuredVideos,
+  findLongVideos,
+  findMoments,
+  findScreenshots,
+} from './real-findings';
 
 const t0 = Date.UTC(2026, 8, 27, 19, 0, 0);
 
@@ -91,4 +98,40 @@ test('favorites are never removal candidates', () => {
   const [group] = findMoments(items);
   const protectedIds = favoriteIds(items);
   expect(candidateIds(group, { protectedIds })).toEqual(['a', 'b']);
+});
+
+describe('findLargeVideos', () => {
+  const video = (id: string, bytes: number | null, durationMs = 120_000) =>
+    toPhotoItem(
+      {
+        id,
+        kind: 'video',
+        creationTime: t0,
+        modificationTime: 1,
+        width: 1920,
+        height: 1080,
+        durationMs,
+        isFavorite: false,
+        subtypes: [],
+        filename: null,
+      },
+      bytes,
+    );
+
+  test('lists only measured videos of 100 MB or more, biggest first', () => {
+    const items = [
+      video('a', 150_000_000),
+      video('b', null),
+      video('c', 900_000_000),
+      video('d', 50_000_000),
+    ];
+    const found = findLargeVideos(items);
+    expect(found.map((finding) => finding.assetId)).toEqual(['c', 'a']);
+    expect(found[0].reason).toBe('Video, 2:00 · 900 MB');
+  });
+
+  test('long videos already listed as large are not listed again', () => {
+    const items = [video('a', 150_000_000), video('b', null)];
+    expect(findLongUnmeasuredVideos(items).map((finding) => finding.assetId)).toEqual(['b']);
+  });
 });

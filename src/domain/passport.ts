@@ -73,11 +73,38 @@ export type PassportFrame = {
   problems: string[];
 };
 
+/**
+ * A person's fine-tuning of the automatic frame: moves as shares of the
+ * frame side (positive = frame moves right / down, so the head moves left /
+ * up in the photo), and zoom (> 1 makes the head bigger).
+ */
+export type FrameTweak = { offsetX: number; offsetY: number; zoom: number };
+
+export const NO_TWEAK: FrameTweak = { offsetX: 0, offsetY: 0, zoom: 1 };
+export const TWEAK_LIMITS = {
+  offset: 0.2,
+  offsetStep: 0.02,
+  zoomMin: 0.84,
+  zoomMax: 1.14,
+  zoomStep: 0.03,
+};
+
+export function clampTweak(tweak: FrameTweak): FrameTweak {
+  const round = (value: number) => Math.round(value * 1000) / 1000;
+  const limit = TWEAK_LIMITS.offset;
+  return {
+    offsetX: round(Math.max(-limit, Math.min(limit, tweak.offsetX))),
+    offsetY: round(Math.max(-limit, Math.min(limit, tweak.offsetY))),
+    zoom: round(Math.max(TWEAK_LIMITS.zoomMin, Math.min(TWEAK_LIMITS.zoomMax, tweak.zoom))),
+  };
+}
+
 export function passportFrame(
   imageWidth: number,
   imageHeight: number,
   faces: readonly FaceBox[],
   rules: PassportRules = US_PASSPORT,
+  tweak: FrameTweak = NO_TWEAK,
 ): PassportFrame | { problems: string[] } {
   if (faces.length === 0) return { problems: ['No face was found.'] };
   if (faces.length > 1)
@@ -91,10 +118,11 @@ export function passportFrame(
   const headHeight = chin - headTop;
   const centerX = (face.x + face.width / 2) * imageWidth;
 
-  const side = Math.round(headHeight / TARGET_HEAD);
+  const { offsetX, offsetY, zoom } = clampTweak(tweak);
+  const side = Math.round(headHeight / TARGET_HEAD / zoom);
   const problems: string[] = [];
-  let originX = Math.round(centerX - side / 2);
-  let originY = Math.round(headTop - TOP_MARGIN * side);
+  let originX = Math.round(centerX - side / 2 + offsetX * side);
+  let originY = Math.round(headTop - TOP_MARGIN * side + offsetY * side);
 
   if (side > imageWidth || side > imageHeight) {
     problems.push(
@@ -119,10 +147,19 @@ export function passportFrame(
 
   const headTopShare = (headTop - originY) / side;
   const chinShare = (chin - originY) / side;
+  const headShare = chinShare - headTopShare;
+  if (headShare < rules.headMin - 1e-9) {
+    problems.push('The head is too small for the official size. Zoom in a little.');
+  } else if (headShare > rules.headMax + 1e-9) {
+    problems.push('The head is too big for the official size. Zoom out a little.');
+  }
+  if (problems.length === 0 && headTopShare < 0.02) {
+    problems.push('The top of the head is too close to the edge. Move the head down.');
+  }
   return {
     crop: { originX, originY, width: side, height: side },
     outputPx: Math.max(rules.minPx, Math.min(rules.maxPx, side)),
-    headShare: chinShare - headTopShare,
+    headShare,
     headTop: headTopShare,
     chin: chinShare,
     problems,

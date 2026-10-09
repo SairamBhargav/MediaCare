@@ -124,9 +124,14 @@ export async function saveToPhotos(uri: string): Promise<string> {
   return asset.id;
 }
 
-export async function shareFile(uri: string) {
-  if (await isAvailableAsync())
-    await shareAsync(uri, { mimeType: 'image/jpeg', UTI: 'public.jpeg' });
+export async function shareFile(uri: string, kind: 'jpeg' | 'mp4' = 'jpeg') {
+  if (!(await isAvailableAsync())) return;
+  await shareAsync(
+    uri,
+    kind === 'mp4'
+      ? { mimeType: 'video/mp4', UTI: 'public.mpeg-4' }
+      : { mimeType: 'image/jpeg', UTI: 'public.jpeg' },
+  );
 }
 
 export function discardFile(uri: string) {

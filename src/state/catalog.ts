@@ -7,13 +7,15 @@ import {
   loadFingerprints,
   loadLastScanJob,
   loadProtectedIds,
+  loadSizes,
   loadVisualRows,
   markInterruptedScans,
   setProtected as persistProtected,
   type ScanJobRow,
+  type SizeRow,
 } from '@/db/catalog-repo';
 import { confirmedSets, type FingerprintRow } from '@/domain/exact-copies';
-import { toPhotoItem, type PhotoItem } from '@/domain/media';
+import { toPhotoItem, type PhotoItem, type PhotoRecord } from '@/domain/media';
 import type { VisualRow } from '@/domain/visual-records';
 import { activeCopyMethod } from '@/services/media/visual-analysis';
 import { useLibrarySession } from '@/state/library-session';
@@ -82,6 +84,7 @@ export const useCatalog = create<CatalogState>()((set, get) => ({
       visualRows,
       lastAnalysis,
       access,
+      sizeRows,
     ] = await Promise.all([
       loadAssets(),
       loadProtectedIds(),
@@ -91,8 +94,10 @@ export const useCatalog = create<CatalogState>()((set, get) => ({
       loadVisualRows().catch(() => [] as VisualRow[]),
       loadLastScanJob('visual-analysis').catch(() => null),
       getAccess().catch(() => 'unknown' as const),
+      loadSizes().catch(() => [] as SizeRow[]),
     ]);
-    const items = records.map(toPhotoItem);
+    const sizes = new Map(sizeRows.map((row) => [row.assetId, row]));
+    const items = records.map((record) => toPhotoItem(record, measuredBytes(record, sizes)));
     const byId = new Map(items.map((item) => [item.id, item]));
     set({
       items,
@@ -182,6 +187,13 @@ function startWatching() {
   } catch {
     // Not available on this platform; the catalog still works from scans.
   }
+}
+
+/** A stored size counts only while the item is the version that was measured. */
+function measuredBytes(record: PhotoRecord, sizes: ReadonlyMap<string, SizeRow>): number | null {
+  const row = sizes.get(record.id);
+  if (!row || row.status !== 'ok' || row.bytes === null) return null;
+  return row.assetVersion === record.modificationTime ? row.bytes : null;
 }
 
 export function hasPhotoAccess(access: CatalogState['access']): boolean {

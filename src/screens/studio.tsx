@@ -1,132 +1,164 @@
-import { useFocusEffect, router } from 'expo-router';
+import { Image } from 'expo-image';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
-import { EmptyState } from '@/components/empty-state';
-import { MediaTile } from '@/components/media-tile';
+import { Icon } from '@/components/icon';
+import { PressableScale } from '@/components/pressable-scale';
 import { Screen } from '@/components/screen';
 import { SectionHeader } from '@/components/section-header';
 import { Surface } from '@/components/surface';
 import { listDerivatives, type DerivativeRow } from '@/db/catalog-repo';
-import { formatBytes } from '@/domain/bytes';
-import { savings } from '@/domain/compress';
+import { creationLabel } from '@/domain/activity';
 import { scanLibrary } from '@/features/media/start-scan';
+import { STUDIO_ORDER, STUDIO_TOOLS, type StudioToolId } from '@/features/studio/tools';
+import { photoUri } from '@/services/media/photo-library';
 import { hasPhotoAccess, useCatalog } from '@/state/catalog';
-import { gutter, spacing } from '@/theme';
-
-const RECENT = 9;
-
-const madeOn = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
+import { gutter, radius, spacing, useTheme } from '@/theme';
 
 /**
- * Studio: tools that make new files from your photos. Only implemented tools
- * appear here (product rule). Phase 2 has one: smaller copies.
+ * Studio: every tool that makes something new from your photos and videos.
+ * Each card opens a picker for what the tool needs; results are always new
+ * items, and originals never change. Tools this build can't run say so.
  */
 export function StudioScreen() {
   const { width } = useWindowDimensions();
   const items = useCatalog((catalog) => catalog.items);
   const access = useCatalog((catalog) => catalog.access);
-  const [copies, setCopies] = useState<DerivativeRow[]>([]);
+  const [made, setMade] = useState<DerivativeRow[]>([]);
 
   useFocusEffect(
     useCallback(() => {
-      listDerivatives(10)
-        .then(setCopies)
-        .catch(() => setCopies([]));
+      listDerivatives(12)
+        .then(setMade)
+        .catch(() => setMade([]));
     }, []),
   );
 
-  const recent = items.filter((item) => item.kind === 'photo').slice(0, RECENT);
-  const tile = (width - gutter * 2 - spacing.xs * 2) / 3;
+  const cardWidth = (width - gutter * 2 - spacing.sm) / 2;
+  const scanned = items.length > 0;
 
   return (
     <Screen title="Studio">
-      {recent.length === 0 ? (
-        <Surface>
-          <EmptyState
-            icon="studio"
-            title="Make smaller copies of your photos"
-            message="Pick a photo, choose a quality or a target size, and save a lighter JPEG copy. Your original stays exactly as it is. Scan your library first so MediaCare can show your photos here."
-            action={
-              <Button
-                title={hasPhotoAccess(access) ? 'Scan my library' : 'Allow access and scan'}
-                icon="scan"
-                onPress={scanLibrary}
-              />
-            }
+      {!scanned ? (
+        <Surface elevation="raised" style={styles.intro}>
+          <AppText variant="headline">Make something from your photos</AppText>
+          <AppText variant="subhead" color="secondaryLabel">
+            Collages, slideshows, adjusted photos, passport photos and smaller copies. Your
+            originals always stay as they are. Scan your library first so MediaCare can show your
+            photos.
+          </AppText>
+          <Button
+            title={hasPhotoAccess(access) ? 'Scan my library' : 'Allow access and scan'}
+            icon="scan"
+            onPress={scanLibrary}
+            block
           />
         </Surface>
-      ) : (
+      ) : null}
+
+      <View style={styles.grid}>
+        {STUDIO_ORDER.map((id) => (
+          <ToolCard key={id} id={id} width={cardWidth} disabled={!scanned} />
+        ))}
+      </View>
+
+      {made.length > 0 ? (
         <View style={styles.section}>
           <SectionHeader
-            eyebrow="Tool"
-            title="Make a smaller copy"
+            title="Recently made"
             action={
-              <Button
-                title="All photos"
-                variant="plain"
-                onPress={() => router.navigate('/library')}
-              />
+              <Button title="Activity" variant="plain" onPress={() => router.push('/activity')} />
             }
           />
-          <AppText variant="subhead" color="secondaryLabel">
-            Choose a photo. You’ll see the real size of the copy before saving it, and your original
-            stays unchanged. You can also start from any photo in the Library.
-          </AppText>
-          <View style={styles.grid}>
-            {recent.map((item) => (
-              <MediaTile
-                key={item.id}
-                asset={item}
-                appearance="card"
-                style={{ width: tile }}
-                onPress={() => router.push(`/export/${encodeURIComponent(item.id)}`)}
-              />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.shelf}
+            contentContainerStyle={styles.shelfContent}
+          >
+            {made.map((row) => (
+              <MadeTile key={row.id} row={row} />
             ))}
-          </View>
-        </View>
-      )}
-
-      {copies.length > 0 ? (
-        <View style={styles.section}>
-          <SectionHeader eyebrow="History" title="Copies you made" />
-          <Surface style={styles.list}>
-            {copies.map((copy) => {
-              const verdict = savings(copy.source_bytes, copy.bytes);
-              return (
-                <View key={copy.id} style={styles.copyRow} accessible>
-                  <AppText variant="subhead" style={styles.numbers}>
-                    {copy.width} × {copy.height} · {formatBytes(copy.bytes)}
-                  </AppText>
-                  <AppText variant="footnote" color="secondaryLabel" style={styles.numbers}>
-                    {madeOn.format(new Date(copy.created_at))}
-                    {verdict.kind === 'smaller'
-                      ? ` · ${verdict.percent}% smaller than the original`
-                      : verdict.kind === 'not-smaller'
-                        ? ' · not smaller than the original'
-                        : ''}
-                  </AppText>
-                </View>
-              );
-            })}
-          </Surface>
+          </ScrollView>
         </View>
       ) : null}
     </Screen>
   );
 }
 
+function ToolCard({ id, width, disabled }: { id: StudioToolId; width: number; disabled: boolean }) {
+  const { colors } = useTheme();
+  const tool = STUDIO_TOOLS[id];
+  const available = tool.available();
+  return (
+    <PressableScale
+      onPress={() => router.push({ pathname: '/pick', params: { tool: id } })}
+      disabled={disabled || !available}
+      accessibilityRole="button"
+      accessibilityLabel={tool.title}
+      accessibilityHint={available ? tool.description : 'Needs the latest MediaCare app'}
+      accessibilityState={{ disabled: disabled || !available }}
+      style={[
+        styles.card,
+        { width, backgroundColor: colors.surface, opacity: available && !disabled ? 1 : 0.55 },
+      ]}
+    >
+      <View style={[styles.iconWell, { backgroundColor: colors.surfaceRaised }]}>
+        <Icon name={tool.icon} size={22} color={colors.accent} weight="semibold" />
+      </View>
+      <AppText variant="headline">{tool.title}</AppText>
+      <AppText variant="footnote" color="secondaryLabel">
+        {available ? tool.description : 'Needs the latest MediaCare app.'}
+      </AppText>
+    </PressableScale>
+  );
+}
+
+function MadeTile({ row }: { row: DerivativeRow }) {
+  const { colors } = useTheme();
+  const label = creationLabel(row.recipe, row.format);
+  return (
+    <View style={styles.made} accessible accessibilityLabel={label}>
+      {row.output_asset_id ? (
+        <Image
+          source={{ uri: photoUri(row.output_asset_id) }}
+          style={[styles.madeImage, { backgroundColor: colors.mediaPlaceholder }]}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={[styles.madeImage, { backgroundColor: colors.mediaPlaceholder }]} />
+      )}
+      <AppText variant="caption" color="secondaryLabel" numberOfLines={1}>
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  intro: { gap: spacing.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  card: {
+    gap: spacing.xxs,
+    padding: spacing.md,
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
+    minHeight: 150,
+  },
+  iconWell: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.control,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xxs,
+  },
   section: { gap: spacing.sm },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  list: { gap: spacing.sm },
-  copyRow: { gap: 2 },
-  numbers: { fontVariant: ['tabular-nums'] },
+  shelf: { marginHorizontal: -gutter },
+  shelfContent: { paddingHorizontal: gutter, gap: spacing.sm },
+  made: { width: 96, gap: spacing.xxs },
+  madeImage: { width: 96, height: 96, borderRadius: radius.control },
 });

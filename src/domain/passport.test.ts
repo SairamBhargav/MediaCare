@@ -45,3 +45,56 @@ test('a face filling the photo asks to step back', () => {
   const frame = passportFrame(3024, 4032, [huge]);
   expect(frame.problems.join(' ')).toMatch(/too close/);
 });
+
+describe('fine-tuning the frame', () => {
+  const base = passportFrame(3024, 4032, [face]);
+
+  test('zooming in makes the head bigger, within the official range', () => {
+    const zoomed = passportFrame(3024, 4032, [face], US_PASSPORT, {
+      offsetX: 0,
+      offsetY: 0,
+      zoom: 1.1,
+    });
+    if (!isFrame(base) || !isFrame(zoomed)) throw new Error('expected frames');
+    expect(zoomed.crop.width).toBeLessThan(base.crop.width);
+    expect(zoomed.headShare).toBeGreaterThan(base.headShare);
+    expect(zoomed.problems).toEqual([]);
+  });
+
+  test('zoom is limited so the head stays inside the official range', () => {
+    for (const zoom of [0.1, 0.84, 1.14, 9]) {
+      const frame = passportFrame(3024, 4032, [face], US_PASSPORT, {
+        offsetX: 0,
+        offsetY: 0,
+        zoom,
+      });
+      if (!isFrame(frame)) throw new Error('expected a frame');
+      expect(frame.headShare).toBeGreaterThanOrEqual(US_PASSPORT.headMin);
+      expect(frame.headShare).toBeLessThanOrEqual(US_PASSPORT.headMax);
+    }
+  });
+
+  test('moving the frame moves the crop by a share of its side', () => {
+    // A smaller face leaves room to move inside the photo.
+    const smaller = { x: 0.425, y: 0.5, width: 0.15, height: 0.18 };
+    const start = passportFrame(3024, 4032, [smaller]);
+    const moved = passportFrame(3024, 4032, [smaller], US_PASSPORT, {
+      offsetX: 0.1,
+      offsetY: 0,
+      zoom: 1,
+    });
+    if (!isFrame(start) || !isFrame(moved)) throw new Error('expected frames');
+    const shift = moved.crop.originX - start.crop.originX;
+    expect(Math.abs(shift - 0.1 * start.crop.width)).toBeLessThanOrEqual(1);
+    expect(moved.headShare).toBeCloseTo(start.headShare, 5);
+  });
+
+  test('moving the head to the top edge is flagged', () => {
+    const frame = passportFrame(3024, 4032, [face], US_PASSPORT, {
+      offsetX: 0,
+      offsetY: 0.2,
+      zoom: 1,
+    });
+    expect(frame.problems.join(' ')).toMatch(/top of the head/);
+  });
+});

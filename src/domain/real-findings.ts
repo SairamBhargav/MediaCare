@@ -1,4 +1,5 @@
 import type { Finding, GroupFinding, ItemFinding } from './findings';
+import { formatBytes } from './bytes';
 import { formatDuration, type PhotoItem } from './media';
 
 /**
@@ -100,6 +101,35 @@ export function findLongVideos(items: readonly PhotoItem[], minVideoMs = 60_000)
       assetId: item.id,
       reason: `Video, ${formatDuration(item.durationMs ?? 0)}`,
     }));
+}
+
+/** Videos at least this big (measured) are listed as large. 100 MB, SI. */
+export const LARGE_VIDEO_BYTES = 100_000_000;
+
+/**
+ * Large videos: only those whose file size was actually measured. Biggest
+ * first, with the measured size in the reason.
+ */
+export function findLargeVideos(
+  items: readonly PhotoItem[],
+  minBytes = LARGE_VIDEO_BYTES,
+): ItemFinding[] {
+  return items
+    .filter((item) => item.kind === 'video' && item.bytes !== null && item.bytes >= minBytes)
+    .sort((a, b) => (b.bytes ?? 0) - (a.bytes ?? 0))
+    .map((item) => ({
+      kind: 'item',
+      id: `large-${item.id}`,
+      category: 'large',
+      assetId: item.id,
+      reason: `Video${item.durationMs ? `, ${formatDuration(item.durationMs)}` : ''} · ${formatBytes(item.bytes ?? 0)}`,
+    }));
+}
+
+/** Long videos not already listed as large, so nothing is listed twice. */
+export function findLongUnmeasuredVideos(items: readonly PhotoItem[]): ItemFinding[] {
+  const large = new Set(findLargeVideos(items).map((finding) => finding.assetId));
+  return findLongVideos(items).filter((finding) => !large.has(finding.assetId));
 }
 
 export function findRealFindings(

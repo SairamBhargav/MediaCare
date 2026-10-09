@@ -278,7 +278,7 @@ export async function listDerivatives(limit = 20): Promise<DerivativeRow[]> {
 export async function clearCatalog() {
   const db = await getDatabase();
   await db.execAsync(
-    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints; DELETE FROM visual_scores; DELETE FROM removals;',
+    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints; DELETE FROM visual_scores; DELETE FROM removals; DELETE FROM media_sizes;',
   );
 }
 
@@ -395,11 +395,84 @@ export async function insertRemovals(
   });
 }
 
+export type SizeRow = {
+  assetId: string;
+  assetVersion: number | null;
+  status: string;
+  bytes: number | null;
+  measuredAt: number;
+};
+
+export async function loadSizes(): Promise<SizeRow[]> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<{
+    asset_id: string;
+    asset_version: number | null;
+    status: string;
+    bytes: number | null;
+    measured_at: number;
+  }>('SELECT asset_id, asset_version, status, bytes, measured_at FROM media_sizes');
+  return rows.map((row) => ({
+    assetId: row.asset_id,
+    assetVersion: row.asset_version,
+    status: row.status,
+    bytes: row.bytes,
+    measuredAt: row.measured_at,
+  }));
+}
+
+export async function saveSizes(rows: readonly SizeRow[]) {
+  if (rows.length === 0) return;
+  const db = await getDatabase();
+  await db.withExclusiveTransactionAsync(async (txn) => {
+    const statement = await txn.prepareAsync(
+      `INSERT OR REPLACE INTO media_sizes (asset_id, asset_version, status, bytes, measured_at)
+       VALUES ($id, $version, $status, $bytes, $at)`,
+    );
+    try {
+      for (const row of rows) {
+        await statement.executeAsync({
+          $id: row.assetId,
+          $version: row.assetVersion,
+          $status: row.status,
+          $bytes: row.bytes,
+          $at: row.measuredAt,
+        });
+      }
+    } finally {
+      await statement.finalizeAsync();
+    }
+  });
+}
+
+/** Every recorded removal outcome, newest first (bounded). */
+export async function loadRemovals(limit = 2000) {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<{
+    batch_id: string;
+    asset_id: string;
+    outcome: string;
+    reason: string | null;
+    at: number;
+  }>(
+    'SELECT batch_id, asset_id, outcome, reason, at FROM removals ORDER BY at DESC LIMIT ?',
+    limit,
+  );
+  return rows.map((row) => ({
+    batchId: row.batch_id,
+    assetId: row.asset_id,
+    outcome: row.outcome,
+    reason: row.reason,
+    at: row.at,
+  }));
+}
+
 /** Fingerprints of photos no longer in the catalog are dropped with them. */
 async function removeOrphanFingerprints() {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM fingerprints WHERE asset_id NOT IN (SELECT id FROM assets)');
   await db.runAsync('DELETE FROM visual_scores WHERE asset_id NOT IN (SELECT id FROM assets)');
+  await db.runAsync('DELETE FROM media_sizes WHERE asset_id NOT IN (SELECT id FROM assets)');
 }
 
 type VisualDbRow = {

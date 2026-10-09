@@ -40,8 +40,7 @@ import {
   type TileTransform,
 } from '@/domain/viewer-geometry';
 import { findMediaItem, isSample, type MediaItem } from '@/features/media/registry';
-import { TOOLS, type ToolKind } from '@/screens/tool';
-import { visualAnalysisAvailable } from '@/services/media/visual-analysis';
+import { PHOTO_EDIT_TOOLS, STUDIO_TOOLS } from '@/features/studio/tools';
 import { useCatalog } from '@/state/catalog';
 import { useViewerOrigin } from '@/state/viewer-origin';
 import { showPhotoActions } from '@/utils/photo-actions';
@@ -379,6 +378,7 @@ function Toolbar({
   const setProtected = useCatalog((catalog) => catalog.setProtected);
   const sample = isSample(item);
   const isProtected = protectedIds.has(item.id);
+  const editTools = PHOTO_EDIT_TOOLS.filter((tool) => STUDIO_TOOLS[tool].available());
 
   return (
     <View style={styles.toolbar}>
@@ -408,25 +408,30 @@ function Toolbar({
           style={styles.toolbarButton}
         />
       ) : null}
-      {!sample && item.kind === 'photo' && visualAnalysisAvailable() ? (
+      {!sample && item.kind === 'photo' && editTools.length > 0 ? (
         <Button
           title="Edit"
-          icon="enhance"
+          icon="adjust"
           variant="secondary"
           onPress={() =>
-            showPhotoActions('Edit a copy', [
-              ...(Object.keys(TOOLS) as ToolKind[]).map((tool) => ({
-                label: TOOLS[tool].title,
-                onPress: () =>
-                  router.push({ pathname: '/tool/[id]', params: { id: item.id, tool } }),
+            showPhotoActions(
+              'Edit a copy',
+              editTools.map((tool) => ({
+                label: STUDIO_TOOLS[tool].title,
+                onPress: () => router.push(STUDIO_TOOLS[tool].route(item.id)),
               })),
-              {
-                label: 'Passport photo (U.S.)',
-                onPress: () => router.push({ pathname: '/passport/[id]', params: { id: item.id } }),
-              },
-            ])
+            )
           }
-          accessibilityHint="Enhance, fix red-eye or remove the background. Saves a new photo."
+          accessibilityHint="Adjust, enhance, fix red-eye, remove the background or make a passport photo. Saves a new photo."
+          style={styles.toolbarButton}
+        />
+      ) : null}
+      {!sample && item.kind === 'video' ? (
+        <Button
+          title="Play & edit"
+          icon="play"
+          onPress={() => router.push({ pathname: '/video/[id]', params: { id: item.id } })}
+          accessibilityHint="Plays the video. You can also trim it or make a smaller copy."
           style={styles.toolbarButton}
         />
       ) : null}
