@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { memo } from 'react';
 import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
@@ -22,12 +23,18 @@ import type { PhotoAction } from '@/utils/photo-actions';
  * VoiceOver action) to keep it instead or to protect it. Every choice is
  * reversible and kept for the session; nothing here removes anything.
  */
-export function GroupReview({ group }: { group: GroupFinding }) {
+export const GroupReview = memo(function GroupReview({ group }: { group: GroupFinding }) {
   const { colors } = useTheme();
-  const review = useReviewSession();
-  const reviewGroup = toReviewGroup(group, review);
-  const selection = selectionFor(group, review);
-  const skipped = review.skippedIds.has(group.id);
+  // Narrow subscriptions: a choice in another group doesn't redraw this one.
+  const stored = useReviewSession((state) => state.selections[group.id]);
+  const protectedIds = useReviewSession((state) => state.protectedIds);
+  const skipped = useReviewSession((state) => state.skippedIds.has(group.id));
+  const review = useReviewSession.getState();
+  const reviewGroup = toReviewGroup(group, { protectedIds });
+  const selection = selectionFor(group, {
+    selections: stored ? { [group.id]: stored } : {},
+    protectedIds,
+  });
   const members = group.memberIds.map(getMediaItem);
   const selectableIds = group.memberIds.filter((id) => canSelect(reviewGroup, selection, id));
   // Only while the suggested keeper stands: a keeper the person chose resets the suggestion.
@@ -71,7 +78,7 @@ export function GroupReview({ group }: { group: GroupFinding }) {
         },
       });
     }
-    const isProtected = review.protectedIds.has(assetId);
+    const isProtected = protectedIds.has(assetId);
     actions.push({
       label: isProtected ? 'Unprotect' : 'Protect',
       onPress: () => review.toggleProtected(assetId),
@@ -132,7 +139,7 @@ export function GroupReview({ group }: { group: GroupFinding }) {
       <View style={styles.grid}>
         {members.map((asset) => {
           const isKeeper = asset.id === selection.keeperId;
-          const isProtected = review.protectedIds.has(asset.id);
+          const isProtected = protectedIds.has(asset.id);
           return (
             <View key={asset.id} style={styles.cell}>
               <MediaTile
@@ -173,7 +180,7 @@ export function GroupReview({ group }: { group: GroupFinding }) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   section: { gap: spacing.md },

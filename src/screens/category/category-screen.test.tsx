@@ -116,3 +116,18 @@ test('Compare escapes group ids, which contain ph:// identifiers for real photos
   // A real id like "moments-ph://UUID/L0/001" must stay a single path segment.
   expect(`/review/${encodeURIComponent('moments-ph://A1B2/L0/001')}`.split('/')).toHaveLength(3);
 });
+
+test('a big category draws only the first groups, not all of them at once', async () => {
+  // 60 copies of the sample groups, each with its own id.
+  const many: GroupFinding[] = Array.from({ length: 60 }, (_, index) => ({
+    ...similarGroups[index % similarGroups.length],
+    id: `similar-copy-${index}`,
+    title: `Group ${index + 1}`,
+  }));
+  useCleanSession.setState({
+    state: { status: 'results', sample: true, analyzed: 1, total: 1, findings: many },
+  });
+  await render(<CategoryScreen category="similar" />);
+  expect(screen.getByText('Group 1')).toBeOnTheScreen();
+  expect(screen.queryByText('Group 60')).toBeNull();
+});
