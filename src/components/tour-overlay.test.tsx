@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { registerAnchor } from '@/features/tour/anchors';
 import { TOUR_STEPS } from '@/features/tour/steps';
 import { usePreferences } from '@/state/preferences';
 import { useTour } from '@/state/tour';
@@ -52,4 +53,27 @@ test('shows each step with Next and Back, and Skip ends it for good', async () =
   await fireEvent.press(screen.getByLabelText('Skip tour'));
   expect(useTour.getState().active).toBe(false);
   expect(usePreferences.getState().tourSeen).toBe(true);
+});
+
+test('a step with a highlighted control draws the ring and card without key clashes', async () => {
+  const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+  const stepIndex = TOUR_STEPS.findIndex((step) => step.target === 'clean.action');
+  const unregister = registerAnchor('clean.action', async () => ({
+    x: 20,
+    y: 200,
+    width: 300,
+    height: 50,
+  }));
+  useTour.setState({ active: true, index: stepIndex });
+  await render(<TourOverlay />);
+  await settle();
+  await fireEvent.press(screen.getByLabelText('Next'));
+  await settle();
+  await fireEvent.press(screen.getByLabelText('Back'));
+  await settle();
+  expect(screen.getByText(TOUR_STEPS[stepIndex].title)).toBeOnTheScreen();
+  const keyWarnings = errors.mock.calls.filter((call) => String(call[0]).includes('same key'));
+  expect(keyWarnings).toEqual([]);
+  unregister();
+  errors.mockRestore();
 });

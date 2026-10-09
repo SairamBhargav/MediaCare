@@ -202,7 +202,7 @@ function Tour({ index }: { index: number }) {
       {/* The highlighted control: touchable only on "tap this" steps. */}
       {target && !locating ? (
         <Animated.View
-          key={step.id}
+          key={`ring-${step.id}`}
           entering={FadeIn.duration(duration.surface)}
           pointerEvents={step.tapToContinue ? 'none' : 'auto'}
           style={[
@@ -221,7 +221,7 @@ function Tour({ index }: { index: number }) {
 
       {!locating ? (
         <Animated.View
-          key={step.id}
+          key={`card-${step.id}`}
           entering={FadeIn.duration(duration.state)}
           exiting={FadeOut.duration(duration.press)}
           style={[styles.cardWrap, cardPosition]}
