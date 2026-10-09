@@ -1,7 +1,27 @@
 # Status
 
-**Current phase:** Phase 1 polish and P2-DUP-001 Find exact copies done in code; awaiting the owner's device test
-**Last updated:** 2026-10-03
+**Current phase:** All main features done in code (Phases 3–6 slice, native v3); next is one development build to compile and test them, then a production build to TestFlight for the owner and his dad
+**Last updated:** 2026-10-09
+
+## Session 2026-10-09 (second PC set up; features, UI rework, release prep)
+
+New Windows PC set up: Node 24.21, `npm ci`, all checks pass. Owner decisions: all remaining main features today (activity, date jump, edits, collage, video, slideshow, passport fine-tuning, Studio hub); **dev build first, then production → TestFlight**; dad as an **internal** tester; UI rework of **Clean home** and an overall **dad-friendly** pass.
+
+Done in code (450 tests, doctor 21/21, iOS bundle 4.6 MB), see CHANGELOG 0.2.0:
+
+- Studio hub + picker; Adjust; Collage; Slideshow; Video trim/smaller copy and playback; Large videos from measured sizes (migration 6); passport fine-tuning; Activity; Library Jump to.
+- Clean: one "Check my photos" button (photo check, then exact copies), prioritized findings list. Settings: Bigger text, Activity.
+- Release builds can't remove photos (ADR-0008); permission strings and privacy manifest updated; version 0.2.0.
+- Deferred with reason: blur restoration and object removal (no reliable on-device model; P5-ENH/P5-INP).
+
+**Not compiled yet**: native v3 Swift (`Creations.swift`, `VideoTools.swift`, module registrations). Everything native is "awaiting build", nothing here is device-tested.
+
+### Next (owner, interactive; each build uses one EAS credit)
+
+1. `npx eas-cli@latest login` (once on this PC).
+2. `npx eas-cli@latest build --profile development --platform ios` → install → `npx expo start --dev-client --clear`.
+3. Test the "What to test" list in docs/SETUP_WINDOWS.md Stage 3, plus: Adjust turn direction and warmth direction; a slideshow of ~10 photos; trim a video with "Start here"; Large videos after Check my photos. Report anything wrong (and the EAS log link if the build fails).
+4. When it's good: `npx eas-cli@latest build --profile production --platform ios --auto-submit`, then add dad as an internal tester (SETUP_WINDOWS.md Stage 3).
 
 ## Completed
 
@@ -9,17 +29,18 @@
 - **Phase 1**: P1-SET-002, P1-CLN-001, P1-JOB-001, P1-JOB-002, P1-REV-001, P1-REV-002, P1-REV-003 (design checkpoint pending), P1-REV-004, P1-LIB-001..005, P1-ONB-001..003, P1-MOT-001, P1-UI-006, P1-UI-008, P1-UI-009, P1-QA-001 (automated part; device walkthrough pending). P1-UI-007 skipped (optional; licensing).
 - **Phase 2**: P2-DUP-001 (awaiting device), P2-MEDIA-001/002/003/004/006, P2-DB-001..004, P2-JOB-001..003, P2-LIB-001, P2-EXP-001..007, P2-FIND-001, P2-UI-001, P2-DIAG-001. Spike S1 answered from source (needs dev build). Details in [docs/BACKLOG.md](docs/BACKLOG.md).
 
-## Checks actually run (Windows 11, Node 22.23.3, 2026-10-03, after Phase 1 polish)
+## Checks actually run (Windows 11, Node 24.21.0, 2026-10-09, after native v3 and UI rework)
 
-| Check                  | Result                                      |
-| ---------------------- | ------------------------------------------- |
-| `npm run typecheck`    | ✅ pass (`.expo/types` set aside, as in CI) |
-| `npm run lint`         | ✅ pass                                     |
-| `npm run format:check` | ✅ pass                                     |
-| `npm test`             | ✅ 346/346 tests                            |
-| `npm run doctor`       | ✅ 21/21                                    |
-| `npm run bundle:ios`   | ✅ iOS Hermes bundle (4.3 MB)               |
-| Physical iPhone        | ⏳ not run yet                              |
+| Check                  | Result                                     |
+| ---------------------- | ------------------------------------------ |
+| `npm run typecheck`    | ✅ pass                                    |
+| `npm run lint`         | ✅ pass                                    |
+| `npm run format:check` | ✅ pass                                    |
+| `npm test`             | ✅ 450/450 tests                           |
+| `npm run doctor`       | ✅ 21/21                                   |
+| `npm run bundle:ios`   | ✅ iOS Hermes bundle (4.6 MB)              |
+| Swift (native v3)      | ⏳ compiles only in an EAS build           |
+| Physical iPhone        | ⏳ awaiting owner test after the dev build |
 
 ## Device test 1 (owner, 2026-10-03)
 

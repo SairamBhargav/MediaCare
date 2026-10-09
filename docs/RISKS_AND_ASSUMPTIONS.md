@@ -33,10 +33,10 @@ Ranked by impact × likelihood. Review at each phase exit.
 
 ## Owner decisions pending
 
-| Decision                                               | Needed by                 | Default if not decided                                                                                            |
-| ------------------------------------------------------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Apple Developer Program membership                     | Phase 3 start             | Stay in Expo Go; Phase 3 blocked                                                                                  |
-| Bundle identifier (e.g. `com.sairambhargav.mediacare`) | First `eas build`         | Not set; EAS will prompt                                                                                          |
-| Final brand name                                       | Before TestFlight         | Keep "MediaCare"                                                                                                  |
-| Repository license                                     | Before any public release | None: all rights reserved (the template's MIT license file was removed because it named Expo as copyright holder) |
-| Any cloud processing / budget                          | Phase 5                   | None                                                                                                              |
+| Decision                           | Needed by                 | Default if not decided                                                                                            |
+| ---------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Apple Developer Program membership | Phase 3 start             | Stay in Expo Go; Phase 3 blocked                                                                                  |
+| Bundle identifier                  | First `eas build`         | **Decided**: `com.bhargav.mediacare` (2026-10-03)                                                                 |
+| Final brand name                   | Before App Store release  | Keep "MediaCare" for TestFlight; if App Store Connect refuses the name, use e.g. "MediaCare Photos"               |
+| Repository license                 | Before any public release | None: all rights reserved (the template's MIT license file was removed because it named Expo as copyright holder) |
+| Any cloud processing / budget      | Phase 5                   | None                                                                                                              |

@@ -98,6 +98,19 @@ Built from Device evidence 1 and the installed SDK 57 sources:
 
 All read with `isNetworkAccessAllowed = false`: iCloud-only photos are reported, not downloaded. Thresholds are provisional (`VISUAL_THRESHOLDS`), to be tuned with Diagnostics → Vision check.
 
+## Creation tools, native v3 (2026-10-09, written, not yet compiled)
+
+| Capability                      | Delivery            | Status                                    | Notes                                                                                                              |
+| ------------------------------- | ------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Adjust (geometry, light, color) | MediaCare app build | `implemented` · awaiting build and device | Core Image: `oriented`, rotate+scale to cover, crop, `CIExposureAdjust`, `CIColorControls`, `CITemperatureAndTint` |
+| Collage                         | MediaCare app build | `implemented` · awaiting build and device | Cells composited over a solid background; layout geometry in JS (tested), preview drawn in JS                      |
+| Video export / trim             | MediaCare app build | `implemented` · awaiting build and device | `AVAssetExportSession` presets 1080/720/540 or passthrough; `timeRange` for trims; MP4 when supported              |
+| Slideshow                       | MediaCare app build | `implemented` · awaiting build and device | `AVAssetWriter` H.264, 30 fps, each slide rendered once; dissolve between slides                                   |
+| Video file sizes                | MediaCare app build | `implemented` · awaiting build and device | `requestAVAsset` (network off) → `AVURLAsset` file size; slo-mo compositions and iCloud-only videos stay unknown   |
+| Video playback                  | Expo Go and app     | `documented-not-tested`                   | expo-video with the `ph://` id (supported through the player constructor on iOS, SDK 57 docs)                      |
+
+Direction of quarter turns and of warmth (`CITemperatureAndTint` target above 6500 K = warmer) are from documentation; confirm on device.
+
 ## Feasibility spikes
 
 Each spike is time-boxed, produces a short report in `docs/spikes/`, and updates this table.

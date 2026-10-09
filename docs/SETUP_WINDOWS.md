@@ -99,6 +99,44 @@ Open the MediaCare dev app on the phone; it finds the server (same Wi-Fi rules a
 
 **Debugging without Xcode**: EAS build logs (web dashboard), Metro logs and the JS debugger (`j`), on-device crash reports (Settings → Privacy & Security → Analytics & Improvements → Analytics Data). For hard native crashes, a short rented remote Mac session is the fallback, not the workflow.
 
-## Stage 3: Preview / TestFlight (after Phase 3)
+## Setting up a second PC
 
-`preview` profile for internal installs that behave like release (use it for performance checks). `production` profile + `eas submit` for TestFlight. Submission works from Windows. Store requirements (privacy manifest, permission strings, review guidelines) get researched at that point, not assumed now.
+Same as Stage 1: install Node (22 or newer), Git, then `git clone`, `npm ci`, `npm run check`. EAS needs a one-time `npx eas-cli@latest login` on each PC; the EAS project, Apple credentials and registered iPhone live on Expo's servers, so nothing else carries over by hand. If Jest fails with `EPERM … jest-transform-cache` on the first run, run `npx jest --clearCache` and run the tests again (a Windows file-lock race in Jest's cache, not a test failure).
+
+## Stage 3: TestFlight (owner and family testers)
+
+`production` profile + `eas submit` for TestFlight. Submission works from Windows. Release builds differ from development builds in two deliberate ways: **removing photos is not available** (ADR-0008) and the Developer section of Settings is hidden.
+
+Already in `app.json`: permission strings that describe what the app does, `ITSAppUsesNonExemptEncryption: false` (no export-compliance question), and a privacy manifest declaring the standard required-reason APIs and no tracking or data collection.
+
+**1. Test the native code first** (one development build; uses a build credit):
+
+```powershell
+npx eas-cli@latest login
+npx eas-cli@latest build --profile development --platform ios
+```
+
+Install it from the link on the iPhone, run `npx expo start --dev-client --clear`, and go through the "What to test" list below yourself. Fix anything that breaks before step 2.
+
+**2. Production build, sent straight to TestFlight** (one build credit):
+
+```powershell
+npx eas-cli@latest build --profile production --platform ios --auto-submit
+```
+
+The first time, EAS asks for your Apple ID (with two-factor code) to create the App Store distribution certificate and profile, and asks whether to create the app in App Store Connect. Say yes. If the name "MediaCare" is already taken on the App Store, App Store Connect will refuse it: pick another app name there (for example "MediaCare Photos"); the bundle identifier stays `com.bhargav.mediacare`. Build numbers increase automatically.
+
+**3. Add your dad as an internal tester** (no Apple review needed):
+
+1. [App Store Connect](https://appstoreconnect.apple.com) → **Users and Access** → **+** → his Apple ID email, role **Customer Support** (or Developer) → Invite. He accepts the email.
+2. App Store Connect → **Apps** → MediaCare → **TestFlight** → **Internal Testing** → **+** create a group (e.g. "Family") → add yourself and him → add the build once it says "Ready to Submit"/"Complete" (processing takes 5–30 minutes after upload).
+3. He installs **TestFlight** from the App Store on his iPhone, opens the invite, taps **Install**. New builds appear there automatically.
+
+**What to test** (paste into TestFlight → the build → Test Details):
+
+> MediaCare tidies up and improves your photos on your iPhone. Nothing is uploaded and this version never deletes anything.
+>
+> 1. Clean: tap Scan my library, then Check my photos. Look at Similar shots, Exact copies, Large videos and Possibly blurry. Do the suggested "keep" photos make sense?
+> 2. Studio: try Adjust, Collage, Slideshow, Trim or shrink a video, Smaller copy and Passport photo. Each saves a new item to Photos; your originals stay.
+> 3. Settings → Bigger text if the text is small.
+> 4. Tell us anything confusing, slow or wrong (screenshot + a sentence is perfect).

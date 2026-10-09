@@ -76,20 +76,33 @@ Status: `done` · `next` · `todo` · `blocked (reason)`.
 
 ## Phase 3 and 4 — in progress (2026-10-07)
 
-| ID               | Goal                                                                  | Status                                                                              |
-| ---------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| P3-NAT-001       | Local native module (Apple Vision, Core Image)                        | written; awaiting first development build                                           |
-| P3-SIM-001       | Similar shots by look (feature prints), not timing                    | done in code; thresholds to tune on device                                          |
-| P3-KEEP-001      | Keeper suggestion with reasons (favorite, sharpest, eyes open, faces) | done in code                                                                        |
-| P3-BLUR-001      | Possibly blurry (sharpest tile)                                       | done in code; tune on device                                                        |
-| P3-EYES-001      | Eyes closed (ignores small faces and winks)                           | done in code; tune on device                                                        |
-| P3-EXPO-001      | Too dark / too bright                                                 | done in code                                                                        |
-| P3-JOB-001       | Pausable "Look at my photos" job + migration 3                        | done in code                                                                        |
-| P3-DIAG-001      | Diagnostics → Vision check                                            | done in code                                                                        |
-| P4-TOOL-001..003 | Enhance, Fix red-eye, Remove background (new photos)                  | done in code                                                                        |
-| P3-DUP-002       | Exact copies for edited and Live Photos (original resources)          | done in code (native v2; awaiting next build)                                       |
-| P3-DEL-001       | Safe removal, proven on purpose-made test photos                      | built (off by default, Settings switch); awaiting owner test on purpose-made photos |
-| P5-PASS-001      | Passport photos                                                       | done in code (U.S. rules, checked 2026-10-08); awaiting owner test                  |
+| ID                      | Goal                                                                                                             | Status                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| P3-NAT-001              | Local native module (Apple Vision, Core Image)                                                                   | written; awaiting first development build                                           |
+| P3-SIM-001              | Similar shots by look (feature prints), not timing                                                               | done in code; thresholds to tune on device                                          |
+| P3-KEEP-001             | Keeper suggestion with reasons (favorite, sharpest, eyes open, faces)                                            | done in code                                                                        |
+| P3-BLUR-001             | Possibly blurry (sharpest tile)                                                                                  | done in code; tune on device                                                        |
+| P3-EYES-001             | Eyes closed (ignores small faces and winks)                                                                      | done in code; tune on device                                                        |
+| P3-EXPO-001             | Too dark / too bright                                                                                            | done in code                                                                        |
+| P3-JOB-001              | Pausable "Look at my photos" job + migration 3                                                                   | done in code                                                                        |
+| P3-DIAG-001             | Diagnostics → Vision check                                                                                       | done in code                                                                        |
+| P4-TOOL-001..003        | Enhance, Fix red-eye, Remove background (new photos)                                                             | done in code                                                                        |
+| P3-DUP-002              | Exact copies for edited and Live Photos (original resources)                                                     | done in code (native v2; awaiting next build)                                       |
+| P3-DEL-001              | Safe removal, proven on purpose-made test photos                                                                 | built (off by default, Settings switch); awaiting owner test on purpose-made photos |
+| P5-PASS-001             | Passport photos                                                                                                  | done in code (U.S. rules, checked 2026-10-08); awaiting owner test                  |
+| P5-PASS-002             | Passport fine-tuning: move the head, bigger/smaller, within the rules                                            | done in code (2026-10-09); works with the current build after a reload              |
+| P3-ACT-001              | Activity: removal outcomes per batch, Recently Deleted guidance, made items                                      | done in code (2026-10-09); JS only                                                  |
+| P2-LIB-002              | Library "Jump to" a year and month                                                                               | done in code (2026-10-09); JS only                                                  |
+| P4-EDIT-001             | Adjust: turn, flip, straighten, crop shape, brightness/contrast/color/warmth                                     | done in code (native v3; awaiting next build)                                       |
+| P5-COL-001              | Collage: 2–6 photos, layouts, shapes, borders                                                                    | done in code (native v3; awaiting next build); preview works in Expo Go             |
+| P5-SLD-001              | Slideshow: photos to H.264 video, fades, slow zoom, no music                                                     | done in code (native v3; awaiting next build)                                       |
+| P6-VID-001              | Video: play, trim, smaller copy (AVFoundation), measured sizes                                                   | done in code (native v3; awaiting next build); playback works in Expo Go            |
+| P6-VID-002              | Large videos finding from measured sizes (migration 6)                                                           | done in code (native v3; measured during "Check my photos")                         |
+| P5-STU-001              | Studio hub: every tool, picker, recently made                                                                    | done in code (2026-10-09)                                                           |
+| P1-UI-010               | Clean rework: one "Check my photos" button, prioritized findings list                                            | done in code (2026-10-09)                                                           |
+| P1-UI-011               | Bigger text setting (dad-friendly)                                                                               | done in code (2026-10-09)                                                           |
+| P3-REL-001              | Release prep: removal off in release builds (ADR-0008), permission strings, privacy manifest, TestFlight runbook | done; build awaiting owner go-ahead                                                 |
+| P5-ENH-001 / P5-INP-001 | Blur restoration, object removal                                                                                 | deferred: no reliable on-device model; a fake would break the no-fabrication rule   |
 
 ## Phase 3+ (outline)
 

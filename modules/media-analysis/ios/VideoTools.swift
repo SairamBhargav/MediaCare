@@ -80,7 +80,8 @@ enum VideoTools {
       guard let asset = fetchVideo(id) else { return ["id": id, "status": "missing"] }
       let (avAsset, inCloud) = loadAVAsset(asset)
       guard let urlAsset = avAsset as? AVURLAsset else {
-        return ["id": id, "status": inCloud || avAsset == nil ? "in-icloud" : "unsupported"]
+        let status = inCloud ? "in-icloud" : (avAsset == nil ? "failed" : "unsupported")
+        return ["id": id, "status": status]
       }
       let values = try? urlAsset.url.resourceValues(forKeys: [.fileSizeKey])
       guard let bytes = values?.fileSize else { return ["id": id, "status": "failed"] }
@@ -238,7 +239,8 @@ enum VideoTools {
       CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
       guard let pixels = buffer else { break }
       MediaTools.context.render(image, to: pixels, bounds: canvas, colorSpace: MediaTools.sRGB)
-      adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
+      guard adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
+      else { break }
       if frame % 10 == 0 { progress(Double(frame) / Double(total)) }
     }
 

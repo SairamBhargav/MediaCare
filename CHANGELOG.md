@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0: Studio, video and the first TestFlight build (2026-10-09)
+
+- **Studio** is now a hub with every tool; each opens a picker for what it needs. Recently made items show with thumbnails.
+- **Adjust** (new): turn, flip, straighten, crop to a shape (square, 4:5, 3:2, 16:9, 9:16), and brightness, contrast, color and warmth, with a live preview. Saves a new full-size photo.
+- **Collage** (new): 2 to 6 photos, several layouts per count, four shapes, borders in white, black or cream. The preview is live; saving makes a new photo.
+- **Slideshow** (new): up to 60 photos become a video with fades and an optional slow zoom, wide, tall or square. No music. Photos only in iCloud show as black and are named.
+- **Video** (new): play any video, trim the start and end ("Start here" / "End here" from the player), and/or make a smaller copy at 1080p, 720p or 540p. The real size and how it compares with the original are shown before saving.
+- **Large videos**: "Check my photos" now also measures video file sizes on this iPhone (migration 6); videos of 100 MB or more are listed biggest first with their real size. Long videos already listed aren't listed twice.
+- **Passport photo**: fine-tune the framing by moving the head or making it bigger or smaller; it never goes outside the official head-size range, and saving waits until the frame is valid.
+- **Activity** (Settings → Activity, Studio → Activity): every removal with exactly what happened (moved, skipped and why, canceled), where to recover photos, and everything MediaCare made.
+- **Library → Jump to** a year and month.
+- **Clean** reworked: one **Check my photos** button runs the photo check and then exact copies; findings are a simple list with what matters most first (exact copies, similar shots, large videos…); measured video sizes appear in the summary; coverage details moved to the bottom.
+- **Settings → Bigger text** steps all text up on top of iOS Text Size.
+- Release builds (TestFlight) never remove photos (ADR-0008) and hide developer settings. Photo permission texts now describe what the app does; privacy manifest added.
+- Native module v3 (needs a new app build): Core Image adjustments, collage compositor, AVFoundation export and trim, slideshow writer, measured video sizes, progress events and cancel.
+
 ## Unreleased: Phase 3 and 4 (first native build pending)
 
 - Native module `modules/media-analysis` (Swift, Apple Vision and Core Image), compiled only in the MediaCare app build: per-photo feature print, sharpness (whole frame and sharpest area), exposure, faces with capture quality and eye openness; plus Enhance, Fix red-eye and Remove background tools. Only renditions already on the iPhone are used; nothing is downloaded or uploaded.
