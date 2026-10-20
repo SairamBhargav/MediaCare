@@ -9,6 +9,8 @@ test('valid stored preferences are kept as-is', () => {
     allowRemoval: true,
     largerText: true,
     tourSeen: true,
+    includeICloud: true,
+    icloudOnMobileData: true,
   };
   expect(sanitizePreferences(stored)).toEqual(stored);
 });
@@ -29,6 +31,8 @@ test('invalid fields fall back individually; valid ones survive', () => {
     allowRemoval: false,
     largerText: false,
     tourSeen: false,
+    includeICloud: false,
+    icloudOnMobileData: false,
   });
 });
 

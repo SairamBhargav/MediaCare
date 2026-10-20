@@ -278,7 +278,7 @@ export async function listDerivatives(limit = 20): Promise<DerivativeRow[]> {
 export async function clearCatalog() {
   const db = await getDatabase();
   await db.execAsync(
-    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints; DELETE FROM visual_scores; DELETE FROM removals; DELETE FROM media_sizes;',
+    'DELETE FROM assets; DELETE FROM asset_flags; DELETE FROM jobs; DELETE FROM derivatives; DELETE FROM fingerprints; DELETE FROM visual_scores; DELETE FROM removals; DELETE FROM media_sizes; DELETE FROM face_scans; DELETE FROM faces; DELETE FROM people;',
   );
 }
 
@@ -473,6 +473,11 @@ async function removeOrphanFingerprints() {
   await db.runAsync('DELETE FROM fingerprints WHERE asset_id NOT IN (SELECT id FROM assets)');
   await db.runAsync('DELETE FROM visual_scores WHERE asset_id NOT IN (SELECT id FROM assets)');
   await db.runAsync('DELETE FROM media_sizes WHERE asset_id NOT IN (SELECT id FROM assets)');
+  await db.runAsync('DELETE FROM face_scans WHERE asset_id NOT IN (SELECT id FROM assets)');
+  await db.runAsync('DELETE FROM faces WHERE asset_id NOT IN (SELECT id FROM assets)');
+  await db.runAsync(
+    'DELETE FROM people WHERE id NOT IN (SELECT person_id FROM faces WHERE person_id IS NOT NULL)',
+  );
 }
 
 type VisualDbRow = {

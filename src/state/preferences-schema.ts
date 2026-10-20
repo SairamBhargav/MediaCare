@@ -19,6 +19,10 @@ export type Preferences = {
   largerText: boolean;
   /** The guided tour was finished or skipped. */
   tourSeen: boolean;
+  /** Checks may download photos stored only in iCloud (ADR-0009). Off until the user turns it on. */
+  includeICloud: boolean;
+  /** ...also on mobile data, not only Wi-Fi. */
+  icloudOnMobileData: boolean;
 };
 
 export const PREFERENCES_VERSION = 1;
@@ -31,6 +35,8 @@ export const defaultPreferences: Preferences = {
   allowRemoval: false,
   largerText: false,
   tourSeen: false,
+  includeICloud: false,
+  icloudOnMobileData: false,
 };
 
 const APPEARANCES: readonly AppearancePreference[] = ['system', 'light', 'dark'];
@@ -59,5 +65,13 @@ export function sanitizePreferences(input: unknown): Preferences {
     largerText:
       typeof record.largerText === 'boolean' ? record.largerText : defaultPreferences.largerText,
     tourSeen: typeof record.tourSeen === 'boolean' ? record.tourSeen : defaultPreferences.tourSeen,
+    includeICloud:
+      typeof record.includeICloud === 'boolean'
+        ? record.includeICloud
+        : defaultPreferences.includeICloud,
+    icloudOnMobileData:
+      typeof record.icloudOnMobileData === 'boolean'
+        ? record.icloudOnMobileData
+        : defaultPreferences.icloudOnMobileData,
   };
 }

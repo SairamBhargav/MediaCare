@@ -89,7 +89,7 @@ MVP (end of Phase 3) = stories above, iPhone, local only.
 
 - Automatic deletion of anything, ever.
 - Uploading a library to a server; accounts; ads; paywall during bootstrap.
-- Face _identification_ or identity profiles.
+- Face identification beyond the user's own device: no face data, names or fingerprints leave the iPhone, no matching against anyone else's photos, no cloud recognition. (On-device People, grouping the user's own photos by face, was accepted 2026-10-19: ADR-0011.)
 - Editing the Photos database directly or rearranging Photos' storage.
 - Promising continuous background scanning, a fixed scan speed, or "AI" quality scores without evaluation.
 - Guaranteeing passport photo acceptance.

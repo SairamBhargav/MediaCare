@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased: opt-in iCloud checking, background checks, People (2026-10-19)
+
+- **People** (app build): Check my photos now also finds faces and groups them into people, on this iPhone only. Library shows a People row; People lists everyone seen in two or more photos; open someone to see all their photos, **Add a name**, **Merge…** two groups that are the same person, **Hide**, or touch and hold a photo for **Not <name>**. Apple Vision finds and lines up each face; Apple's fingerprint and (once bundled) the SFace face model decide who's who. ADR-0011; migration 7; Clear MediaCare data removes it all.
+- `.github/workflows/face-model.yml` converts SFace (Apache 2.0) to Core ML and verifies it; photo permission text now mentions people.
+
+- **Settings → Include photos in iCloud** (off by default, asks first): Check my photos and exact copies also download photos kept only in iCloud, on Wi-Fi only unless **Also use mobile data** is on. The photo check gets a small copy of each; exact copies reads every full original (streamed, not kept). ADR-0009.
+- Downloads happen last, a few photos at a time, and stop with a reason when you go offline or onto mobile data, turn on Low Data or Low Power Mode, or switch the setting off. Pause and Stop keep everything done so far.
+- The progress line says "Getting photos from iCloud · n of m"; the "What was checked" cards say why photos are still in iCloud and link to Settings.
+- Native module (needs a new app build): `networkState`, `analyzeFromCloud`, `hashOriginalsFromCloud`, `cloudVersion` 1.
+- **Checks keep running after you leave the app** (iOS 26, app build): shown on the Lock Screen as a Live Activity with progress and a stop button, and a **notification** when the check is done, stopped by iOS, or failed. Swiping MediaCare away in the app switcher still stops it. ADR-0010; native `BackgroundRun`, `backgroundVersion` 1; app.json adds the background task identifier.
+
 ## 0.2.0: Studio, video and the first TestFlight build (2026-10-09)
 
 - **Haptics on buttons**: a firm tap for buttons, icon buttons and tab switches (tap or swipe), a lighter tick for choice chips, photo selection and Mark/Unmark; never two for one tap; off with Settings → Haptics.
@@ -91,3 +102,11 @@
 - Domain rules with tests: review selection (keeper/protected never selectable), SI/IEC byte formatting, unique-asset byte sums.
 - Jest + Testing Library, ESLint + Prettier, GitHub Actions CI, EAS build profiles (not linked to an account).
 - Planning documents: PRD, architecture, stack, capabilities, design system, motion, screens, data model, roadmap, backlog, test plan, Windows setup, privacy and safety, risks, and ADRs 0001–0006.
+
+## Unreleased — repository audit (2026-10-09)
+
+- Added a deep source audit with 26 performance, UX, safety, privacy and maintenance findings and a 21-task implementation plan with verification gates.
+- Recorded full-scan-on-launch and Photos-like manager direction; implementation pending.
+- Documented protection-store divergence, uncertain removal outcomes, job/clear-data races, unbounded plan/group rendering, quadratic grouping, preview lifecycle and video verification issues.
+- Verified baseline with npm run check: 52 suites / 472 tests. Recorded dependency advisory triage and synthetic grouping benchmark, neither of which proves device behavior.
+- Updated project tracking documentation. No app behavior, dependencies, native code or release gates changed.

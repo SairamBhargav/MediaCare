@@ -1,7 +1,25 @@
 # Status
 
 **Current phase:** All main features done in code (Phases 3–6 slice, native v3); next is one development build to compile and test them, then a production build to TestFlight for the owner and his dad
-**Last updated:** 2026-10-09
+**Last updated:** 2026-10-19
+
+## Session 2026-10-19: opt-in iCloud checking (P3-ICL-001)
+
+Dad's feedback: on his iPhone (Optimize iPhone Storage on) 8,667 of ~13,200 items were "Stored in iCloud only" and never scanned, however often he checked. Cause: every check read with network off by design. Owner decision: opt-in iCloud for both checks at once, Wi-Fi only with a mobile-data option (ADR-0009). This is ahead of the audit plan order by owner request.
+
+Done in code: Settings → iCloud Photos (switch with confirmation, "Also use mobile data"); both checks retry iCloud-only photos last in small batches, re-checking connection, Low Data, Low Power and the switch before every batch, and stop with a stated reason; job line "Getting photos from iCloud · n of m"; Clean cards explain the iCloud count and link to Settings. Native: `CloudAccess.swift` (`networkState`), `analyzeFromCloud`, `hashOriginalsFromCloud`, time limits per photo, `cloudVersion` 1 (analysis `version` unchanged, so no results are redone).
+
+Checks: `npm run check` ✅ (53 suites, 488 tests), `npm run bundle:ios` ✅ 4.6 MB. Doctor not rerun (no dependency or config change). Swift **not compiled** yet: needs a new EAS build (not started; owner's go-ahead needed). Device behaviour **awaiting owner test**: data per photo, speed, whether Photos keeps downloaded originals.
+
+Then (same day, P3-BG-001, ADR-0010): checks continue in the background on iOS 26 as a continued-processing task (Live Activity with progress and stop) and send a local notification when done, stopped or failed. Native `BackgroundRun.swift`; app.json gains `BGTaskSchedulerPermittedIdentifiers` and `UIBackgroundModes: processing`. Checks after this: `npm run check` ✅ (54 suites, 490 tests), `npm run bundle:ios` ✅ 4.6 MB, `npm run doctor` 20/21: nine Expo packages are one patch behind (new SDK 57 patches, not caused by this change); run `npx expo install --fix` before the next build.
+
+Then (same day, P4-PPL-001..005, ADR-0011): **People**. Owner chose to combine Apple Vision with a dedicated face model. Native `FaceTools.swift` (Vision landmarks, OpenCV 5-point alignment, Apple + optional SFace fingerprints), migration 7, grouping in `src/domain/people.ts` (tested), "Finding people" step in the photo check, People row in Library, People and person screens (rename, merge, hide, Not <name>). PRD non-goal narrowed. SFace itself isn't in the repo yet: run Actions → **Face model** (P4-PPL-006), confirm the model, then commit `SFace.mlmodelc` into `modules/media-analysis/ios/models/`. Without it, People uses Apple's fingerprint only (strict). Checks: `npm run check` ✅ (56 suites, 504 tests), bundle ✅ 4.7 MB, doctor 20/21 (same patch-version item). All People behaviour **awaiting build and owner test**.
+
+Also logged from the same feedback: P4-ICL-003 (Studio on iCloud photos), P4-CUT-001 (tap to pick one person in Remove background), P4-PPL-001 (people by name: blocked, PRD non-goal; Photos → People & Pets does this today).
+
+## First TestFlight build (2026-10-09)
+
+Owner ran `eas build --platform ios --profile production --auto-submit` (checks 472 tests, doctor 21/21 beforehand). Version 0.2.0 build 2 is processed in App Store Connect (app id 6818920566), internal group "Team (Expo)" with the owner invited. EAS manages the distribution certificate, App Store profile and an APP_MANAGER App Store Connect API key. Removal hidden in this build (ADR-0008). Next (owner): install via TestFlight, compare smoothness with the dev build (feeds P3-PERF-002), add dad as an internal tester, check the app icon. Release-build behaviour **awaiting owner test**.
 
 ## Session 2026-10-09 (second PC set up; features, UI rework, release prep)
 
@@ -145,3 +163,15 @@ Next: owner decides between building now (compile native v2 early) or after Stud
 - Owner to test with a reload: safe removal (on purpose-made screenshots only, after turning on Settings → Allow removing photos) and Passport photo (U.S.).
 - Decision pending: next EAS development build now (compiles native v2: pose/layout, exact copies for edited and Live Photos) or after Studio hub (P5) and video (P6).
 - Then: re-run "Look at my photos" after the new build; tune thresholds from Compare's tuning line; production build → TestFlight for the owner and his dad.
+
+## Latest session — 2026-10-09: repository audit and stabilization plan
+
+This entry supersedes earlier next-step instructions: Phase 3 performance/safety stabilization is the next gate. P3-AUD-001 is complete (audit/documentation only); fixes remain planned.
+
+Owner reports tap/view-opening lag in the installed development build with fewer than 1,000 photos. Direction: calm, Photos-like, dad-friendly; full deep scan each fresh launch; then browsing, albums/favorites/date/type, people/subject/text search, editing and creations. Tab swipe preference remains open; preserve current behavior until decided.
+
+Read [the 26-finding audit](docs/REPO_AUDIT_2026-10-09.md) and [the 21-task implementation plan](docs/AUDIT_IMPLEMENTATION_PLAN.md). Start with P3-PERF-002 (interaction profiling), P3-SAFE-001/002 (protection and honest removal outcomes), then P3-JOB-004 (awaited cancellation). Add automatic launch scanning after responsiveness/lifecycle foundations.
+
+Source findings include protection-store divergence, lookup errors counted as removed, clear-data/write races and quadratic grouping. ADR-0008 removal gate stays. No app behavior, dependency, native build or removal changed in this audit.
+
+Evidence: npm run check passed (52 suites, 472 tests). npm audit: 66 affected package entries, 49 high / 17 moderate / 0 critical, including inherited tooling warnings. Synthetic 1,000-photo grouping: 499,500 comparisons, 745 ms on Windows Node/V8, not an iPhone timing. Native/device validation remains awaiting owner test. Doctor/bundle not rerun for documentation-only changes. No cloud build authorized.

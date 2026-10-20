@@ -6,6 +6,7 @@ import { useSessionReveal } from '@/components/reveal';
 import { Screen } from '@/components/screen';
 import { TourAnchor } from '@/components/tour-anchor';
 import { copyCoverage } from '@/domain/exact-copies';
+import { cloudNote } from '@/domain/icloud';
 import { visualCoverage } from '@/domain/visual-records';
 import { useActionPlan } from '@/features/clean/use-action-plan';
 import { scanLibrary } from '@/features/media/start-scan';
@@ -13,6 +14,7 @@ import { openSettings } from '@/services/media/photo-library';
 import {
   ANALYSIS_IMPLEMENTATION,
   activeCopyMethod,
+  cloudDownloadAvailable,
   visualAnalysisAvailable,
 } from '@/services/media/visual-analysis';
 import { useCatalog } from '@/state/catalog';
@@ -49,15 +51,38 @@ export function CleanScreen() {
   const lastCopyCheck = useCatalog((catalog) => catalog.lastCopyCheck);
   const visualRows = useCatalog((catalog) => catalog.visualRows);
   const lastAnalysis = useCatalog((catalog) => catalog.lastAnalysis);
+  const cloudBlocked = useCleanSession((session) => session.cloudBlocked);
+  const includeICloud = usePreferences((preferences) => preferences.includeICloud);
+  const icloudOnMobileData = usePreferences((preferences) => preferences.icloudOnMobileData);
+  const cloudSettings = {
+    available: cloudDownloadAvailable(),
+    enabled: includeICloud,
+    allowMobileData: icloudOnMobileData,
+  };
+  const visual = visualCoverage(items, visualRows, ANALYSIS_IMPLEMENTATION);
   const analysis = {
     available: visualAnalysisAvailable(),
-    coverage: visualCoverage(items, visualRows, ANALYSIS_IMPLEMENTATION),
+    coverage: visual,
     lastStatus: lastAnalysis?.status ?? null,
+    icloud: cloudNote({
+      ...cloudSettings,
+      inCloud: visual.notAnalyzed.find((entry) => entry.reason === 'in-icloud')?.count ?? 0,
+      blocked: cloudBlocked.analysis,
+    }),
   };
+  const copies = copyCoverage(items, fingerprints, copySets, activeCopyMethod());
   const copyCheck = {
-    coverage: copyCoverage(items, fingerprints, copySets, activeCopyMethod()),
+    coverage: copies,
     lastStatus: lastCopyCheck?.status ?? null,
     sets: copySets.length,
+    icloud: cloudNote({
+      ...cloudSettings,
+      // "unavailable" is iCloud-only or unreadable; the app build can't tell them apart.
+      inCloud: copies.notChecked
+        .filter((entry) => entry.reason === 'unavailable' || entry.reason === 'in-icloud')
+        .reduce((sum, entry) => sum + entry.count, 0),
+      blocked: cloudBlocked.copies,
+    }),
   };
   const adjustments = useReviewAdjustments();
   const plan = useActionPlan();

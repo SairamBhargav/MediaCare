@@ -130,4 +130,41 @@ export const MIGRATIONS: readonly string[] = [
     measured_at INTEGER NOT NULL
   );
   `,
+
+  // 7: People (ADR-0011), on device only. face_scans: photos looked at for
+  // faces, valid while asset_version and implementation match. faces: one
+  // row per face with its fingerprints (base64 Float32) and person;
+  // confirmed / rejected_person_id are the user's corrections. people: names.
+  `
+  CREATE TABLE face_scans (
+    asset_id TEXT PRIMARY KEY NOT NULL,
+    asset_version INTEGER,
+    implementation TEXT NOT NULL,
+    status TEXT NOT NULL,
+    scanned_at INTEGER NOT NULL
+  );
+  CREATE TABLE people (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    hidden INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+  CREATE TABLE faces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    asset_id TEXT NOT NULL,
+    face_index INTEGER NOT NULL,
+    x REAL NOT NULL,
+    y REAL NOT NULL,
+    width REAL NOT NULL,
+    height REAL NOT NULL,
+    quality REAL NOT NULL,
+    apple_print TEXT,
+    model_print TEXT,
+    person_id INTEGER,
+    confirmed INTEGER NOT NULL DEFAULT 0,
+    rejected_person_id INTEGER,
+    UNIQUE (asset_id, face_index)
+  );
+  CREATE INDEX idx_faces_person ON faces (person_id);
+  `,
 ];

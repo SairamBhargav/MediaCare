@@ -27,6 +27,8 @@ test('changes are written to device storage as data only', () => {
     allowRemoval: false,
     largerText: false,
     tourSeen: false,
+    includeICloud: false,
+    icloudOnMobileData: false,
   });
 });
 
@@ -46,8 +48,17 @@ test('corrupted stored values fall back to defaults without throwing', async () 
     JSON.stringify({ state: { appearance: 'neon', lessMotion: 'maybe' }, version: 1 }),
   );
   await usePreferences.persist.rehydrate();
-  const { appearance, lessMotion, haptics, onboardingSeen, allowRemoval, largerText, tourSeen } =
-    usePreferences.getState();
+  const {
+    appearance,
+    lessMotion,
+    haptics,
+    onboardingSeen,
+    allowRemoval,
+    largerText,
+    tourSeen,
+    includeICloud,
+    icloudOnMobileData,
+  } = usePreferences.getState();
   expect({
     appearance,
     lessMotion,
@@ -56,6 +67,8 @@ test('corrupted stored values fall back to defaults without throwing', async () 
     allowRemoval,
     largerText,
     tourSeen,
+    includeICloud,
+    icloudOnMobileData,
   }).toEqual(defaultPreferences);
 });
 

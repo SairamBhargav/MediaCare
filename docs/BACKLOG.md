@@ -59,7 +59,7 @@ Status: `done` · `next` · `todo` · `blocked (reason)`.
 | P2-MEDIA-002      | Limited access: "Manage selected photos"                                                                     | done (awaiting device)                                                 | Clean, Library, Settings                                                                                          |
 | P2-MEDIA-003      | Denied state with Open Settings                                                                              | done (awaiting device)                                                 | Sample still available                                                                                            |
 | P2-MEDIA-004      | Paginated thumbnails via expo-image                                                                          | done (awaiting device)                                                 | ph:// at tile size; row-virtualized SectionList                                                                   |
-| P2-MEDIA-005      | iCloud-only placeholders                                                                                     | partial                                                                | Scans never download; export warns before downloading; grid relies on iOS thumbnails                              |
+| P2-MEDIA-005      | iCloud-only placeholders                                                                                     | partial                                                                | Scans download only with the opt-in (P3-ICL-001); export warns before downloading; grid relies on iOS thumbnails  |
 | P2-MEDIA-006      | Change listener + reconciliation                                                                             | done (awaiting device)                                                 | Deletions removed from catalog; changes prompt "Scan again"                                                       |
 | P2-DB-001..004    | SQLite schema, migrations, repositories, Protected flag                                                      | done                                                                   | Schema v1: assets, asset_flags, jobs, derivatives                                                                 |
 | P2-JOB-001..003   | Durable scan with checkpoints and resume                                                                     | done (awaiting device)                                                 | Batched, checkpointed; interrupted scans recorded as interrupted; rescans skip unchanged items                    |
@@ -116,3 +116,52 @@ P3-DEV-001 EAS project + dev build (needs owner's Apple Developer membership) ·
 ## Coverage map
 
 Every PRD feature (F1–F26) maps to tasks above or to a later-phase prefix in [PRD.md §5](PRD.md#5-feature-map-and-phase-coverage). Nothing from the brief is dropped; deferred items carry a reason there.
+
+## Audit follow-up — 2026-10-09
+
+[Audit](REPO_AUDIT_2026-10-09.md) and [implementation plan](AUDIT_IMPLEMENTATION_PLAN.md) define findings, task dependencies, priorities, effort and acceptance criteria. Audit findings are not implemented fixes.
+
+| ID          | Goal                                                           | Status                                         |
+| ----------- | -------------------------------------------------------------- | ---------------------------------------------- |
+| P3-AUD-001  | Deep performance, UX, safety/security audit and plan           | done (documentation; device profiling pending) |
+| P3-PERF-002 | Interaction profiling                                          | planned                                        |
+| P3-SAFE-001 | Authoritative protection and execution policy                  | planned                                        |
+| P3-SAFE-002 | Immutable review evidence and honest outcomes                  | planned                                        |
+| P3-JOB-004  | Single job coordinator and awaited cancellation                | planned                                        |
+| P3-PRIV-001 | Asset/access reconciliation and safe missing states            | planned                                        |
+| P3-PRIV-002 | Clear-data contract and owned temporary storage                | planned                                        |
+| P3-SEC-001  | Dependency advisory triage                                     | planned                                        |
+| P3-PERF-003 | Press feedback and tab lifecycle                               | planned                                        |
+| P3-PERF-004 | Bound rendered plan/group content                              | planned                                        |
+| P3-PERF-005 | Cancellable grouping and cached derived results                | planned                                        |
+| P3-PERF-006 | Lightweight launch and catalog access                          | planned                                        |
+| P4-EDIT-002 | Preview scheduler and output lifecycle                         | planned                                        |
+| P3-SCAN-001 | Full launch scan with responsive browsing                      | planned                                        |
+| P3-QUAL-001 | Evaluate keeper and similar-moment quality                     | planned                                        |
+| P1-UI-012   | Calm cleanup, review and viewer presentation                   | planned                                        |
+| P6-VID-003  | Native cancellation and output verification                    | planned                                        |
+| P4-EXP-002  | Export capability and consent gate                             | planned                                        |
+| P4-ORG-001  | Albums, favorites and useful selection actions                 | planned                                        |
+| P4-SRCH-001 | On-device text/subject/people search feasibility               | planned                                        |
+| P3-HARD-001 | Diagnostics, boundary validation and documentation consistency | planned                                        |
+| P3-QA-002   | Release-like performance and safety gate                       | planned                                        |
+
+Owner direction: full deep scan each cold launch; calm Photos-like UI; complete manager scope including albums/favorites/date/type and people/subject/text search. Tab swipe preference pending. Preserve release removal gate and Expo Go capability honesty. No EAS build authorized.
+
+## Owner feedback — 2026-10-19 (dad's first real use)
+
+Dad's library: ~13,200 items, 8,667 only in iCloud (Optimize iPhone Storage). Feedback: many photos never scan; does iCloud scan; find everyone with "Bob"; isolate one person in a picture.
+
+| ID         | Goal                                                                          | Acceptance                                                                                                                                                        | Env | Status                                     |
+| ---------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------------------------------------------ |
+| P3-ICL-001 | Opt-in iCloud downloads for the photo check and exact copies (ADR-0009)       | Off by default with confirmation; Wi-Fi only unless mobile data allowed; stops on offline/Low Data/Low Power/switch off and says why; Stop keeps progress; tested | Dev | done in code; awaiting build and device    |
+| P3-ICL-002 | Measure iCloud download cost on device                                        | Data and time per 1,000 photos for both checks recorded in CAPABILITIES; storage before/after                                                                     | Dev | todo (needs build)                         |
+| P4-ICL-003 | Studio tools download the one photo picked when it's only in iCloud           | One-line notice; same connection rules; Remove background works on iCloud photos                                                                                  | Dev | todo                                       |
+| P4-CUT-001 | Remove background: tap to choose one person or subject                        | Per-instance masks; tapping picks one; "All" still available                                                                                                      | Dev | todo                                       |
+| P4-PPL-001 | People by name ("show all photos of Bob"): PRD change + ADR-0011              | Owner decision recorded; PRD non-goal narrowed to "nothing leaves the device"                                                                                     | —   | done                                       |
+| P4-PPL-002 | Native faces: Vision landmarks, 5-point alignment, Apple + SFace fingerprints | `faces()` per photo; small faces reported without fingerprints; model optional                                                                                    | Dev | done in code; awaiting build and device    |
+| P4-PPL-003 | Store and group faces (migration 7, combined matching, corrections kept)      | Tested: split two people, borderline needs Apple, Apple-only strict, rejected never rejoins, existing people grow                                                 | Go  | done (tests)                               |
+| P4-PPL-004 | "Finding people" step in the photo check                                      | Only photos with faces and no current scan; iCloud rules; grouping once per run; tested                                                                           | Dev | done in code; awaiting build and device    |
+| P4-PPL-005 | People UI: Library row, People, person (rename, merge, hide, Not <name>)      | Screen tests; theme tokens; one haptic per action                                                                                                                 | Dev | done in code; awaiting build and device    |
+| P4-PPL-006 | SFace to Core ML (workflow) and bundle it                                     | Workflow run green (cosine ≥ 0.999 vs onnxruntime); `SFace.mlmodelc` committed; About shows Apache 2.0 notice                                                     | Dev | todo (owner runs workflow, confirms model) |
+| P4-PPL-007 | Tune face thresholds on real photos                                           | Measured on owner/dad libraries; numbers recorded in CAPABILITIES                                                                                                 | Dev | todo (needs build)                         |

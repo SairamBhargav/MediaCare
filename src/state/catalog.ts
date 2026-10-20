@@ -19,6 +19,7 @@ import { toPhotoItem, type PhotoItem, type PhotoRecord } from '@/domain/media';
 import type { VisualRow } from '@/domain/visual-records';
 import { activeCopyMethod } from '@/services/media/visual-analysis';
 import { useLibrarySession } from '@/state/library-session';
+import { usePeople } from '@/state/people';
 import {
   getAccess,
   manageSelection,
@@ -145,6 +146,7 @@ export const useCatalog = create<CatalogState>()((set, get) => ({
 
   clear: async () => {
     await clearCatalog();
+    usePeople.getState().reset();
     set({
       items: [],
       byId: new Map(),

@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'Photos', 'Vision', 'UIKit', 'CoreGraphics', 'CoreImage', 'CryptoKit', 'AVFoundation', 'CoreMedia', 'CoreVideo'
+  s.frameworks = 'Photos', 'Vision', 'UIKit', 'CoreGraphics', 'CoreImage', 'CryptoKit', 'AVFoundation', 'CoreMedia', 'CoreVideo', 'CoreML', 'BackgroundTasks', 'UserNotifications', 'Network'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
@@ -20,4 +20,7 @@ Pod::Spec.new do |s|
   }
 
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
+
+  # Optional compiled face model (ADR-0011), produced by .github/workflows/face-model.yml.
+  s.resources = "models/*.mlmodelc"
 end

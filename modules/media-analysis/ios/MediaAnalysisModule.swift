@@ -6,7 +6,8 @@ import Vision
 /// On-device photo analysis for MediaCare (Phase 3).
 ///
 /// For each Photos asset it loads a small rendition that is already on the
-/// iPhone (never downloads from iCloud), then measures:
+/// iPhone (analyzeFromCloud may download that small rendition from iCloud
+/// when the user opted in, ADR-0009), then measures:
 ///  - a Vision feature print (for "do these photos look alike"),
 ///  - sharpness: Laplacian variance over the whole frame and in the
 ///    sharpest tile, so a sharp subject on a soft background isn't "blurry",
@@ -24,7 +25,49 @@ public class MediaAnalysisModule: Module {
     // Bump when tools are added, so the app can tell what this build offers.
     Constant("toolsVersion") { 3 }
 
-    Events("onProgress")
+    // Bump when the opt-in iCloud functions change (ADR-0009).
+    Constant("cloudVersion") { 1 }
+
+    // Bump when the background-run functions change (ADR-0010).
+    Constant("backgroundVersion") { 1 }
+
+    // Bump when what faces() returns changes (ADR-0011); stored faces are redone.
+    Constant("facesVersion") { 1 }
+
+    // Name of the bundled face-recognition model, or empty if this build has none.
+    Constant("faceModel") { FaceEmbedder.shared?.name ?? "" }
+
+    Events("onProgress", "onBackgroundExpired")
+
+    AsyncFunction("faces") { (ids: [String], maxSide: Int, allowNetwork: Bool, promise: Promise) in
+      DispatchQueue.global(qos: .utility).async {
+        let side = max(256, min(maxSide, 2048))
+        promise.resolve(ids.map { FaceTools.faces(id: $0, maxSide: side, allowNetwork: allowNetwork) })
+      }
+    }
+
+    Function("beginBackgroundRun") { (title: String, subtitle: String) -> String in
+      BackgroundRun.onExpired = { [weak self] in
+        self?.sendEvent("onBackgroundExpired", [:])
+      }
+      return BackgroundRun.begin(title: title, subtitle: subtitle)
+    }
+
+    Function("updateBackgroundRun") { (done: Int, total: Int, subtitle: String) in
+      BackgroundRun.update(done: done, total: total, subtitle: subtitle)
+    }
+
+    Function("endBackgroundRun") { (success: Bool) in
+      BackgroundRun.end(success: success)
+    }
+
+    AsyncFunction("requestNotifications") { (promise: Promise) in
+      BackgroundRun.requestNotifications { granted in promise.resolve(granted) }
+    }
+
+    Function("notifyIfInBackground") { (title: String, body: String) in
+      BackgroundRun.notifyIfInBackground(title: title, body: body)
+    }
 
     AsyncFunction("adjust") { (id: String, options: AdjustOptions, promise: Promise) in
       DispatchQueue.global(qos: .userInitiated).async {
@@ -76,6 +119,23 @@ public class MediaAnalysisModule: Module {
       }
     }
 
+    // Same as analyze, but iOS may download the small rendition from iCloud.
+    AsyncFunction("analyzeFromCloud") { (ids: [String], maxSide: Int, promise: Promise) in
+      DispatchQueue.global(qos: .utility).async {
+        let side = max(64, min(maxSide, 1024))
+        let results = ids.map {
+          MediaAnalysisModule.analyze(id: $0, maxSide: side, allowNetwork: true)
+        }
+        promise.resolve(results)
+      }
+    }
+
+    AsyncFunction("networkState") { (promise: Promise) in
+      DispatchQueue.global(qos: .utility).async {
+        promise.resolve(CloudAccess.networkState())
+      }
+    }
+
     AsyncFunction("enhance") { (id: String, enhance: Bool, redEye: Bool, maxSide: Int, promise: Promise) in
       DispatchQueue.global(qos: .userInitiated).async {
         promise.resolve(MediaTools.enhance(id: id, enhance: enhance, redEye: redEye, maxSide: maxSide))
@@ -93,11 +153,18 @@ public class MediaAnalysisModule: Module {
         promise.resolve(ids.map { OriginalResources.hash(id: $0) })
       }
     }
+
+    // Same as hashOriginals, but files only in iCloud are downloaded (streamed, not kept).
+    AsyncFunction("hashOriginalsFromCloud") { (ids: [String], promise: Promise) in
+      DispatchQueue.global(qos: .utility).async {
+        promise.resolve(ids.map { OriginalResources.hash(id: $0, allowNetwork: true) })
+      }
+    }
   }
 
   // MARK: - Per asset
 
-  static func analyze(id: String, maxSide: Int) -> [String: Any] {
+  static func analyze(id: String, maxSide: Int, allowNetwork: Bool = false) -> [String: Any] {
     let localId = id.hasPrefix("ph://") ? String(id.dropFirst(5)) : id
     guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localId], options: nil).firstObject else {
       return ["id": id, "status": "missing"]
@@ -106,9 +173,11 @@ public class MediaAnalysisModule: Module {
       return ["id": id, "status": "unsupported"]
     }
 
-    let (image, inCloud) = loadImage(asset: asset, maxSide: maxSide)
+    let (image, inCloud) = loadImage(asset: asset, maxSide: maxSide, allowNetwork: allowNetwork)
     guard let uiImage = image, let cgImage = uiImage.cgImage else {
-      return ["id": id, "status": inCloud ? "in-icloud" : "failed"]
+      // With network on, this is only asked for photos just found to be in
+      // iCloud only, so a failed or timed-out download leaves them "in-icloud".
+      return ["id": id, "status": inCloud || allowNetwork ? "in-icloud" : "failed"]
     }
 
     var result: [String: Any] = [
@@ -213,25 +282,33 @@ public class MediaAnalysisModule: Module {
     return (0..<(cells * cells)).map { counts[$0] > 0 ? sums[$0] / counts[$0] / 255 : 0 }
   }
 
-  /// A rendition of the current version that is already on the device.
-  static func loadImage(asset: PHAsset, maxSide: Int) -> (UIImage?, Bool) {
+  /// A rendition of the current version: one already on the device, or with
+  /// `allowNetwork` one iOS may download from iCloud at about this size.
+  static func loadImage(asset: PHAsset, maxSide: Int, allowNetwork: Bool = false) -> (UIImage?, Bool) {
     let options = PHImageRequestOptions()
-    options.isSynchronous = true
-    options.isNetworkAccessAllowed = false
+    // Without network: synchronous. With network: asynchronous with a time limit.
+    options.isSynchronous = !allowNetwork
+    options.isNetworkAccessAllowed = allowNetwork
     options.deliveryMode = .highQualityFormat
     options.resizeMode = .fast
     options.version = .current
 
     var image: UIImage?
     var inCloud = false
+    let done = DispatchSemaphore(value: 0)
     let size = CGSize(width: maxSide, height: maxSide)
-    PHImageManager.default().requestImage(
+    let request = PHImageManager.default().requestImage(
       for: asset, targetSize: size, contentMode: .aspectFit, options: options
     ) { result, info in
       image = result
       if let flag = info?[PHImageResultIsInCloudKey] as? NSNumber {
         inCloud = flag.boolValue
       }
+      if allowNetwork { done.signal() }
+    }
+    if allowNetwork, done.wait(timeout: .now() + CloudAccess.photoTimeout) == .timedOut {
+      PHImageManager.default().cancelImageRequest(request)
+      return (nil, true)
     }
     return (image, inCloud)
   }

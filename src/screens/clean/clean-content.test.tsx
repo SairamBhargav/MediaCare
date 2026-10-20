@@ -206,6 +206,20 @@ describe('real results', () => {
     expect(screen.getByText(/40 · Stored in iCloud only/)).toBeOnTheScreen();
   });
 
+  test('photo check: iCloud photos point to the iCloud setting', async () => {
+    await renderState(real, 'full', {
+      analysis: {
+        available: true,
+        coverage: { analyzed: 950, notAnalyzed: [{ reason: 'in-icloud', count: 40 }] },
+        lastStatus: 'succeeded',
+        icloud: { text: 'Turn on “Include photos in iCloud” in Settings.', offerSettings: true },
+      },
+    });
+    expect(screen.getByText(/Include photos in iCloud/)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Open Settings'));
+    expect(router.push).toHaveBeenCalledWith('/settings');
+  });
+
   test('sample results never offer the exact copies check', async () => {
     await renderState(sampleResultsState, 'full', {
       copyCheck: { coverage: { checked: 0, inSets: 0, notChecked: [] }, lastStatus: null, sets: 0 },

@@ -16,6 +16,7 @@ import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { REMOVAL_IN_THIS_BUILD } from '@/features/clean/removal-gate';
 import { openSettings } from '@/services/media/photo-library';
+import { cloudDownloadAvailable, faceModelIncluded } from '@/services/media/visual-analysis';
 import { useCatalog } from '@/state/catalog';
 import { useCleanSession } from '@/state/clean-session';
 import { usePreferences, type AppearancePreference } from '@/state/preferences';
@@ -34,11 +35,15 @@ export function SettingsScreen() {
     haptics,
     allowRemoval,
     largerText,
+    includeICloud,
+    icloudOnMobileData,
     setAppearance,
     setLessMotion,
     setHaptics,
     setAllowRemoval,
     setLargerText,
+    setIncludeICloud,
+    setICloudOnMobileData,
   } = usePreferences();
 
   const access = useCatalog((catalog) => catalog.access);
@@ -52,6 +57,21 @@ export function SettingsScreen() {
         : access === 'denied'
           ? 'Not allowed'
           : 'Not asked yet';
+
+  const changeIncludeICloud = (on: boolean) => {
+    if (!on) {
+      setIncludeICloud(false);
+      return;
+    }
+    Alert.alert(
+      'Include photos in iCloud?',
+      'Checks will download photos that are only in iCloud, on Wi-Fi. The photo check gets a small copy of each. Exact copies needs every full original: for thousands of photos that can be many gigabytes and take hours. You can pause or stop any check; nothing is uploaded or removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Turn On', onPress: () => setIncludeICloud(true) },
+      ],
+    );
+  };
 
   const confirmClear = () =>
     Alert.alert(
@@ -156,6 +176,30 @@ export function SettingsScreen() {
             </FieldGroup.SectionFooter>
           </FieldGroup.Section>
 
+          {cloudDownloadAvailable() ? (
+            <FieldGroup.Section title="iCloud Photos">
+              <Switch
+                label="Include photos in iCloud"
+                value={includeICloud}
+                onValueChange={changeIncludeICloud}
+              />
+              {includeICloud ? (
+                <Switch
+                  label="Also use mobile data"
+                  value={icloudOnMobileData}
+                  onValueChange={setICloudOnMobileData}
+                />
+              ) : null}
+              <FieldGroup.SectionFooter>
+                <Text>
+                  {includeICloud
+                    ? `Checks also download photos that are only in iCloud, from Apple to this iPhone${icloudOnMobileData ? '' : ', on Wi-Fi only'}. The photo check downloads a small copy of each; exact copies needs every full original, which for a large library can be many gigabytes and take hours. Nothing is uploaded and MediaCare keeps no copies. Downloads stop in Low Power Mode and Low Data Mode.`
+                    : 'With “Optimize iPhone Storage” on, many photos are kept only in iCloud and checks skip them. Turn this on to download them while checking.'}
+                </Text>
+              </FieldGroup.SectionFooter>
+            </FieldGroup.Section>
+          ) : null}
+
           <FieldGroup.Section title="Privacy & Data">
             <Text>
               MediaCare works on your iPhone. It has no account and uploads nothing. Scans read
@@ -254,6 +298,14 @@ export function SettingsScreen() {
                 <Spacer />
                 <Text>{sdk}</Text>
               </Row>
+            ) : null}
+            {faceModelIncluded() ? (
+              <FieldGroup.SectionFooter>
+                <Text>
+                  People uses the SFace face-recognition model from the OpenCV model zoo, licensed
+                  under the Apache License 2.0. It runs only on this iPhone.
+                </Text>
+              </FieldGroup.SectionFooter>
             ) : null}
           </FieldGroup.Section>
         </FieldGroup>

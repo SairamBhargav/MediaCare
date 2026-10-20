@@ -14,7 +14,8 @@ import type { PhotoItem } from './media';
  *    so they fail this test and are reported, not guessed about.
  *  - Live Photos are excluded: they are a photo plus a video, and only the
  *    photo half would be compared.
- *  - Photos stored only in iCloud are skipped so nothing downloads.
+ *  - Photos stored only in iCloud are skipped so nothing downloads, unless
+ *    the user opted in to iCloud downloads (ADR-0009, app build only).
  *  - Equal size and MD5 only make a *candidate*. A pair is called an exact
  *    copy only after a full byte-by-byte comparison.
  *

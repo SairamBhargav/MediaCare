@@ -72,3 +72,14 @@ test('invalid totals are ignored', () => {
 test('an empty library is complete, not divide-by-zero', () => {
   expect(jobFraction(run([{ type: 'total-known', total: 0 }]))).toBe(1);
 });
+
+test('a step’s count only moves forward; a new step starts over', () => {
+  let job = reduceJob(startJob('j', false, 'analysis'), { type: 'total-known', total: 10 });
+  job = reduceJob(job, { type: 'step-progress', label: 'A', done: 3, total: 4 });
+  job = reduceJob(job, { type: 'step-progress', label: 'A', done: 2, total: 4 });
+  expect(job.step).toEqual({ label: 'A', done: 3, total: 4 });
+  job = reduceJob(job, { type: 'step-progress', label: 'B', done: 1, total: 9 });
+  expect(job.step).toEqual({ label: 'B', done: 1, total: 9 });
+  const paused = reduceJob(job, { type: 'pause' });
+  expect(reduceJob(paused, { type: 'step-progress', label: 'B', done: 4, total: 9 })).toBe(paused);
+});

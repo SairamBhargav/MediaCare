@@ -137,3 +137,40 @@ export type OriginalsResult = {
   resources?: OriginalResource[];
   error?: string;
 };
+
+/** Connection and power state, read before each batch that may download from iCloud (ADR-0009). */
+export type NetworkState = {
+  /** False if iOS didn't report a network path in time. */
+  known: boolean;
+  connected: boolean;
+  /** Mobile data or a personal hotspot. */
+  expensive: boolean;
+  /** Low Data Mode. */
+  constrained: boolean;
+  lowPower: boolean;
+};
+
+/** One face found for People (ADR-0011). Box normalized, origin bottom-left. */
+export type FaceFound = {
+  /** `small`: too small or without landmarks to recognize; no fingerprints. */
+  status: 'ok' | 'small';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Vision face capture quality, 0–1; -1 if unknown. */
+  quality: number;
+  /** Apple feature print of the aligned face: base64 Float32, L2-normalized. */
+  applePrint?: string;
+  /** Face-model fingerprint (SFace) when the build includes the model. */
+  modelPrint?: string;
+};
+
+export type FacesResult = {
+  id: string;
+  status: 'ok' | 'missing' | 'unsupported' | 'in-icloud' | 'failed';
+  faces?: FaceFound[];
+  /** Face model used, if any. */
+  model?: string;
+  error?: string;
+};

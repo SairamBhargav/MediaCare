@@ -276,3 +276,50 @@ describe('app build: every Photos resource hashed (edited and Live Photos covere
     );
   });
 });
+
+describe('opt-in iCloud pass for originals (ADR-0009)', () => {
+  const res = (sha: string) => [{ type: 1, filename: 'x.HEIC', bytes: 10, sha256: sha }];
+
+  test('unavailable originals are downloaded before grouping and can form a set', async () => {
+    const items = [photo('a'), photo('cloud')];
+    const t = setup({}, items);
+    const fetched: string[][] = [];
+    const deps: CopyCheckDeps = {
+      ...t.deps,
+      hashOriginals: async (ids) =>
+        ids.map((id) =>
+          id === 'cloud'
+            ? { id, status: 'unavailable' }
+            : { id, status: 'ok', resources: res('s') },
+        ),
+      cloud: {
+        blocked: async () => null,
+        run: async (ids) => {
+          fetched.push(ids);
+          return ids.map((id) => ({ id, status: 'ok', resources: res('s') }));
+        },
+        onBlocked: jest.fn(),
+      },
+    };
+    expect(await runCopyCheck(deps, t.emit).done).toBe('succeeded');
+    expect(fetched).toEqual([['cloud']]);
+    expect(t.groups().map((set) => [...set].sort())).toEqual([['a', 'cloud']]);
+    expect(t.job()).toMatchObject({ processed: 2, total: 2, step: { done: 1, total: 1 } });
+  });
+
+  test('blocked: nothing downloads, the reason is reported, the check still finishes', async () => {
+    const items = [photo('cloud')];
+    const t = setup({}, items);
+    const run = jest.fn();
+    const onBlocked = jest.fn();
+    const deps: CopyCheckDeps = {
+      ...t.deps,
+      hashOriginals: async (ids) => ids.map((id) => ({ id, status: 'unavailable' })),
+      cloud: { blocked: async () => 'low-power', run, onBlocked },
+    };
+    expect(await runCopyCheck(deps, t.emit).done).toBe('succeeded');
+    expect(run).not.toHaveBeenCalled();
+    expect(onBlocked).toHaveBeenCalledWith('low-power');
+    expect(t.saved.map((row) => row.skipReason)).toEqual(['unavailable']);
+  });
+});

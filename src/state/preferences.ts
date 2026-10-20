@@ -20,6 +20,8 @@ type PreferencesState = Preferences & {
   setAllowRemoval: (allowRemoval: boolean) => void;
   setLargerText: (largerText: boolean) => void;
   setTourSeen: (tourSeen: boolean) => void;
+  setIncludeICloud: (includeICloud: boolean) => void;
+  setICloudOnMobileData: (icloudOnMobileData: boolean) => void;
 };
 
 const STORAGE_KEY = 'mediacare.preferences';
@@ -69,6 +71,8 @@ export const usePreferences = create<PreferencesState>()(
       setAllowRemoval: (allowRemoval) => set({ allowRemoval }),
       setLargerText: (largerText) => set({ largerText }),
       setTourSeen: (tourSeen) => set({ tourSeen }),
+      setIncludeICloud: (includeICloud) => set({ includeICloud }),
+      setICloudOnMobileData: (icloudOnMobileData) => set({ icloudOnMobileData }),
     }),
     {
       name: STORAGE_KEY,
@@ -83,6 +87,8 @@ export const usePreferences = create<PreferencesState>()(
         allowRemoval,
         largerText,
         tourSeen,
+        includeICloud,
+        icloudOnMobileData,
       }) => ({
         appearance,
         lessMotion,
@@ -91,6 +97,8 @@ export const usePreferences = create<PreferencesState>()(
         allowRemoval,
         largerText,
         tourSeen,
+        includeICloud,
+        icloudOnMobileData,
       }),
       // Validate whatever comes back from disk before it reaches the UI.
       merge: (persisted, current) => ({ ...current, ...sanitizePreferences(persisted) }),

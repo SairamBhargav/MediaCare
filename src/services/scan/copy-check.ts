@@ -13,6 +13,9 @@ import {
 } from '@/domain/exact-copies';
 import type { JobEvent } from '@/domain/jobs';
 import type { PhotoItem } from '@/domain/media';
+import { yieldToUi } from '@/utils/yield-to-ui';
+
+import { ICLOUD_STEP, type CloudPass } from './visual-analysis-job';
 
 /**
  * "Find exact copies" (P2-DUP-001): a separate, user-started job over the
@@ -27,6 +30,10 @@ import type { PhotoItem } from '@/domain/media';
  *     byte size + MD5. Written in batches with a checkpoint and a yield.
  *  3. Grouping: files with equal size and MD5 are compared byte by byte;
  *     only identical files form a set. Sets are saved.
+ *
+ * In the app build, with the user's opt-in (ADR-0009, `cloud`), photos
+ * whose originals are only in iCloud are tried again before grouping,
+ * downloading the originals a couple at a time while the connection allows.
  *
  * Pause waits between photos; Stop keeps every fingerprint taken so far,
  * so running it again continues where it left off. Progress counts photos
@@ -53,6 +60,8 @@ export type CopyCheckDeps = {
   hashOriginals?: (
     ids: string[],
   ) => Promise<{ id: string; status: string; resources?: HashedResource[] }[]>;
+  /** Opt-in iCloud pass for `hashOriginals` (ADR-0009); ignored without it. */
+  cloud?: CloudPass<{ id: string; status: string; resources?: HashedResource[] }>;
   saveFingerprints: (rows: readonly FingerprintRow[]) => Promise<void>;
   saveMatchGroups: (sets: readonly (readonly string[])[]) => Promise<void>;
   checkpoint: (state: {
@@ -71,12 +80,10 @@ export type CopyCheckControls = {
   done: Promise<'succeeded' | 'canceled' | 'failed'>;
 };
 
-const yieldToUi = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-
 export function runCopyCheck(
   deps: CopyCheckDeps,
   emit: (event: JobEvent) => void,
-  { batchSize = 20 }: { batchSize?: number } = {},
+  { batchSize = 20, cloudBatchSize = 2 }: { batchSize?: number; cloudBatchSize?: number } = {},
 ): CopyCheckControls {
   const now = deps.now ?? Date.now;
   const method = deps.hashOriginals ? ORIGINALS_METHOD : FILE_MD5_METHOD;
@@ -129,8 +136,11 @@ export function runCopyCheck(
   };
 
   /** App build: a whole batch hashed natively in one call. */
-  const fingerprintOriginals = async (batch: readonly PhotoItem[]): Promise<FingerprintRow[]> => {
-    const results = await deps.hashOriginals!(batch.map((item) => item.id));
+  const fingerprintOriginals = async (
+    batch: readonly PhotoItem[],
+    hash = deps.hashOriginals!,
+  ): Promise<FingerprintRow[]> => {
+    const results = await hash(batch.map((item) => item.id));
     const byId = new Map(results.map((result) => [result.id, result]));
     return batch.map((item) => {
       const result = byId.get(item.id);
@@ -170,6 +180,9 @@ export function runCopyCheck(
       await deps.checkpoint({ status: 'running', processed, total });
 
       const current = new Map<string, FingerprintRow>();
+      // With the iCloud pass on, unavailable originals are counted when that pass handles them.
+      const cloud = deps.hashOriginals ? deps.cloud : undefined;
+      const inCloud: PhotoItem[] = [];
       for (let start = 0; start < eligible.length; start += batchSize) {
         const batch = eligible.slice(start, start + batchSize);
         const written: FingerprintRow[] = [];
@@ -185,13 +198,19 @@ export function runCopyCheck(
               todo.push(item);
             }
           }
+          let deferred = 0;
           if (todo.length > 0) {
-            for (const row of await fingerprintOriginals(todo)) {
+            const rows = await fingerprintOriginals(todo);
+            rows.forEach((row, index) => {
               current.set(row.assetId, row);
               written.push(row);
-            }
+              if (cloud && row.skipReason === 'unavailable') {
+                inCloud.push(todo[index]);
+                deferred += 1;
+              }
+            });
           }
-          processed += batch.length;
+          processed += batch.length - deferred;
         } else {
           for (const item of batch) {
             await waitWhilePaused();
@@ -212,6 +231,31 @@ export function runCopyCheck(
         emit({ type: 'progress', stage: 'checking', processed });
         await deps.checkpoint({ status: 'running', processed, total });
         await yieldToUi();
+      }
+
+      if (cloud && inCloud.length > 0) {
+        let fetched = 0;
+        emit({ type: 'step-progress', label: ICLOUD_STEP, done: 0, total: inCloud.length });
+        for (let start = 0; start < inCloud.length; start += cloudBatchSize) {
+          await waitWhilePaused();
+          if (canceled) return 'canceled';
+          const reason = await cloud.blocked();
+          if (reason) {
+            cloud.onBlocked(reason);
+            processed += inCloud.length - fetched;
+            break;
+          }
+          const batch = inCloud.slice(start, start + cloudBatchSize);
+          const rows = await fingerprintOriginals(batch, cloud.run);
+          for (const row of rows) current.set(row.assetId, row);
+          await deps.saveFingerprints(rows);
+          fetched += batch.length;
+          processed += batch.length;
+          emit({ type: 'step-progress', label: ICLOUD_STEP, done: fetched, total: inCloud.length });
+          emit({ type: 'progress', stage: 'checking', processed });
+          await deps.checkpoint({ status: 'running', processed, total });
+          await yieldToUi();
+        }
       }
 
       emit({ type: 'progress', stage: 'grouping', processed });

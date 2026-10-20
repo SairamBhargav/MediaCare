@@ -1,0 +1,45 @@
+# Converts OpenCV's SFace face-recognition model (Apache 2.0) to a compiled
+# Core ML model for People (ADR-0011). Run by hand (Actions → Face model →
+# Run workflow), download the "SFace" artifact and unzip it into
+# modules/media-analysis/ios/models/ so it holds SFace.mlmodelc/. The next
+# app build then uses it; builds without it fall back to Apple's fingerprint.
+name: Face model
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convert:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install converters
+        run: pip install "coremltools==8.3.0" "onnx==1.17.0" "onnx2torch==1.5.15" "onnxruntime==1.20.1" "torch==2.5.1" "numpy<2.1" pillow
+
+      - name: Download SFace (OpenCV model zoo, Apache 2.0)
+        run: |
+          curl -fL -o sface.onnx \
+            https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx
+          shasum -a 256 sface.onnx
+
+      - name: Convert and verify against onnxruntime
+        run: python scripts/face-model/convert.py sface.onnx SFace.mlpackage
+
+      - name: Compile for iOS
+        run: |
+          mkdir -p out
+          xcrun coremlcompiler compile SFace.mlpackage out/
+          cp scripts/face-model/NOTICE.md out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SFace
+          path: out/

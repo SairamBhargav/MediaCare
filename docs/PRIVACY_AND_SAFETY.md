@@ -6,8 +6,9 @@ These rules override convenience. Code reviews check them.
 
 - No account. No upload of photos, thumbnails, filenames, hashes, locations or face data to any MediaCare server. There is no server.
 - Photo access is requested only after an explicit user action, with an explanation first. **Limited access is a valid mode**, not an error; offer "Manage selected photos" and never nag.
-- iCloud-optimized originals may need network to read. The app asks before fetching large batches, bounds temporary storage, and shows how many items need download. Local-first means "no upload to us", not "always offline".
+- iCloud-optimized originals may need network to read. Checks download from iCloud only after the user turns on Settings → Include photos in iCloud (confirmation names the cost), on Wi-Fi unless they also allow mobile data, never in Low Data or Low Power Mode, re-checked before every batch (ADR-0009). Downloaded bytes are analyzed or hashed in a stream and not kept by MediaCare. The cards show how many items are still only in iCloud and why. Local-first means "no upload to us", not "always offline".
 - Sample mode uses synthetic images only and is labelled everywhere.
+- People (ADR-0011): face fingerprints, groupings and names are biometric-grade data. They are made and kept on this iPhone only, never uploaded or shared, never used for anything but the user's own People screens, and removed by Clear MediaCare data. Grouping is labelled as possibly wrong and every grouping can be corrected (rename, merge, "not this person", hide).
 
 ## Removal (Phase 3+)
 

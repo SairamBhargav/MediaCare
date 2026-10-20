@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
@@ -5,6 +6,7 @@ import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { Surface } from '@/components/surface';
 import { SKIP_REASON_TEXT, type CopyCoverage } from '@/domain/exact-copies';
+import type { CloudNote } from '@/domain/icloud';
 import { spacing, useTheme } from '@/theme';
 
 export type CopyCheckSummary = {
@@ -12,6 +14,8 @@ export type CopyCheckSummary = {
   /** Status of the last copies check ('succeeded', 'canceled', 'interrupted', …), or null if never run. */
   lastStatus: string | null;
   sets: number;
+  /** About the photos only in iCloud (ADR-0009), or null. */
+  icloud?: CloudNote | null;
 };
 
 /**
@@ -62,13 +66,32 @@ export function CopiesCard({
           ))}
         </View>
       ) : null}
+      {!neverRun ? (
+        <>
+          {summary.icloud ? (
+            <View style={styles.cloud}>
+              <AppText variant="footnote" color="secondaryLabel">
+                {summary.icloud.text}
+              </AppText>
+              {summary.icloud.offerSettings ? (
+                <Button
+                  title="Open Settings"
+                  variant="plain"
+                  icon="settings"
+                  onPress={() => router.push('/settings')}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </>
+      ) : null}
       <Button
         title={neverRun ? 'Find exact copies' : finished ? 'Check again' : 'Continue checking'}
         variant="secondary"
         icon="duplicate"
         onPress={onStart}
         disabled={disabled}
-        accessibilityHint="Reads photo files on this iPhone. Nothing is downloaded or removed."
+        accessibilityHint="Reads photo files on this iPhone. Nothing is uploaded or removed."
         block
       />
     </Surface>
@@ -86,5 +109,6 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   flex: { flex: 1 },
   reasons: { gap: 2 },
+  cloud: { gap: spacing.xs, alignItems: 'flex-start' },
   numbers: { fontVariant: ['tabular-nums'] },
 });

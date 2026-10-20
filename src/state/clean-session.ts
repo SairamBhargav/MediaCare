@@ -15,11 +15,22 @@ import {
   saveVisualRows,
   upsertAssets,
 } from '@/db/catalog-repo';
+import { jobStatusLine } from '@/features/clean/job-text';
+import { peopleStep } from '@/features/people/people-step';
+import {
+  beginBackgroundRun,
+  endBackgroundRun,
+  notifyIfInBackground,
+  onBackgroundRunExpired,
+  requestNotifications,
+  updateBackgroundRun,
+} from '@/services/media/background-run';
 import { creationToolsAvailable, measureVideoSizes } from '@/services/media/creations';
 import { sampleFindings, sampleLibrary } from '@/demo/sample-library';
 import { runSampleScan } from '@/demo/sample-scan';
 import { exactCopyFindings } from '@/domain/exact-copies';
 import { findingsWithin, type Finding } from '@/domain/findings';
+import { cloudBlockReason, type CloudBlock } from '@/domain/icloud';
 import { isActive, reduceJob, startJob, type Job, type JobEvent } from '@/domain/jobs';
 import type { PhotoItem } from '@/domain/media';
 import {
@@ -42,16 +53,21 @@ import { getSubtypes, listAllMetadata, toRecord } from '@/services/media/photo-l
 import {
   ANALYSIS_IMPLEMENTATION,
   analyzePhotos,
+  analyzePhotosFromCloud,
+  cloudDownloadAvailable,
   hashOriginals,
+  hashOriginalsFromCloud,
   originalsHashingAvailable,
+  readConnection,
   visualAnalysisAvailable,
 } from '@/services/media/visual-analysis';
 import { runCopyCheck } from '@/services/scan/copy-check';
-import { runVisualAnalysis } from '@/services/scan/visual-analysis-job';
+import { runVisualAnalysis, type CloudPass } from '@/services/scan/visual-analysis-job';
 import { runLibraryScan } from '@/services/scan/library-scan';
 import { haptics } from '@/utils/haptics';
 
 import { hasPhotoAccess, useCatalog } from './catalog';
+import { usePreferences } from './preferences';
 import { useReviewSession } from './review-session';
 
 /** New or cleared results invalidate review choices made on the old ones. */
@@ -88,6 +104,11 @@ type CleanSession = {
   state: CleanHomeState;
   /** The current or just-finished scan. Drives the job bar and scan sheet. */
   job: Job | null;
+  /**
+   * Why the last check of each kind stopped downloading from iCloud early
+   * (ADR-0009). Cleared when that check starts again.
+   */
+  cloudBlocked: Partial<Record<'analysis' | 'copies', CloudBlock>>;
   startSampleScan: () => void;
   /** Real scan of the accessible Photos library; asks for access first if needed. */
   startLibraryScan: () => Promise<void>;
@@ -172,7 +193,33 @@ function catalogProtection(items: readonly PhotoItem[]): Set<string> {
   return new Set([...useCatalog.getState().protectedIds, ...favoriteIds(items)]);
 }
 
+/**
+ * The opt-in iCloud pass for a check (ADR-0009), or undefined when the user
+ * hasn't turned it on or this build can't download. Preferences are read
+ * again before every batch, so turning the switch off stops downloads.
+ */
+function cloudPass<Result>(
+  run: (ids: string[]) => Promise<Result[]>,
+  onBlocked: (reason: CloudBlock) => void,
+): CloudPass<Result> | undefined {
+  if (!cloudDownloadAvailable() || !usePreferences.getState().includeICloud) return undefined;
+  return {
+    blocked: async () => {
+      const { includeICloud, icloudOnMobileData } = usePreferences.getState();
+      if (!includeICloud) return 'switched-off';
+      return cloudBlockReason(await readConnection(), { allowMobileData: icloudOnMobileData });
+    },
+    run,
+    onBlocked,
+  };
+}
+
 let controls: ScanHandle | null = null;
+/** A background run (ADR-0010) is open for the current check, or chain of checks. */
+let backgroundOpen = false;
+/** iOS ended the background run; the check was stopped because of it. */
+let backgroundExpired = false;
+let stopExpiryListener: (() => void) | null = null;
 /** Set by startFullCheck: run exact copies after the photo check succeeds. */
 let chainCopies = false;
 let dismissTimer: ReturnType<typeof setTimeout> | null = null;
@@ -189,6 +236,39 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     }, FINISHED_JOB_VISIBLE_MS);
   };
 
+  /** Lets a check keep running after the user leaves the app (iOS 26+, app build). */
+  const openBackground = (job: Job) => {
+    if (backgroundOpen) return;
+    requestNotifications().catch(() => {});
+    backgroundExpired = false;
+    backgroundOpen = beginBackgroundRun('Checking your photos', jobStatusLine(job));
+    if (backgroundOpen && !stopExpiryListener) {
+      stopExpiryListener = onBackgroundRunExpired(() => {
+        backgroundOpen = false;
+        backgroundExpired = true;
+        chainCopies = false;
+        controls?.cancel();
+      });
+    }
+  };
+
+  /** Ends the background run; tells the user if they aren't in the app. */
+  const closeBackground = (job: Job, done?: { title: string; body: string }) => {
+    if (backgroundExpired && job.status === 'canceled') {
+      notifyIfInBackground(
+        'Photo check stopped',
+        'iOS stopped it in the background. Open MediaCare and tap Continue; nothing checked so far is lost.',
+      );
+    } else if (job.status === 'failed') {
+      notifyIfInBackground('Photo check stopped', job.error ?? 'Something went wrong.');
+    } else if (done && job.status === 'succeeded') {
+      notifyIfInBackground(done.title, done.body);
+    }
+    backgroundExpired = false;
+    if (backgroundOpen) endBackgroundRun(job.status === 'succeeded');
+    backgroundOpen = false;
+  };
+
   /** Applies job events; `finish` runs once when the job reaches a final state. */
   const onEvent =
     (jobId: string, finish: (job: Job) => void | Promise<void>) => (event: JobEvent) => {
@@ -197,6 +277,9 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
       const job = reduceJob(current, event);
       if (job === current) return;
       set({ job });
+      if (backgroundOpen && isActive(job)) {
+        updateBackgroundRun(job.processed, job.total ?? 0, jobStatusLine(job));
+      }
       if (!isActive(job)) {
         controls = null;
         const finished = finish(job);
@@ -260,6 +343,13 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     } else {
       get().showCatalogResults();
     }
+    closeBackground(job, {
+      title: 'Your photos are checked',
+      body:
+        copySets.length === 0
+          ? 'No exact copies found. Results are on the Clean tab in MediaCare.'
+          : `${copySets.length} ${copySets.length === 1 ? 'set' : 'sets'} of exact copies found. Results are on the Clean tab in MediaCare.`,
+    });
     if (job.status === 'succeeded') {
       haptics.success();
       AccessibilityInfo.announceForAccessibility(
@@ -292,9 +382,13 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     if (job.status === 'succeeded' && chainCopies) {
       chainCopies = false;
       get().startCopyCheck();
-      return;
+      if (isActive(get().job)) return;
     }
     chainCopies = false;
+    closeBackground(job, {
+      title: 'Photo check done',
+      body: 'Results are on the Clean tab in MediaCare.',
+    });
     if (job.status === 'succeeded') {
       haptics.success();
       AccessibilityInfo.announceForAccessibility('Photo check complete');
@@ -311,6 +405,7 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
   return {
     state: { status: 'not-scanned' },
     job: null,
+    cloudBlocked: {},
 
     startSampleScan: () => {
       if (isActive(get().job)) return;
@@ -364,7 +459,8 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
 
       const job = startJob(`copy-check-${Date.now()}`, false, 'copies');
       const startedAt = Date.now();
-      set({ job });
+      set({ job, cloudBlocked: { ...get().cloudBlocked, copies: undefined } });
+      openBackground(job);
       controls = runCopyCheck(
         {
           listItems: async () => useCatalog.getState().items,
@@ -375,6 +471,9 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
           fileMd5,
           sameBytes,
           hashOriginals: originalsHashingAvailable() ? hashOriginals : undefined,
+          cloud: cloudPass(hashOriginalsFromCloud, (reason) =>
+            set({ cloudBlocked: { ...get().cloudBlocked, copies: reason } }),
+          ),
           saveFingerprints,
           saveMatchGroups,
           checkpoint: ({ status, processed, total, error }) =>
@@ -401,13 +500,18 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
 
       const job = startJob(`visual-analysis-${Date.now()}`, false, 'analysis');
       const startedAt = Date.now();
-      set({ job });
+      set({ job, cloudBlocked: { ...get().cloudBlocked, analysis: undefined } });
+      openBackground(job);
       controls = runVisualAnalysis(
         {
           listItems: async () => useCatalog.getState().items,
           loadRows: loadVisualRows,
           analyze: analyzePhotos,
+          cloud: cloudPass(analyzePhotosFromCloud, (reason) =>
+            set({ cloudBlocked: { ...get().cloudBlocked, analysis: reason } }),
+          ),
           saveRows: saveVisualRows,
+          people: peopleStep(),
           implementation: ANALYSIS_IMPLEMENTATION,
           videoSizes: creationToolsAvailable()
             ? { load: loadSizes, measure: measureVideoSizes, save: saveSizes }
@@ -460,11 +564,14 @@ export const useCleanSession = create<CleanSession>()((set, get) => {
     },
     reset: () => {
       chainCopies = false;
+      backgroundExpired = false;
+      if (backgroundOpen) endBackgroundRun(false);
+      backgroundOpen = false;
       controls?.cancel();
       controls = null;
       if (dismissTimer) clearTimeout(dismissTimer);
       clearReview();
-      set({ state: { status: 'not-scanned' }, job: null });
+      set({ state: { status: 'not-scanned' }, job: null, cloudBlocked: {} });
     },
   };
 });

@@ -61,6 +61,22 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="people/index"
+            options={{
+              headerLargeTitleEnabled: true,
+              headerShadowVisible: false,
+              headerLargeTitleShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <Stack.Screen
+            name="people/[id]"
+            options={{
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <Stack.Screen
             name="review/[groupId]"
             options={{
               headerShadowVisible: false,

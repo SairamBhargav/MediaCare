@@ -28,11 +28,22 @@ export type Job = {
   /** `null` while the total is unknown (indeterminate progress). */
   readonly total: number | null;
   readonly error?: string;
+  /**
+   * A named step inside "checking" with its own count, e.g. getting photos
+   * from iCloud (ADR-0009) or finding people (ADR-0011).
+   */
+  readonly step?: { readonly label: string; readonly done: number; readonly total: number };
 };
 
 export type JobEvent =
   | { readonly type: 'total-known'; readonly total: number }
   | { readonly type: 'progress'; readonly stage: JobStage; readonly processed: number }
+  | {
+      readonly type: 'step-progress';
+      readonly label: string;
+      readonly done: number;
+      readonly total: number;
+    }
   | { readonly type: 'pause' }
   | { readonly type: 'resume' }
   | { readonly type: 'cancel' }
@@ -73,6 +84,14 @@ export function reduceJob(job: Job, event: JobEvent): Job {
       const stage =
         JOB_STAGES.indexOf(event.stage) > JOB_STAGES.indexOf(job.stage) ? event.stage : job.stage;
       return { ...job, processed, stage };
+    }
+    case 'step-progress': {
+      if (job.status !== 'running') return job;
+      if (!Number.isInteger(event.total) || event.total < 0) return job;
+      // Within one step the count only moves forward; a new step starts over.
+      const previous = job.step?.label === event.label ? job.step.done : 0;
+      const done = Math.min(Math.max(previous, event.done), event.total);
+      return { ...job, step: { label: event.label, done, total: event.total } };
     }
     case 'pause':
       return job.status === 'running' ? { ...job, status: 'paused' } : job;

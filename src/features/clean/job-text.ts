@@ -17,6 +17,9 @@ function counts(job: Job): string {
 export function jobStatusLine(job: Job): string {
   switch (job.status) {
     case 'running':
+      if (job.stage === 'checking' && job.step) {
+        return `${job.step.label} · ${job.step.done.toLocaleString()} of ${job.step.total.toLocaleString()}`;
+      }
       return job.stage === 'listing'
         ? stageLabel(job, 'listing')
         : `${stageLabel(job, job.stage)} · ${counts(job)}`;

@@ -25,6 +25,8 @@ import { useViewerOrigin } from '@/state/viewer-origin';
 import { gutter, radius, spacing, useReduceMotion, useTheme } from '@/theme';
 import { showPhotoActions } from '@/utils/photo-actions';
 
+import { LibraryPeople } from './library-people';
+
 const GAP = 2;
 const MONTH_HEADER_HEIGHT = 44;
 
@@ -273,6 +275,7 @@ export function LibraryScreen() {
               </AppText>
             </View>
             {banner}
+            {showingReal && !selecting ? <LibraryPeople /> : null}
           </View>
         }
       />

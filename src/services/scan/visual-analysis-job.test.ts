@@ -156,3 +156,141 @@ test('measures sizes of videos without a current size, after the photos', async 
   ]);
   expect(t.job()).toMatchObject({ status: 'succeeded', processed: 3, total: 3 });
 });
+
+describe('opt-in iCloud pass (ADR-0009)', () => {
+  const local = (id: string): NativeAnalysis =>
+    id.startsWith('cloud') ? { id, status: 'in-icloud' } : ok(id);
+
+  test('without it, iCloud photos stay in iCloud and nothing is retried', async () => {
+    const t = setup([photo('a'), photo('cloud1')], [], local);
+    await runVisualAnalysis(t.deps, t.emit).done;
+    expect(t.saved.map((row) => row.status)).toEqual(['ok', 'in-icloud']);
+    expect(t.job().step).toBeUndefined();
+  });
+
+  test('iCloud photos are retried last with downloads, after local ones', async () => {
+    const t = setup([photo('cloud1'), photo('a'), photo('cloud2')], [], local);
+    const fetched: string[][] = [];
+    t.deps.cloud = {
+      blocked: async () => null,
+      run: async (ids) => {
+        fetched.push(ids);
+        return ids.map(ok);
+      },
+      onBlocked: jest.fn(),
+    };
+    expect(await runVisualAnalysis(t.deps, t.emit, { batchSize: 8, cloudBatchSize: 1 }).done).toBe(
+      'succeeded',
+    );
+    expect(fetched).toEqual([['cloud1'], ['cloud2']]);
+    const last = new Map(t.saved.map((row) => [row.assetId, row.status]));
+    expect([...last.values()]).toEqual(['ok', 'ok', 'ok']);
+    expect(t.job()).toMatchObject({ processed: 3, total: 3, step: { done: 2, total: 2 } });
+  });
+
+  test('a blocked connection stops the pass and says why; the rest stay in iCloud', async () => {
+    const t = setup([photo('cloud1'), photo('cloud2')], [], local);
+    const reasons = ['ok', 'mobile-data'] as const;
+    let call = 0;
+    const onBlocked = jest.fn();
+    t.deps.cloud = {
+      blocked: async () => (reasons[call++] === 'ok' ? null : 'mobile-data'),
+      run: async (ids) => ids.map(ok),
+      onBlocked,
+    };
+    expect(await runVisualAnalysis(t.deps, t.emit, { cloudBatchSize: 1 }).done).toBe('succeeded');
+    expect(onBlocked).toHaveBeenCalledWith('mobile-data');
+    const last = new Map(t.saved.map((row) => [row.assetId, row.status]));
+    expect(last.get('cloud1')).toBe('ok');
+    expect(last.get('cloud2')).toBe('in-icloud');
+  });
+
+  test('Stop during the pass keeps what was downloaded', async () => {
+    const t = setup([photo('cloud1'), photo('cloud2')], [], local);
+    let controls: ReturnType<typeof runVisualAnalysis> | null = null;
+    t.deps.cloud = {
+      blocked: async () => null,
+      run: async (ids) => {
+        controls?.cancel();
+        return ids.map(ok);
+      },
+      onBlocked: jest.fn(),
+    };
+    controls = runVisualAnalysis(t.deps, t.emit, { cloudBatchSize: 1 });
+    expect(await controls.done).toBe('canceled');
+    const last = new Map(t.saved.map((row) => [row.assetId, row.status]));
+    expect(last.get('cloud1')).toBe('ok');
+    expect(last.get('cloud2')).toBe('in-icloud');
+  });
+});
+
+describe('People step (ADR-0011)', () => {
+  const withFace = (id: string): NativeAnalysis => ({
+    ...ok(id),
+    faces: id.startsWith('face')
+      ? [{ quality: 0.8, leftEyeOpen: 1, rightEyeOpen: 1, width: 0.2, height: 0.2 }]
+      : [],
+  });
+
+  function withRows(items: PhotoItem[], native = withFace) {
+    const t = setup(items, [], native);
+    // The step reads rows back after analysis; serve what was saved.
+    t.deps.loadRows = async () => t.saved;
+    return t;
+  }
+
+  test('only photos with faces and no current face scan are looked at, then grouped once', async () => {
+    const t = withRows([photo('face1'), photo('plain'), photo('face2'), photo('face3')]);
+    const asked: string[][] = [];
+    const group = jest.fn(async () => {});
+    t.deps.people = {
+      scanned: async () => new Set(['face3']),
+      find: async (ids) => {
+        asked.push(ids);
+        return ids.map((id) => ({ id, status: 'ok' }));
+      },
+      save: async () => {},
+      group,
+    };
+    expect(await runVisualAnalysis(t.deps, t.emit, { peopleBatchSize: 1 }).done).toBe('succeeded');
+    expect(asked).toEqual([['face1'], ['face2']]);
+    expect(group).toHaveBeenCalledTimes(1);
+  });
+
+  test('nothing new: no grouping', async () => {
+    const t = withRows([photo('plain')]);
+    const group = jest.fn(async () => {});
+    t.deps.people = {
+      scanned: async () => new Set(),
+      find: jest.fn(),
+      save: async () => {},
+      group,
+    };
+    await runVisualAnalysis(t.deps, t.emit).done;
+    expect(t.deps.people.find).not.toHaveBeenCalled();
+    expect(group).not.toHaveBeenCalled();
+  });
+
+  test('downloads for faces only while the iCloud pass allows it', async () => {
+    const t = withRows([photo('face1'), photo('face2')]);
+    const network: boolean[] = [];
+    let checks = 0;
+    t.deps.cloud = {
+      // Allowed for the first face batch, then the phone leaves Wi-Fi.
+      blocked: async () => (checks++ === 0 ? null : 'mobile-data'),
+      run: async (ids) => ids.map(withFace),
+      onBlocked: jest.fn(),
+    };
+    t.deps.people = {
+      scanned: async () => new Set(),
+      find: async (ids, allowNetwork) => {
+        network.push(allowNetwork);
+        return ids.map((id) => ({ id, status: 'ok' }));
+      },
+      save: async () => {},
+      group: async () => {},
+    };
+    await runVisualAnalysis(t.deps, t.emit, { peopleBatchSize: 1 }).done;
+    expect(network).toEqual([true, false]);
+  });
+});

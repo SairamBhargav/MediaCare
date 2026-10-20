@@ -1,9 +1,11 @@
+import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/app-text';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { Surface } from '@/components/surface';
+import type { CloudNote } from '@/domain/icloud';
 import { VISUAL_REASON_TEXT, type VisualCoverage } from '@/domain/visual-records';
 import { spacing, useTheme } from '@/theme';
 
@@ -13,6 +15,8 @@ export type AnalysisSummary = {
   coverage: VisualCoverage;
   /** Status of the last photo check, or null if never run. */
   lastStatus: string | null;
+  /** About the photos only in iCloud (ADR-0009), or null. */
+  icloud?: CloudNote | null;
 };
 
 /**
@@ -60,6 +64,21 @@ export function AnalysisCard({
               {count.toLocaleString()} · {VISUAL_REASON_TEXT[reason]}
             </AppText>
           ))}
+          {summary.icloud ? (
+            <View style={styles.cloud}>
+              <AppText variant="footnote" color="secondaryLabel">
+                {summary.icloud.text}
+              </AppText>
+              {summary.icloud.offerSettings ? (
+                <Button
+                  title="Open Settings"
+                  variant="plain"
+                  icon="settings"
+                  onPress={() => router.push('/settings')}
+                />
+              ) : null}
+            </View>
+          ) : null}
         </View>
       ) : null}
       {available ? (
@@ -68,7 +87,7 @@ export function AnalysisCard({
           variant="secondary"
           icon="scan"
           onPress={onStart}
-          accessibilityHint="Analyzes photos on this iPhone. Nothing is downloaded, uploaded or removed."
+          accessibilityHint="Analyzes photos on this iPhone. Nothing is uploaded or removed."
           block
         />
       ) : null}
@@ -81,5 +100,6 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   flex: { flex: 1 },
   reasons: { gap: 2 },
+  cloud: { gap: spacing.xs, alignItems: 'flex-start', marginTop: spacing.xs },
   numbers: { fontVariant: ['tabular-nums'] },
 });

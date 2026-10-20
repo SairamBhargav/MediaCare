@@ -13,7 +13,9 @@
       "supportsTablet": false,
       "infoPlist": {
         "CADisableMinimumFrameDurationOnPhone": true,
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "BGTaskSchedulerPermittedIdentifiers": ["com.bhargav.mediacare.check"],
+        "UIBackgroundModes": ["processing"]
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -70,7 +72,7 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "MediaCare looks at your photos and videos on this iPhone to find repeated shots, blurry photos, copies and large videos, and to make the edits you ask for. Nothing is uploaded.",
+          "photosPermission": "MediaCare looks at your photos and videos on this iPhone to find repeated shots, blurry photos, copies, large videos and the people in them, and to make the edits you ask for. Nothing is uploaded.",
           "savePhotosPermission": "MediaCare saves the copies, edits, collages and videos you make as new items in Photos.",
           "isAccessMediaLocationEnabled": false
         }

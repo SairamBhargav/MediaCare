@@ -96,7 +96,7 @@ Built from Device evidence 1 and the installed SDK 57 sources:
 | Enhance, red-eye                      | MediaCare app build          | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | `CIImage.autoAdjustmentFilters`; red-eye reports when nothing was found                                         |
 | Background removal                    | MediaCare app build, iOS 17+ | `implemented` · compiled (EAS dev build 2026-10-07), awaiting owner test | `VNGenerateForegroundInstanceMaskRequest`, transparent PNG cropped to the subject                               |
 
-All read with `isNetworkAccessAllowed = false`: iCloud-only photos are reported, not downloaded. Thresholds are provisional (`VISUAL_THRESHOLDS`), to be tuned with Diagnostics → Vision check.
+Read with `isNetworkAccessAllowed = false` by default: iCloud-only photos are reported, not downloaded. With the opt-in (ADR-0009), `analyzeFromCloud` / `hashOriginalsFromCloud` allow the download for those photos only, gated per batch by `networkState` (NWPathMonitor `isExpensive` / `isConstrained`, Low Power Mode); native `cloudVersion` 1, `implemented` · awaiting build and device (data per rendition and speed unmeasured). Checks can continue in the background on iOS 26+ through `BGContinuedProcessingTask` (ADR-0010), `implemented` · awaiting build and device (JS execution in background, Photos reads while locked, run length). People (ADR-0011): `faces()` with `VNDetectFaceLandmarksRequest`, five-point alignment and `VNGenerateImageFeaturePrintRequest` per face, plus SFace through Core ML when `SFace.mlmodelc` is bundled; `implemented` · awaiting build and device (grouping accuracy, thresholds, first-run time). Thresholds are provisional (`VISUAL_THRESHOLDS`), to be tuned with Diagnostics → Vision check.
 
 ## Creation tools, native v3 (2026-10-09, written, not yet compiled)
 
@@ -136,3 +136,20 @@ Fill in from S3/S5. "?" = not yet tested.
 | RAW / ProRAW      | ?             | ?       | ?        | ?                                                                     | —       | never overwritten | —                                                    |
 | Screenshots (PNG) | ?             | ?       | ?        | ?                                                                     | ?       | ?                 | ?                                                    |
 | MOV/MP4 video     | Phase 6       |         |          |                                                                       |         |                   |                                                      |
+
+## Audit evidence — 2026-10-09
+
+[Full audit](REPO_AUDIT_2026-10-09.md) and [implementation plan](AUDIT_IMPLEMENTATION_PLAN.md). This source evidence qualifies older claims; it is not new device validation.
+
+| Area                | Evidence                                                                                                      | Limit / follow-up                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Smoothness          | Owner reports slow-feeling taps/view openings in installed development build with fewer than 1,000 photos     | P3-PERF-002; device trace awaiting owner test                                        |
+| Similarity grouping | Synthetic actual-function test: 1,000 identical 768-D vectors, 499,500 comparisons, 745 ms on Windows Node/V8 | Stress case, not iPhone timing; P3-PERF-005                                          |
+| Protection/removal  | Viewer/catalog protection can diverge from review/plan; lookup errors count as gone                           | P3-SAFE-001/002; release removal remains disabled                                    |
+| Cancellation/clear  | Cancel does not await runner completion; clear omits cache/temp cleanup                                       | P3-JOB-004, P3-PRIV-002                                                              |
+| Thumbnail network   | Installed expo-image PhotoLibraryAssetLoader permits network; view-size optimization depends on context       | Browsing may fetch iCloud renditions; native scan/hash no-network policy is separate |
+| Video outputs       | Source-track dimensions/requested duration reported; MOV fallback not represented by JS format                | P6-VID-003; native compile/playback awaiting owner test                              |
+| Full launch scan    | Requested by owner; bootstrap currently restores cached findings, full-check action omits metadata scan       | P3-SCAN-001 planned, not implemented                                                 |
+| Albums/search       | Owner requested complete manager scope                                                                        | P4-ORG-001/P4-SRCH-001; not existing working features                                |
+| Automated baseline  | npm run check passed: 52 suites / 472 tests                                                                   | Does not prove native behavior or smoothness                                         |
+| Advisories          | npm audit: 66 affected entries (49 high, 17 moderate, 0 critical)                                             | Includes inherited entries; runtime reachability/compatible fixes need P3-SEC-001    |
