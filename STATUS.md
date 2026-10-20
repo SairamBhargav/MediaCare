@@ -15,6 +15,8 @@ Then (same day, P3-BG-001, ADR-0010): checks continue in the background on iOS 2
 
 Then (same day, P4-PPL-001..005, ADR-0011): **People**. Owner chose to combine Apple Vision with a dedicated face model. Native `FaceTools.swift` (Vision landmarks, OpenCV 5-point alignment, Apple + optional SFace fingerprints), migration 7, grouping in `src/domain/people.ts` (tested), "Finding people" step in the photo check, People row in Library, People and person screens (rename, merge, hide, Not <name>). PRD non-goal narrowed. SFace itself isn't in the repo yet: run Actions → **Face model** (P4-PPL-006), confirm the model, then commit `SFace.mlmodelc` into `modules/media-analysis/ios/models/`. Without it, People uses Apple's fingerprint only (strict). Checks: `npm run check` ✅ (56 suites, 504 tests), bundle ✅ 4.7 MB, doctor 20/21 (same patch-version item). All People behaviour **awaiting build and owner test**.
 
+EAS development build 2925872a (2026-10-19, 0.2.0 build 2) **compiled** with all of the above (iCloud, background run, People; no SFace yet). Behaviour on device **awaiting owner test**.
+
 Also logged from the same feedback: P4-ICL-003 (Studio on iCloud photos), P4-CUT-001 (tap to pick one person in Remove background), P4-PPL-001 (people by name: blocked, PRD non-goal; Photos → People & Pets does this today).
 
 ## First TestFlight build (2026-10-09)
