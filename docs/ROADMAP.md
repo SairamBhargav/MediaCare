@@ -53,3 +53,9 @@ As specified in the master brief: quality and editing (4), advanced Studio incl.
 - TestFlight to family testers is allowed before Phase 3 exit (owner decision, 2026-10-07), with removal disabled in every build until removal is proven on purpose-made test photos. No public App Store release before Phase 3 exit.
 - No cloud processing, account system, analytics SDK or paywall before an explicit owner decision with a written product case.
 - Expo Go support for the sample experience continues through Phase 3 unless an ADR records the end of it.
+
+## Stabilization priority — owner audit request, 2026-10-09
+
+Complete the ordered [audit implementation plan](AUDIT_IMPLEMENTATION_PLAN.md) before broader feature expansion. Phase 3 performance/safety gates remain open despite feature code being present. P3-AUD-001 is complete; application fixes are planned.
+
+Owner direction: calm Photos-like experience, full deep scan each fresh launch and a photo manager covering albums, favorites, date/type filters, editing/creations and people/subject/text search. Implement launch scanning after job lifecycle/responsiveness foundations. Add organization/search via P4-ORG-001/P4-SRCH-001. Every removal still requires explicit review; ADR-0008 stays. No cloud processing/build authorization is implied.
